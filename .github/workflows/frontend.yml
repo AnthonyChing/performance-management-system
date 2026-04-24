@@ -1,0 +1,35 @@
+name: Build and deploy frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+      - '!**.md'
+
+# jobs:
+#   deploy:
+#     runs-on: self-hosted
+#     concurrency:
+#       group: frontend-deploy
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v6
+#       - name: Build Docker image
+#         run: |
+#           docker build \
+#             -t frontend:${{ github.sha }} \
+#             -t frontend:latest \
+#             ./frontend
+#       - name: Run Docker container
+#         run: |
+#           docker stop frontend || true
+#           docker rm frontend || true
+#           docker run -d \
+#             --name frontend \
+#             -p 80:80 \
+#             --network cspace_network \
+#             --restart unless-stopped \
+#             frontend:${{ github.sha }}
