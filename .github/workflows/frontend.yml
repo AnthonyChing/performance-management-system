@@ -10,7 +10,7 @@ on:
       - '!**.md'
 
 jobs:
-  pass_check:
+  frontend_pass_check:
     runs-on: ubuntu-latest
     steps:
       - name: Do nothing
