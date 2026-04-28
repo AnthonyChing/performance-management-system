@@ -9,6 +9,13 @@ on:
       - '.github/workflows/frontend.yml'
       - '!**.md'
 
+jobs:
+  pass_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Do nothing
+        run: echo "Workflow passes without doing anything"
+
 # jobs:
 #   deploy:
 #     runs-on: self-hosted
