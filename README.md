@@ -25,26 +25,22 @@ Run `npm run dev` to start vite dev server.
 
 ### Development
 
-*For example*:
-To start the development server:
+Backend is now Spring Boot (Java). Run from repository root:
 
-1. cd into `backend`
-2. create a file `.env`
-```
-DB_USER=[enter username]
-DB_PASSWORD=[enter password]
-DJANGO_SECRET_KEY=[enter anything e.g. your-secret-key]
-```
-3. Then execute:
-```
-docker compose -f docker-compose.yml -f docker-compose.dev.yml build --no-cache
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```bash
+docker compose up --build -d backend
 ```
 
-To stop:
-cd into `backend`
+Health check:
+
+```bash
+curl http://localhost:8080/api/v1/health
 ```
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+Stop backend:
+
+```bash
+docker compose down
 ```
 
 ### Production
