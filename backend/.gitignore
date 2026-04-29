@@ -1,0 +1,34 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.class
+*.jar
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db
+.env
+
+# Runtime files
+.gradle/
+build/
+*.pid
