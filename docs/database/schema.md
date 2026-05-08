@@ -50,25 +50,249 @@ Core functional domains:
 
 ```mermaid
 erDiagram
+    users {
+        UUID id PK
+        VARCHAR employee_id UK
+        VARCHAR email UK
+        VARCHAR full_name
+        UUID department_id FK
+        UUID manager_id FK
+        VARCHAR job_title
+        VARCHAR job_function
+        employment_status_enum employment_status
+        BOOLEAN mfa_enabled
+        VARCHAR locale
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ terminated_at
+    }
+    roles {
+        UUID id PK
+        VARCHAR name UK
+        TEXT description
+    }
+    user_roles {
+        UUID user_id PK, FK
+        UUID role_id PK, FK
+        TIMESTAMPTZ granted_at
+        UUID granted_by FK
+    }
+    departments {
+        UUID id PK
+        VARCHAR name
+        UUID parent_id FK
+        TIMESTAMPTZ created_at
+    }
+    performance_cycles {
+        UUID id PK
+        VARCHAR name
+        cycle_type_enum cycle_type
+        cycle_status_enum status
+        TIMESTAMPTZ self_eval_start
+        TIMESTAMPTZ self_eval_end
+        TIMESTAMPTZ manager_eval_start
+        TIMESTAMPTZ manager_eval_end
+        TIMESTAMPTZ hr_review_end
+        TIMESTAMPTZ results_published_at
+        INTEGER appeal_deadline_days
+        BOOLEAN is_locked
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    evaluation_templates {
+        UUID id PK
+        VARCHAR name
+        TEXT description
+        VARCHAR job_function
+        BOOLEAN is_active
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    template_questions {
+        UUID id PK
+        UUID template_id FK
+        TEXT question_text
+        question_type_enum question_type
+        INTEGER rating_scale_max
+        BOOLEAN is_required
+        INTEGER sort_order
+        TIMESTAMPTZ created_at
+    }
+    cycle_template_assignments {
+        UUID id PK
+        UUID cycle_id FK
+        UUID template_id FK
+        VARCHAR job_function
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+    }
+    goals {
+        UUID id PK
+        UUID cycle_id FK
+        UUID owner_id FK
+        UUID set_by FK
+        goal_type_enum goal_type
+        VARCHAR title
+        TEXT description
+        NUMERIC weight
+        TEXT target_value
+        TEXT current_value
+        DATE due_date
+        goal_status_enum status
+        TIMESTAMPTZ published_at
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ deleted_at
+    }
+    kpis {
+        UUID id PK
+        UUID cycle_id FK
+        UUID created_by FK
+        goal_type_enum kpi_type
+        VARCHAR title
+        TEXT description
+        VARCHAR unit
+        TIMESTAMPTZ published_at
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ deleted_at
+    }
+    kpi_assignments {
+        UUID kpi_id PK, FK
+        UUID user_id PK, FK
+        NUMERIC target_value
+        NUMERIC current_value
+        TIMESTAMPTZ last_updated_at
+    }
+    performance_reviews {
+        UUID id PK
+        UUID cycle_id FK
+        UUID employee_id FK
+        UUID manager_id FK
+        UUID co_manager_id FK
+        UUID template_id FK
+        review_status_enum status
+        TIMESTAMPTZ self_submitted_at
+        TIMESTAMPTZ self_withdrawn_at
+        TIMESTAMPTZ manager_submitted_at
+        TIMESTAMPTZ hr_approved_at
+        rating_scale_enum final_rating
+        TEXT manager_comment
+        BOOLEAN is_terminated_employee
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    review_responses {
+        UUID id PK
+        UUID review_id FK
+        UUID question_id FK
+        respondent_type_enum respondent_type
+        INTEGER rating_value
+        TEXT text_value
+        TIMESTAMPTZ responded_at
+    }
+    review_documents {
+        UUID id PK
+        UUID review_id FK
+        VARCHAR source_system
+        VARCHAR source_document_id
+        VARCHAR document_name
+        TEXT source_url
+        BOOLEAN is_pinned
+        BOOLEAN is_accessible
+        TIMESTAMPTZ last_sync_at
+        UUID pinned_by FK
+        TIMESTAMPTZ pinned_at
+        TIMESTAMPTZ created_at
+    }
+    appeals {
+        UUID id PK
+        UUID review_id FK
+        UUID filed_by FK
+        appeal_assignee_enum assigned_to_type
+        UUID assigned_to FK
+        TEXT reason
+        appeal_status_enum status
+        TIMESTAMPTZ filed_at
+        TIMESTAMPTZ resolved_at
+    }
+    appeal_responses {
+        UUID id PK
+        UUID appeal_id FK
+        UUID responded_by FK
+        TEXT response_text
+        BOOLEAN is_final
+        TIMESTAMPTZ responded_at
+    }
+    notifications {
+        UUID id PK
+        UUID recipient_id FK
+        notification_type_enum notification_type
+        UUID review_id FK
+        UUID appeal_id FK
+        UUID goal_id FK
+        VARCHAR title
+        TEXT body
+        notification_channel_enum channel
+        BOOLEAN is_read
+        TIMESTAMPTZ sent_at
+    }
+    audit_logs {
+        BIGSERIAL id PK
+        UUID actor_id FK
+        VARCHAR actor_email
+        audit_action_enum action
+        VARCHAR resource_type
+        UUID resource_id
+        JSONB old_value
+        JSONB new_value
+        INET ip_address
+        TEXT user_agent
+        TIMESTAMPTZ occurred_at
+    }
+    security_violation_logs {
+        BIGSERIAL id PK
+        UUID attempted_by FK
+        TIMESTAMPTZ attempted_at
+        VARCHAR violation_type
+        TEXT details
+    }
+
+    %% Relationships structured to optimize layout (reduce line overlap)
+    departments ||--o{ users : "has"
     users ||--o{ user_roles : "has"
     roles ||--o{ user_roles : "assigned via"
-    users ||--o{ goals : "owns"
-    users ||--o{ kpi_assignments : "assigned to"
-    kpis ||--o{ kpi_assignments : "includes"
-    users ||--o{ performance_reviews : "evaluated in"
-    performance_cycles ||--o{ performance_reviews : "contains"
-    performance_cycles ||--o{ cycle_template_assignments : "uses template"
+    
+    performance_cycles ||--o{ cycle_template_assignments : "configures"
     evaluation_templates ||--o{ cycle_template_assignments : "applied to"
     evaluation_templates ||--o{ template_questions : "contains"
+    
+    performance_cycles ||--o{ goals : "contains"
+    users ||--o{ goals : "owns"
+    
+    performance_cycles ||--o{ kpis : "contains"
+    users ||--o{ kpis : "creates"
+    kpis ||--o{ kpi_assignments : "includes"
+    users ||--o{ kpi_assignments : "assigned to"
+
+    performance_cycles ||--o{ performance_reviews : "contains"
+    users ||--o{ performance_reviews : "evaluated in"
+    evaluation_templates ||--o{ performance_reviews : "uses template"
+    
     performance_reviews ||--o{ review_responses : "has responses"
     template_questions ||--o{ review_responses : "answered in"
     performance_reviews ||--o{ review_documents : "includes evidence"
+    
     performance_reviews ||--o{ appeals : "appealed via"
     appeals ||--o{ appeal_responses : "has replies"
+    
     users ||--o{ notifications : "receives"
     performance_reviews ||--o{ notifications : "triggers"
     appeals ||--o{ notifications : "triggers"
     goals ||--o{ notifications : "triggers"
+    
     users ||--o{ audit_logs : "generates"
 ```
 
