@@ -294,6 +294,7 @@ erDiagram
     goals ||--o{ notifications : "triggers"
     
     users ||--o{ audit_logs : "generates"
+    users ||--o{ security_violation_logs : "attempts"
 ```
 
 ---
