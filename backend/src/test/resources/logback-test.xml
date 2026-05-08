@@ -1,0 +1,16 @@
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Enable Testcontainers debug output so we can see Docker strategy selection -->
+    <logger name="org.testcontainers" level="DEBUG"/>
+    <logger name="com.github.dockerjava" level="DEBUG"/>
+    <logger name="org.springframework.boot.testcontainers" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
