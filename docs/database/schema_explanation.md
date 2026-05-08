@@ -1,11 +1,9 @@
 # 系統架構與 Schema 設計解析
 
-這個資料庫是為十萬人規模的大型企業設計的「績效考核管理系統」。我們可以把它拆解成 6 大核心模組來理解資料流動的過程：
-
 ## 模組一：身份與組織架構 (Identity & Organization)
 * **包含表**：`users`, `departments`, `roles`, `user_roles`
 * **運作邏輯**：
-  這是系統的基石。每位員工（`users`）會歸屬於某個部門（`departments`），並有一位直屬主管（`manager_id`）。透過 `user_roles`，系統可以靈活賦予某個員工 `manager`、`hr` 或是 `admin` 等不同的權限（RBAC 架構），這決定了他們登入系統後能看到什麼畫面。
+  這是系統的基礎。每位員工（`users`）會歸屬於某個部門（`departments`），並有一位直屬主管（`manager_id`）。透過 `user_roles`，系統可以靈活賦予某個員工 `manager`、`hr` 或是 `admin` 等不同的權限（RBAC 架構），這決定了他們登入系統後能看到什麼畫面。
 
 ## 模組二：考核週期與範本 (Cycles & Templates)
 * **包含表**：`performance_cycles`, `evaluation_templates`, `template_questions`, `cycle_template_assignments`
@@ -31,7 +29,7 @@
 ## 模組五：申訴機制 (Appeals)
 * **包含表**：`appeals`, `appeal_responses`
 * **運作邏輯**：
-  大型企業必須保障勞工權益。如果員工對 `performance_reviews` 的最終結果不滿意，在 `appeal_deadline_days`（例如公佈後 7 天內）可以發起申訴。申訴會被指派給更上層的主管或 HR，並透過 `appeal_responses` 進行雙向的對話與仲裁，直到爭議解決。
+  如果員工對 `performance_reviews` 的最終結果不滿意，在 `appeal_deadline_days`（例如公佈後 7 天內）可以發起申訴。申訴會被指派給更上層的主管或 HR，並透過 `appeal_responses` 進行雙向的對話與仲裁，直到爭議解決。
 
 ## 模組六：系統日誌與通知 (System Mechanics)
 * **包含表**：`notifications`, `audit_logs`, `security_violation_logs`
@@ -40,5 +38,5 @@
   * **法規遵循**：任何對績效的增刪改，都會被 `audit_logs` 永久記錄下來（舊值與新值）。這張表被 PostgreSQL 設定了「不可被修改或刪除」的強硬規則。如果有任何人嘗試竄改 Audit Log，就會觸發機制寫入 `security_violation_logs` 並立刻阻擋。
   * **安全性設計**：`security_violation_logs` 與其他表維持鬆散耦合（`attempted_by` 可為 NULL），確保在任何異常未授權情況下，系統就算無法對應到正確的員工 ID，也能強硬寫入安全日誌，不會因為 Foreign Key 限制而導致日誌丟失。
 
-## 總結
-這個架構的資料流向是：**HR 定義遊戲規則 (模組二) ➔ 員工與主管訂定目標 (模組三) ➔ 週期結束進行評分 (模組四) ➔ 如有爭議進入仲裁 (模組五) ➔ 所有過程皆被監聽紀錄 (模組六)。**
+## 資料流向
+**HR 定義規則 (模組二) ➔ 員工與主管訂定目標 (模組三) ➔ 週期結束進行評分 (模組四) ➔ 如有爭議進入仲裁 (模組五) ➔ 所有過程皆被紀錄 (模組六)。**
