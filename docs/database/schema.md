@@ -1,3 +1,72 @@
+# Database Schema
+## Table of Contents
+
+- [Overview](#overview)
+- [Entity Relationship Summary](#entity-relationship-summary)
+- [Tables](#tables)
+  - [users](#users)
+  - [roles](#roles)
+  - [user\_roles](#user_roles)
+  - [departments](#departments)
+  - [performance\_cycles](#performance_cycles)
+  - [evaluation\_templates](#evaluation_templates)
+  - [template\_questions](#template_questions)
+  - [cycle\_template\_assignments](#cycle_template_assignments)
+  - [goals](#goals)
+  - [kpis](#kpis)
+  - [kpi\_assignments](#kpi_assignments)
+  - [performance\_reviews](#performance_reviews)
+  - [review\_responses](#review_responses)
+  - [review\_documents](#review_documents)
+  - [appeals](#appeals)
+  - [appeal\_responses](#appeal_responses)
+  - [notifications](#notifications)
+  - [audit\_logs](#audit_logs)
+  - [security\_violation\_logs](#security_violation_logs)
+- [Enums](#enums)
+- [Indexes](#indexes)
+- [Design Notes](#design-notes)
+
+---
+
+## Overview
+
+This schema supports a centralized, enterprise-grade Performance Management System serving three primary actor types — **Employees**, **Managers**, and **HR Professionals** — across a global organization of ~100,000 employees.
+
+Core functional domains:
+
+| Domain | Description |
+|---|---|
+| **Identity & Access** | Users, roles, RBAC enforcement |
+| **Goal Management** | SMART goals, KPIs, individual and team targets |
+| **Performance Review** | Cycles, templates, self-evaluation, manager evaluation |
+| **Appeal Handling** | Employee appeals, manager/HR responses |
+| **Compliance & Audit** | Immutable audit logs, operation history |
+| **Notifications** | System-triggered alerts across email and messaging |
+
+---
+
+## Entity Relationship Summary
+
+```
+users ──< user_roles >── roles
+users ──< goals
+users ──< kpi_assignments >── kpis
+users ──< performance_reviews >── performance_cycles
+performance_cycles ──< cycle_template_assignments >── evaluation_templates
+evaluation_templates ──< template_questions
+performance_reviews ──< review_responses >── template_questions
+performance_reviews ──< review_documents
+performance_reviews ──< appeals ──< appeal_responses
+users ──< notifications
+performance_reviews ──< notifications
+appeals ──< notifications
+goals ──< notifications
+users ──< audit_logs
+```
+
+---
+
 ## Tables
 
 ---
@@ -39,7 +108,7 @@ System-defined roles for RBAC.
 
 | name | description |
 |---|---|
-| `employee` | Standard employee; can self-evaluate, view own KPIs, file disputes |
+| `employee` | Standard employee; can self-evaluate, view own KPIs, file appeals |
 | `manager` | Can set goals/KPIs, evaluate direct reports, import documents |
 | `hr` | Manages cycles, templates, tracks completion, reviews audit logs |
 | `admin` | System administrator; no access to performance data |
@@ -84,13 +153,13 @@ Defines a performance review period (annual, quarterly, probation, etc.).
 | `name` | `VARCHAR(128)` | `NOT NULL` | e.g. `2025 Q4 Quarterly Review` |
 | `cycle_type` | `cycle_type_enum` | `NOT NULL` | See [Enums](#enums) |
 | `status` | `cycle_status_enum` | `NOT NULL, DEFAULT 'draft'` | See [Enums](#enums) |
-| `self_eval_start` | `DATE` | `NOT NULL` | Employee self-evaluation window opens |
-| `self_eval_end` | `DATE` | `NOT NULL` | Employee self-evaluation window closes |
-| `manager_eval_start` | `DATE` | `NOT NULL` | Manager evaluation window opens |
-| `manager_eval_end` | `DATE` | `NOT NULL` | Manager evaluation window closes |
-| `hr_review_end` | `DATE` | `NOT NULL` | HR review deadline |
-| `results_published_at` | `DATE` | `NULLABLE` | When results become visible to employees |
-| `dispute_deadline_days` | `INTEGER` | `NOT NULL, DEFAULT 7` | Days after publish that disputes are accepted |
+| `self_eval_start` | `TIMESTAMPTZ` | `NOT NULL` | Employee self-evaluation window opens |
+| `self_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | Employee self-evaluation window closes |
+| `manager_eval_start` | `TIMESTAMPTZ` | `NOT NULL` | Manager evaluation window opens |
+| `manager_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | Manager evaluation window closes |
+| `hr_review_end` | `TIMESTAMPTZ` | `NOT NULL` | HR review deadline |
+| `results_published_at` | `TIMESTAMPTZ` | `NULLABLE` | When results become visible to employees |
+| `appeal_deadline_days` | `INTEGER` | `NOT NULL, DEFAULT 7` | Days after publish that appeals are accepted |
 | `is_locked` | `BOOLEAN` | `NOT NULL, DEFAULT false` | If true, goals/KPIs cannot be edited |
 | `created_by` | `UUID` | `FK → users.id, NOT NULL` | HR who created the cycle |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
@@ -172,6 +241,7 @@ Individual or team goals set by managers for employees.
 | `published_at` | `TIMESTAMPTZ` | `NULLABLE` | When manager officially published this goal |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
+| `deleted_at` | `TIMESTAMPTZ` | `NULLABLE` | Soft delete timestamp |
 
 > **Lock rule:** Goals may not be edited when `performance_cycles.is_locked = true`. Enforced at the application layer.
 
@@ -189,13 +259,13 @@ KPI definitions owned by a manager for a specific cycle.
 | `kpi_type` | `goal_type_enum` | `NOT NULL` | `individual` or `team` |
 | `title` | `VARCHAR(255)` | `NOT NULL` | KPI name |
 | `description` | `TEXT` | `NULLABLE` | Detailed description |
-| `target_value` | `NUMERIC(15,4)` | `NOT NULL` | Numeric target |
 | `unit` | `VARCHAR(32)` | `NULLABLE` | Unit of measurement; e.g. `%`, `NTD`, `tickets` |
 | `published_at` | `TIMESTAMPTZ` | `NULLABLE` | When KPI was officially published |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
+| `deleted_at` | `TIMESTAMPTZ` | `NULLABLE` | Soft delete timestamp |
 
-> **Constraint:** `published_at` may not be set if `target_value` is NULL. Enforced at the application layer with a user-facing validation error.
+> **Constraint:** `published_at` may not be set if there are no assignments with target values. Enforced at the application layer with a user-facing validation error.
 
 ---
 
@@ -207,6 +277,7 @@ Assigns a KPI to a specific employee or team member.
 |---|---|---|---|
 | `kpi_id` | `UUID` | `FK → kpis.id, NOT NULL` | |
 | `user_id` | `UUID` | `FK → users.id, NOT NULL` | Assigned employee |
+| `target_value` | `NUMERIC(15,4)` | `NOT NULL` | Individual numeric target |
 | `current_value` | `NUMERIC(15,4)` | `NULLABLE` | Latest tracked value |
 | `last_updated_at` | `TIMESTAMPTZ` | `NULLABLE` | When progress was last recorded |
 
@@ -224,13 +295,14 @@ One review record per employee per cycle. Tracks the full lifecycle: self-eval �
 | `cycle_id` | `UUID` | `FK → performance_cycles.id, NOT NULL` | |
 | `employee_id` | `UUID` | `FK → users.id, NOT NULL` | The employee being reviewed |
 | `manager_id` | `UUID` | `FK → users.id, NOT NULL` | Assigned reviewing manager |
+| `co_manager_id` | `UUID` | `FK → users.id, NULLABLE` | Secondary/previous manager for mid-cycle transfers |
 | `template_id` | `UUID` | `FK → evaluation_templates.id, NOT NULL` | Template used for this review |
 | `status` | `review_status_enum` | `NOT NULL, DEFAULT 'pending_self_eval'` | See [Enums](#enums) |
 | `self_submitted_at` | `TIMESTAMPTZ` | `NULLABLE` | When employee submitted self-evaluation |
 | `self_withdrawn_at` | `TIMESTAMPTZ` | `NULLABLE` | If employee withdrew and re-submitted; kept for audit |
 | `manager_submitted_at` | `TIMESTAMPTZ` | `NULLABLE` | When manager completed evaluation |
 | `hr_approved_at` | `TIMESTAMPTZ` | `NULLABLE` | When HR finalized the review |
-| `final_rating` | `VARCHAR(32)` | `NULLABLE` | e.g. `Exceeds Expectations`, `Meets Expectations` |
+| `final_rating` | `rating_scale_enum` | `NULLABLE` | See [Enums](#enums) |
 | `manager_comment` | `TEXT` | `NULLABLE` | Overall manager narrative |
 | `is_terminated_employee` | `BOOLEAN` | `NOT NULL, DEFAULT false` | Set true if employee left mid-cycle; excluded from completion stats |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
@@ -279,37 +351,37 @@ Documents imported from integrated office tools and pinned to a review by a mana
 
 ---
 
-### `disputes`
+### `appeals`
 
-Formal disputes filed by employees against a specific review.
+Formal appeals filed by employees against a specific review.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | Primary key |
 | `review_id` | `UUID` | `FK → performance_reviews.id, NOT NULL` | |
-| `filed_by` | `UUID` | `FK → users.id, NOT NULL` | The employee filing the dispute |
-| `assigned_to_type` | `dispute_assignee_enum` | `NOT NULL` | `senior_manager` or `hr` |
-| `assigned_to` | `UUID` | `FK → users.id, NOT NULL` | The specific user handling this dispute |
-| `reason` | `TEXT` | `NOT NULL` | Employee's stated reason for dispute |
-| `status` | `dispute_status_enum` | `NOT NULL, DEFAULT 'submitted'` | See [Enums](#enums) |
+| `filed_by` | `UUID` | `FK → users.id, NOT NULL` | The employee filing the appeal |
+| `assigned_to_type` | `appeal_assignee_enum` | `NOT NULL` | `senior_manager` or `hr` |
+| `assigned_to` | `UUID` | `FK → users.id, NOT NULL` | The specific user handling this appeal |
+| `reason` | `TEXT` | `NOT NULL` | Employee's stated reason for appeal |
+| `status` | `appeal_status_enum` | `NOT NULL, DEFAULT 'submitted'` | See [Enums](#enums) |
 | `filed_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `resolved_at` | `TIMESTAMPTZ` | `NULLABLE` | |
 
-> **Deadline enforcement:** Before creating a record, the application layer checks `performance_cycles.results_published_at + dispute_deadline_days` against `now()`. If expired, the operation is rejected and the button is disabled in the UI.
+> **Deadline enforcement:** Before creating a record, the application layer checks `performance_cycles.results_published_at + appeal_deadline_days` against `now()`. If expired, the operation is rejected and the button is disabled in the UI.
 
 ---
 
-### `dispute_responses`
+### `appeal_responses`
 
-Official responses to a dispute, supporting threaded communication.
+Official responses to an appeal, supporting threaded communication.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | Primary key |
-| `dispute_id` | `UUID` | `FK → disputes.id, NOT NULL` | |
+| `appeal_id` | `UUID` | `FK → appeals.id, NOT NULL` | |
 | `responded_by` | `UUID` | `FK → users.id, NOT NULL` | Manager or HR who responded |
 | `response_text` | `TEXT` | `NOT NULL` | Content of the response |
-| `is_final` | `BOOLEAN` | `NOT NULL, DEFAULT false` | If true, marks dispute as resolved |
+| `is_final` | `BOOLEAN` | `NOT NULL, DEFAULT false` | If true, marks appeal as resolved |
 | `responded_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 
 ---
@@ -323,8 +395,9 @@ System-generated notifications sent to users.
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | Primary key |
 | `recipient_id` | `UUID` | `FK → users.id, NOT NULL` | Target user |
 | `notification_type` | `notification_type_enum` | `NOT NULL` | See [Enums](#enums) |
-| `reference_id` | `UUID` | `NULLABLE` | ID of the related entity (e.g. review, dispute) |
-| `reference_type` | `VARCHAR(64)` | `NULLABLE` | Table name of the related entity |
+| `review_id` | `UUID` | `FK → performance_reviews.id, NULLABLE` | Related review |
+| `appeal_id` | `UUID` | `FK → appeals.id, NULLABLE` | Related appeal |
+| `goal_id` | `UUID` | `FK → goals.id, NULLABLE` | Related goal |
 | `title` | `VARCHAR(255)` | `NOT NULL` | Short notification title |
 | `body` | `TEXT` | `NOT NULL` | Full notification message |
 | `channel` | `notification_channel_enum` | `NOT NULL` | `email`, `push`, `in_app` |
@@ -372,6 +445,14 @@ Captures attempted tampering with audit records or other unauthorized operations
 ## Enums
 
 ```sql
+CREATE TYPE rating_scale_enum AS ENUM (
+  'outstanding',
+  'exceeds_expectations',
+  'meets_expectations',
+  'needs_improvement',
+  'unacceptable'
+);
+
 CREATE TYPE employment_status_enum AS ENUM (
   'active',
   'on_leave',
@@ -424,12 +505,12 @@ CREATE TYPE question_type_enum AS ENUM (
   'boolean'
 );
 
-CREATE TYPE dispute_assignee_enum AS ENUM (
+CREATE TYPE appeal_assignee_enum AS ENUM (
   'senior_manager',
   'hr'
 );
 
-CREATE TYPE dispute_status_enum AS ENUM (
+CREATE TYPE appeal_status_enum AS ENUM (
   'submitted',
   'under_review',
   'resolved'
@@ -442,9 +523,9 @@ CREATE TYPE notification_type_enum AS ENUM (
   'self_eval_reminder',
   'manager_eval_reminder',
   'results_published',
-  'dispute_received',
-  'dispute_responded',
-  'dispute_resolved'
+  'appeal_received',
+  'appeal_responded',
+  'appeal_resolved'
 );
 
 CREATE TYPE notification_channel_enum AS ENUM (
@@ -462,8 +543,8 @@ CREATE TYPE audit_action_enum AS ENUM (
   'withdraw',
   'submit',
   'approve',
-  'dispute_filed',
-  'dispute_responded'
+  'appeal_filed',
+  'appeal_responded'
 );
 ```
 
@@ -491,10 +572,10 @@ CREATE INDEX idx_goals_owner_id             ON goals(owner_id);
 -- kpi_assignments
 CREATE INDEX idx_kpi_assignments_user_id    ON kpi_assignments(user_id);
 
--- disputes
-CREATE INDEX idx_disputes_review_id         ON disputes(review_id);
-CREATE INDEX idx_disputes_assigned_to       ON disputes(assigned_to);
-CREATE INDEX idx_disputes_status            ON disputes(status);
+-- appeals
+CREATE INDEX idx_appeals_review_id         ON appeals(review_id);
+CREATE INDEX idx_appeals_assigned_to       ON appeals(assigned_to);
+CREATE INDEX idx_appeals_status            ON appeals(status);
 
 -- notifications
 CREATE INDEX idx_notifications_recipient_id ON notifications(recipient_id);
@@ -532,20 +613,21 @@ No performance-related record is ever hard-deleted. Soft deletion is used:
 - `users.terminated_at` — for employee termination
 - `evaluation_templates.is_active = false` — for templates no longer in use
 - `performance_reviews.is_terminated_employee = true` — excludes record from completion dashboards
+- `goals.deleted_at` and `kpis.deleted_at` — for user-deleted objectives
 
 ### Cycle Locking
 
 When `performance_cycles.is_locked = true`, the application layer rejects all `UPDATE` operations on `goals` and `kpis` referencing that cycle, returning a `423 Locked` HTTP status.
 
-### Dispute Deadline Enforcement
+### Appeal Deadline Enforcement
 
-Dispute eligibility is checked at application layer using:
+Appeal eligibility is checked at application layer using:
 
 ```
-results_published_at + INTERVAL '1 day' * dispute_deadline_days < now()
+results_published_at + INTERVAL '1 day' * appeal_deadline_days < now()
 ```
 
-If the deadline has passed, the endpoint returns `403 Forbidden` and the UI disables the dispute button.
+If the deadline has passed, the endpoint returns `403 Forbidden` and the UI disables the appeal button.
 
 ### Multi-language Support
 
