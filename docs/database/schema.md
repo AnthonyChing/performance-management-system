@@ -48,21 +48,28 @@ Core functional domains:
 
 ## Entity Relationship Summary
 
-```
-users ──< user_roles >── roles
-users ──< goals
-users ──< kpi_assignments >── kpis
-users ──< performance_reviews >── performance_cycles
-performance_cycles ──< cycle_template_assignments >── evaluation_templates
-evaluation_templates ──< template_questions
-performance_reviews ──< review_responses >── template_questions
-performance_reviews ──< review_documents
-performance_reviews ──< appeals ──< appeal_responses
-users ──< notifications
-performance_reviews ──< notifications
-appeals ──< notifications
-goals ──< notifications
-users ──< audit_logs
+```mermaid
+erDiagram
+    users ||--o{ user_roles : "has"
+    roles ||--o{ user_roles : "assigned via"
+    users ||--o{ goals : "owns"
+    users ||--o{ kpi_assignments : "assigned to"
+    kpis ||--o{ kpi_assignments : "includes"
+    users ||--o{ performance_reviews : "evaluated in"
+    performance_cycles ||--o{ performance_reviews : "contains"
+    performance_cycles ||--o{ cycle_template_assignments : "uses template"
+    evaluation_templates ||--o{ cycle_template_assignments : "applied to"
+    evaluation_templates ||--o{ template_questions : "contains"
+    performance_reviews ||--o{ review_responses : "has responses"
+    template_questions ||--o{ review_responses : "answered in"
+    performance_reviews ||--o{ review_documents : "includes evidence"
+    performance_reviews ||--o{ appeals : "appealed via"
+    appeals ||--o{ appeal_responses : "has replies"
+    users ||--o{ notifications : "receives"
+    performance_reviews ||--o{ notifications : "triggers"
+    appeals ||--o{ notifications : "triggers"
+    goals ||--o{ notifications : "triggers"
+    users ||--o{ audit_logs : "generates"
 ```
 
 ---
