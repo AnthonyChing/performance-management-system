@@ -1,4 +1,4 @@
-# 系統架構與 Schema 設計解析
+# 系統架構與 Schema 設計
 
 ## 模組一：身份與組織架構 (Identity & Organization)
 * **包含表**：`users`, `departments`, `roles`, `user_roles`
