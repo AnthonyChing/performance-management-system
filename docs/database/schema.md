@@ -52,8 +52,8 @@ Core functional domains:
 erDiagram
     users {
         UUID id PK
-        VARCHAR employee_id UK
-        VARCHAR email UK
+        VARCHAR employee_id "UK"
+        VARCHAR email "UK"
         VARCHAR full_name
         UUID department_id FK
         UUID manager_id FK
@@ -68,12 +68,12 @@ erDiagram
     }
     roles {
         UUID id PK
-        VARCHAR name UK
+        VARCHAR name "UK"
         TEXT description
     }
     user_roles {
-        UUID user_id PK, FK
-        UUID role_id PK, FK
+        UUID user_id PK
+        UUID role_id PK
         TIMESTAMPTZ granted_at
         UUID granted_by FK
     }
@@ -160,8 +160,8 @@ erDiagram
         TIMESTAMPTZ deleted_at
     }
     kpi_assignments {
-        UUID kpi_id PK, FK
-        UUID user_id PK, FK
+        UUID kpi_id PK
+        UUID user_id PK
         NUMERIC target_value
         NUMERIC current_value
         TIMESTAMPTZ last_updated_at
