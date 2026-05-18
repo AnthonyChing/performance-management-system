@@ -22,7 +22,9 @@ public class TestcontainersConfig {
     @Bean
     @ServiceConnection
     PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:15-alpine"))
+        // Match the production image (docker-compose.yml uses postgres:17-alpine)
+        // so migration SQL is verified against the exact engine that runs in prod.
+        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:17-alpine"))
                 .withDatabaseName("pms_test")
                 .withUsername("pms_user")
                 .withPassword("pms_pass")
