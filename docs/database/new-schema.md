@@ -1,6 +1,6 @@
 # Database Schema — Revised
 
-This document supersedes [`schema.md`](./schema.md). It folds in the KPI scoring model from the previous revision **and** resolves the 10 structural gaps identified during review:
+This document supersedes [`schema.md`](./schema.md). It folds in the KPI scoring model from the previous revision **and** resolves the structural gaps identified during review:
 
 1. No identity/auth surface
 2. No history for goal/KPI progress
@@ -8,12 +8,17 @@ This document supersedes [`schema.md`](./schema.md). It folds in the KPI scoring
 4. No template version control
 5. `users.department_id` is mutable, breaking historical reports
 6. `performance_cycles` lacks a timezone
-7. No peer / 360 review support
-8. No explicit cycle participant list
-9. `audit_logs` will not scale without partitioning
-10. `goals.weight = 100` invariant enforced only at app layer
+7. `audit_logs` will not scale without partitioning
+8. KPI weight (`Σ = 100` per employee) enforced only at app layer
 
 Naming change: `job_function` is renamed `job_category` everywhere.
+
+**Intentionally kept lean** (out of scope for now):
+
+- **Reviews are single-rater**: only `self` and `manager` evaluate. No peer / 360 / direct-report review.
+- **KPI scoring is linear only**: achievement ratio = `current / target`. No alternate scoring rules, thresholds, or caps.
+- **Departments are externally provisioned**: the `departments` table is a read-only reference seeded from the org's source-of-truth (HR system). This service does not create, edit, or retire departments.
+- **No separate participant roster**: a cycle's roster is its set of [`performance_reviews`](#performance_reviews) rows (one per employee). HR generates these at cycle start; excluding someone means not creating their row.
 
 ---
 
@@ -32,7 +37,6 @@ Naming change: `job_function` is renamed `job_category` everywhere.
     - [departments](#departments)
   - [Cycles & Templates](#cycles--templates)
     - [performance_cycles](#performance_cycles)
-    - [cycle_participants](#cycle_participants)
     - [evaluation_templates](#evaluation_templates)
     - [template_versions](#template_versions)
     - [template_questions](#template_questions)
@@ -46,7 +50,6 @@ Naming change: `job_function` is renamed `job_category` everywhere.
     - [kpi_progress_snapshots](#kpi_progress_snapshots)
   - [Reviews & Appeals](#reviews--appeals)
     - [performance_reviews](#performance_reviews)
-    - [review_participants](#review_participants)
     - [review_responses](#review_responses)
     - [review_comments](#review_comments)
     - [review_documents](#review_documents)
@@ -73,7 +76,7 @@ Centralized enterprise Performance Management System serving **Employees**, **Ma
 | **Identity & Org** | Users, IdP linkage, RBAC, organizational hierarchy with history |
 | **Cycles & Templates** | Versioned templates assigned to cycles by job category |
 | **Goal & KPI Management** | SMART goals & KPIs with progress history and threaded discussion |
-| **Performance Review** | Self / Manager / Peer / Direct-report evaluation with computed scores |
+| **Performance Review** | Self / Manager evaluation with computed scores |
 | **Appeals** | Formal challenge of finalized reviews |
 | **Compliance & Audit** | Append-only audit logs (partitioned), violation logging |
 | **Notifications** | Multi-channel system alerts |
@@ -88,12 +91,10 @@ Centralized enterprise Performance Management System serving **Employees**, **Ma
 | 2 | Progress not historized | Add [`goal_progress_updates`](#goal_progress_updates) and [`kpi_progress_snapshots`](#kpi_progress_snapshots). The "current value" columns become caches of the latest entry. |
 | 3 | No discussion | Add [`goal_comments`](#goal_comments) and [`review_comments`](#review_comments) with thread support via `parent_comment_id`. |
 | 4 | Template editing breaks history | Introduce [`template_versions`](#template_versions). Questions belong to a version, not the template. Reviews reference the exact version they were rendered from. Editing a published template creates a new version. |
-| 5 | Department mobility loses reporting fidelity | Add [`user_department_history`](#user_department_history) **and** snapshot `department_id_snapshot` on [`performance_reviews`](#performance_reviews) at creation. Dashboards read from the snapshot; HR can audit moves via the history table. |
+| 5 | Department mobility loses reporting fidelity | Add [`user_department_history`](#user_department_history). Time-travel reports ("who was in Sales on 2025-06-30") read from the history table. |
 | 6 | Cycle deadlines ambiguous globally | Add `timezone` (IANA TZ identifier) on [`performance_cycles`](#performance_cycles). Deadlines are interpreted in that zone. |
-| 7 | 360 review missing | Expand [`respondent_type_enum`](#enums) (`self`, `manager`, `peer`, `direct_report`, `hr`, `co_manager`) and add [`review_participants`](#review_participants) to invite & track non-manager evaluators. |
-| 8 | Cycle scope implicit | Add [`cycle_participants`](#cycle_participants) as the authoritative list of employees in a cycle, decoupled from whether a review row exists yet. |
-| 9 | Audit log scale | Declare [`audit_logs`](#audit_logs) as a **range-partitioned** table on `occurred_at` (monthly partitions). |
-| 10 | Weight invariant fragile | Enforce `Σ goals.weight = 100` and `Σ kpis.weight = 100` per `(cycle_id, owner_id)` via deferrable PostgreSQL triggers. See [Constraints & Triggers](#constraints--triggers). |
+| 7 | Audit log scale | Declare [`audit_logs`](#audit_logs) as a **range-partitioned** table on `occurred_at` (monthly partitions). |
+| 8 | Weight invariant fragile | Enforce `Σ kpi_assignments.weight = 100` per `(cycle_id, user_id)` via a deferrable PostgreSQL trigger. See [Constraints & Triggers](#constraints--triggers). |
 
 ---
 
@@ -108,8 +109,6 @@ erDiagram
     departments ||--o{ users             : "currently in"
     departments ||--o{ user_department_history : "tracks"
 
-    performance_cycles ||--o{ cycle_participants         : "scopes"
-    users              ||--o{ cycle_participants         : "is in"
     performance_cycles ||--o{ cycle_template_assignments : "configures"
     evaluation_templates ||--o{ template_versions        : "has versions"
     template_versions ||--o{ template_questions          : "contains"
@@ -128,8 +127,6 @@ erDiagram
     performance_cycles  ||--o{ performance_reviews : "contains"
     users               ||--o{ performance_reviews : "evaluated in"
     template_versions   ||--o{ performance_reviews : "rendered from"
-    performance_reviews ||--o{ review_participants : "invites"
-    users               ||--o{ review_participants : "evaluates as"
     performance_reviews ||--o{ review_responses    : "has responses"
     template_questions  ||--o{ review_responses    : "answered in"
     performance_reviews ||--o{ review_comments     : "discussed in"
@@ -236,18 +233,16 @@ Append-only record of department membership over time. Powers historical reporti
 
 #### `departments`
 
-Tree-structured organizational units. A department is never hard-deleted; instead, `closed_at` marks it as retired while preserving historical references from snapshots and audit logs.
+Tree-structured organizational units. **Read-only reference table**: rows are provisioned and maintained by the org's source-of-truth (HR system) and seeded into this database. This service never creates, edits, or deletes departments — it only reads them to resolve `users.department_id` and historical references.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
+| `id` | `UUID` | `PK, NOT NULL` | Stable ID from the source system |
 | `name` | `VARCHAR(128)` | `NOT NULL` | |
-| `parent_id` | `UUID` | `FK → departments.id, NULLABLE` | NULL = root; tree must be acyclic (enforced at app layer) |
-| `closed_at` | `TIMESTAMPTZ` | `NULLABLE` | NULL = active; non-NULL = department retired |
-| `closed_by` | `UUID` | `FK → users.id, NULLABLE` | HR who closed the department |
-| `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
+| `parent_id` | `UUID` | `FK → departments.id, NULLABLE` | NULL = root; tree is acyclic by source-system guarantee |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | When the row was seeded |
 
-> See [Department lifecycle](#department-lifecycle) for closure rules and history preservation.
+> Because departments are externally owned, there is no closure/reopen lifecycle in this schema. If the source system retires a department, the seed simply stops listing it as active; existing `user_department_history` rows continue to reference it by ID.
 
 ---
 
@@ -266,8 +261,6 @@ Tree-structured organizational units. A department is never hard-deleted; instea
 | `self_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | |
 | `manager_eval_start` | `TIMESTAMPTZ` | `NOT NULL` | |
 | `manager_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | |
-| `peer_eval_start` | `TIMESTAMPTZ` | `NULLABLE` | NULL = 360 phase disabled |
-| `peer_eval_end` | `TIMESTAMPTZ` | `NULLABLE` | |
 | `hr_review_end` | `TIMESTAMPTZ` | `NOT NULL` | |
 | `results_published_at` | `TIMESTAMPTZ` | `NULLABLE` | |
 | `appeal_deadline_days` | `INTEGER` | `NOT NULL, DEFAULT 7` | |
@@ -277,24 +270,6 @@ Tree-structured organizational units. A department is never hard-deleted; instea
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 
 > Timestamps remain `TIMESTAMPTZ` (always stored as UTC). The `timezone` column tells the UI which wall-clock day a deadline ends on, so "midnight on the 30th" is unambiguous for a global org.
-
----
-
-#### `cycle_participants`
-
-Explicit list of who is in a cycle. Decouples cycle scope definition from whether a review row has been created yet, and supports excluding employees (e.g. on leave) deliberately.
-
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
-| `cycle_id` | `UUID` | `FK → performance_cycles.id, NOT NULL` | |
-| `user_id` | `UUID` | `FK → users.id, NOT NULL` | |
-| `included` | `BOOLEAN` | `NOT NULL, DEFAULT true` | False = explicitly excluded with reason |
-| `excluded_reason` | `TEXT` | `NULLABLE` | e.g. "on parental leave", "joined after cutoff" |
-| `added_by` | `UUID` | `FK → users.id, NOT NULL` | |
-| `added_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
-
-**Unique:** `(cycle_id, user_id)`
 
 ---
 
@@ -347,13 +322,9 @@ Questions belong to a `template_version`, not directly to a template.
 | `question_type` | `question_type_enum` | `NOT NULL` | `rating`, `text`, `boolean` |
 | `rating_scale_max` | `INTEGER` | `NULLABLE` | Required if `question_type = 'rating'` |
 | `weight` | `NUMERIC(5,2)` | `NULLABLE` | % contribution to `review_score`. NULL = qualitative, not scored. Sum of non-null weights per template version = 100 |
-| `linked_kpi_id` | `UUID` | `FK → kpis.id, NULLABLE` | UI-only reference for context; does **not** participate in calculation |
 | `is_required` | `BOOLEAN` | `NOT NULL, DEFAULT true` | |
 | `sort_order` | `INTEGER` | `NOT NULL, DEFAULT 0` | |
-| `applicable_to` | `respondent_type_enum[]` | `NOT NULL, DEFAULT ARRAY['self','manager']::respondent_type_enum[]` | Which respondent types are asked this question |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
-
-> `applicable_to` enables 360 questionnaires that ask peers different questions than managers.
 
 ---
 
@@ -387,7 +358,6 @@ Pins a specific template **version** to a cycle for a job category.
 | `goal_type` | `goal_type_enum` | `NOT NULL` | `individual` / `team` |
 | `title` | `VARCHAR(255)` | `NOT NULL` | |
 | `description` | `TEXT` | `NULLABLE` | SMART description |
-| `weight` | `NUMERIC(5,2)` | `NOT NULL, DEFAULT 0` | % contribution. Sum per `(cycle_id, owner_id)` = 100, enforced by trigger |
 | `target_value` | `TEXT` | `NULLABLE` | |
 | `current_value` | `TEXT` | `NULLABLE` | **Cached** latest entry from [`goal_progress_updates`](#goal_progress_updates) |
 | `due_date` | `DATE` | `NULLABLE` | |
@@ -396,6 +366,8 @@ Pins a specific template **version** to a cycle for a job category.
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `deleted_at` | `TIMESTAMPTZ` | `NULLABLE` | |
+
+> Goals are **qualitative**: they are tracked (status, progress, discussion) but carry no weight and do not feed `kpi_score` or `review_score`. Quantitative scoring is the job of KPIs. See [Scoring Model](#scoring-model).
 
 ---
 
@@ -442,14 +414,12 @@ Threaded discussion attached to a goal.
 | `title` | `VARCHAR(255)` | `NOT NULL` | |
 | `description` | `TEXT` | `NULLABLE` | |
 | `unit` | `VARCHAR(32)` | `NULLABLE` | Display only (e.g. `%`, `NTD`, `tickets`) |
-| `weight` | `NUMERIC(5,2)` | `NOT NULL, DEFAULT 0` | % contribution per `(cycle_id, owner_id)`. Sum = 100, trigger-enforced |
-| `scoring_rule` | `kpi_scoring_rule_enum` | `NOT NULL, DEFAULT 'linear'` | |
-| `min_threshold` | `NUMERIC(5,2)` | `NOT NULL, DEFAULT 0` | Floor (0–100). Achievement below this scores 0 |
-| `cap_multiplier` | `NUMERIC(4,2)` | `NOT NULL, DEFAULT 1.00` | Upper clamp on per-KPI ratio |
 | `published_at` | `TIMESTAMPTZ` | `NULLABLE` | |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `deleted_at` | `TIMESTAMPTZ` | `NULLABLE` | |
+
+> KPI achievement is scored **linearly**: `ratio = current / target`. See [Scoring Model](#scoring-model).
 
 ---
 
@@ -459,11 +429,14 @@ Threaded discussion attached to a goal.
 |---|---|---|---|
 | `kpi_id` | `UUID` | `FK → kpis.id, NOT NULL` | |
 | `user_id` | `UUID` | `FK → users.id, NOT NULL` | |
+| `weight` | `NUMERIC(5,2)` | `NOT NULL, DEFAULT 0` | % contribution to this user's `kpi_score`. Sum per `(cycle_id, user_id)` = 100, trigger-enforced |
 | `target_value` | `NUMERIC(15,4)` | `NOT NULL` | |
 | `current_value` | `NUMERIC(15,4)` | `NULLABLE` | **Cached** latest snapshot |
 | `last_updated_at` | `TIMESTAMPTZ` | `NULLABLE` | |
 
 **Primary Key:** `(kpi_id, user_id)`
+
+> `weight` lives here, not on `kpis`, because the same KPI can be assigned to multiple employees whose KPI mixes differ. Putting weight per-assignment lets each employee's weights sum to 100 independently.
 
 ---
 
@@ -489,7 +462,7 @@ Append-only history of KPI progress per assignment. Powers trend dashboards and 
 
 #### `performance_reviews`
 
-One row per employee per cycle. Snapshots org context at creation so historical reports remain stable.
+One row per employee per cycle. **Doubles as the cycle roster** — the set of rows for a given `cycle_id` is the authoritative list of who participates. Tracks the full lifecycle: self-eval → manager eval → HR review.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -499,9 +472,6 @@ One row per employee per cycle. Snapshots org context at creation so historical 
 | `manager_id` | `UUID` | `FK → users.id, NOT NULL` | Primary reviewing manager |
 | `co_manager_id` | `UUID` | `FK → users.id, NULLABLE` | Mid-cycle transfer support |
 | `template_version_id` | `UUID` | `FK → template_versions.id, NOT NULL` | Pins exact version used |
-| `department_id_snapshot` | `UUID` | `FK → departments.id, NOT NULL` | Employee's department at cycle start; freezes for reports |
-| `job_category_snapshot` | `VARCHAR(64)` | `NOT NULL` | Job category at cycle start |
-| `manager_id_snapshot` | `UUID` | `NOT NULL` | Manager at cycle start (no FK; allows historical reference even if user is hard-deleted in a future cleanup) |
 | `status` | `review_status_enum` | `NOT NULL, DEFAULT 'pending_self_eval'` | |
 | `self_submitted_at` | `TIMESTAMPTZ` | `NULLABLE` | |
 | `self_withdrawn_at` | `TIMESTAMPTZ` | `NULLABLE` | |
@@ -520,45 +490,22 @@ One row per employee per cycle. Snapshots org context at creation so historical 
 
 ---
 
-#### `review_participants`
-
-Invitations for non-primary evaluators (peers, direct reports, secondary managers, HR). Drives the 360 phase.
-
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
-| `review_id` | `UUID` | `FK → performance_reviews.id, NOT NULL` | |
-| `participant_id` | `UUID` | `FK → users.id, NOT NULL` | The evaluator |
-| `respondent_type` | `respondent_type_enum` | `NOT NULL` | `peer` / `direct_report` / `co_manager` / `hr` |
-| `invited_by` | `UUID` | `FK → users.id, NOT NULL` | Usually employee or manager |
-| `invited_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
-| `submitted_at` | `TIMESTAMPTZ` | `NULLABLE` | NULL while pending |
-| `declined_at` | `TIMESTAMPTZ` | `NULLABLE` | Mutually exclusive with `submitted_at` |
-| `decline_reason` | `TEXT` | `NULLABLE` | |
-
-**Unique:** `(review_id, participant_id, respondent_type)`
-
-> `self` and `manager` responses do **not** require rows here; they are implicit in the review itself.
-
----
-
 #### `review_responses`
+
+Individual answers to template questions within a review. Stores both self-eval and manager responses.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
 | `review_id` | `UUID` | `FK → performance_reviews.id, NOT NULL` | |
 | `question_id` | `UUID` | `FK → template_questions.id, NOT NULL` | |
-| `respondent_id` | `UUID` | `FK → users.id, NOT NULL` | The user who submitted this response |
-| `respondent_type` | `respondent_type_enum` | `NOT NULL` | |
+| `respondent_type` | `respondent_type_enum` | `NOT NULL` | `self` or `manager` |
 | `rating_value` | `INTEGER` | `NULLABLE` | For rating questions |
 | `text_value` | `TEXT` | `NULLABLE` | |
-| `boolean_value` | `BOOLEAN` | `NULLABLE` | |
+| `boolean_value` | `BOOLEAN` | `NULLABLE` | For boolean questions |
 | `responded_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 
-**Unique:** `(review_id, question_id, respondent_id)` — one answer per evaluator per question.
-
-> For peer 360 anonymity, the application masks `respondent_id` and the role-level aggregated answers are shown to the employee, not individual responses.
+**Unique:** `(review_id, question_id, respondent_type)` — one self answer and one manager answer per question.
 
 ---
 
@@ -718,12 +665,11 @@ CREATE TYPE goal_status_enum AS ENUM (
 CREATE TYPE review_status_enum AS ENUM (
   'pending_self_eval', 'self_eval_in_progress',
   'pending_manager_eval', 'manager_eval_in_progress',
-  'pending_peer_eval', 'peer_eval_in_progress',
   'pending_hr_review', 'completed', 'terminated'
 );
 
 CREATE TYPE respondent_type_enum AS ENUM (
-  'self', 'manager', 'co_manager', 'peer', 'direct_report', 'hr'
+  'self', 'manager'
 );
 
 CREATE TYPE question_type_enum AS ENUM (
@@ -740,7 +686,7 @@ CREATE TYPE appeal_status_enum AS ENUM (
 
 CREATE TYPE notification_type_enum AS ENUM (
   'goal_published', 'kpi_published', 'goal_updated',
-  'self_eval_reminder', 'manager_eval_reminder', 'peer_eval_invitation',
+  'self_eval_reminder', 'manager_eval_reminder',
   'results_published', 'appeal_received', 'appeal_responded', 'appeal_resolved'
 );
 
@@ -760,13 +706,6 @@ CREATE TYPE identity_provider_enum AS ENUM (
   'google', 'azure_ad', 'okta', 'local'
 );
 
-CREATE TYPE kpi_scoring_rule_enum AS ENUM (
-  'linear',    -- ratio = current / target
-  'inverse',   -- ratio = target / current
-  'binary',    -- 1 if current >= target else 0
-  'stepped'    -- application-defined band lookup
-);
-
 CREATE TYPE comment_visibility_enum AS ENUM (
   'participants', 'manager_hr_only', 'hr_only'
 );
@@ -776,39 +715,45 @@ CREATE TYPE comment_visibility_enum AS ENUM (
 
 ## Constraints & Triggers
 
-### Weight = 100 invariant (resolves issue #10)
+### KPI weight = 100 invariant (resolves issue #8)
 
-Two deferrable constraint triggers enforce that goal weights and KPI weights each sum to exactly 100 per employee per cycle, evaluated at transaction commit:
+A deferrable constraint trigger enforces that each employee's KPI weights sum to exactly 100 per cycle, evaluated at transaction commit. Weights live on `kpi_assignments` (per user); the cycle is resolved by joining to `kpis`:
 
 ```sql
-CREATE OR REPLACE FUNCTION assert_goals_weight_sum() RETURNS trigger AS $$
-DECLARE total NUMERIC(7,2);
+CREATE OR REPLACE FUNCTION assert_kpi_weight_sum() RETURNS trigger AS $$
+DECLARE
+  v_cycle_id UUID;
+  v_user_id  UUID;
+  total      NUMERIC(7,2);
 BEGIN
-  SELECT COALESCE(SUM(weight), 0) INTO total
-  FROM goals
-  WHERE cycle_id = COALESCE(NEW.cycle_id, OLD.cycle_id)
-    AND owner_id = COALESCE(NEW.owner_id, OLD.owner_id)
-    AND deleted_at IS NULL
-    AND status <> 'cancelled';
+  v_user_id := COALESCE(NEW.user_id, OLD.user_id);
+  SELECT k.cycle_id INTO v_cycle_id
+  FROM kpis k
+  WHERE k.id = COALESCE(NEW.kpi_id, OLD.kpi_id);
+
+  SELECT COALESCE(SUM(ka.weight), 0) INTO total
+  FROM kpi_assignments ka
+  JOIN kpis k ON k.id = ka.kpi_id
+  WHERE k.cycle_id = v_cycle_id
+    AND ka.user_id = v_user_id
+    AND k.deleted_at IS NULL;
 
   IF total <> 0 AND total <> 100 THEN
-    RAISE EXCEPTION 'Sum of goals.weight for (cycle=%, owner=%) must equal 100, got %',
-      COALESCE(NEW.cycle_id, OLD.cycle_id),
-      COALESCE(NEW.owner_id, OLD.owner_id),
-      total;
+    RAISE EXCEPTION 'Sum of kpi_assignments.weight for (cycle=%, user=%) must equal 100, got %',
+      v_cycle_id, v_user_id, total;
   END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE CONSTRAINT TRIGGER trg_goals_weight_sum
-  AFTER INSERT OR UPDATE OR DELETE ON goals
+CREATE CONSTRAINT TRIGGER trg_kpi_weight_sum
+  AFTER INSERT OR UPDATE OR DELETE ON kpi_assignments
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW
-  EXECUTE FUNCTION assert_goals_weight_sum();
+  EXECUTE FUNCTION assert_kpi_weight_sum();
 ```
 
-An analogous trigger applies to `kpis` via a join through `kpi_assignments` (group by `(cycle_id, user_id)`). Total = 0 is permitted to allow intermediate transaction states; the application also explicitly validates non-zero before publishing.
+Total = 0 is permitted to allow intermediate transaction states; the application also explicitly validates non-zero before publishing. Goals carry no weight and have no equivalent constraint.
 
 ### Audit log immutability (preserved from original)
 
@@ -883,9 +828,6 @@ CREATE INDEX idx_user_identities_user  ON user_identities(user_id);
 -- user_department_history
 CREATE INDEX idx_udh_user_effective    ON user_department_history(user_id, effective_from DESC);
 
--- cycle_participants
-CREATE INDEX idx_cycle_participants_user ON cycle_participants(user_id);
-
 -- template_versions
 CREATE UNIQUE INDEX uniq_template_current_version
   ON template_versions(template_id) WHERE is_current;
@@ -895,11 +837,6 @@ CREATE INDEX idx_reviews_cycle_id      ON performance_reviews(cycle_id);
 CREATE INDEX idx_reviews_employee_id   ON performance_reviews(employee_id);
 CREATE INDEX idx_reviews_manager_id    ON performance_reviews(manager_id);
 CREATE INDEX idx_reviews_status        ON performance_reviews(status);
-CREATE INDEX idx_reviews_dept_snapshot ON performance_reviews(department_id_snapshot, cycle_id);
-
--- review_participants
-CREATE INDEX idx_review_parts_review   ON review_participants(review_id);
-CREATE INDEX idx_review_parts_user     ON review_participants(participant_id);
 
 -- review_responses
 CREATE INDEX idx_review_responses_review_question ON review_responses(review_id, question_id);
@@ -927,7 +864,7 @@ CREATE INDEX idx_audit_resource ON audit_logs(resource_type, resource_id);
 CREATE INDEX idx_audit_occurred ON audit_logs(occurred_at DESC);
 ```
 
-### `audit_logs` partitioning (resolves issue #9)
+### `audit_logs` partitioning (resolves issue #7)
 
 Estimated load: 100K users × ~20 actions/day = ~2M rows/day → ~60M/month. Single-table queries become slow and `VACUUM` expensive. Use native range partitioning by month:
 
@@ -965,8 +902,7 @@ A review yields two computed numbers plus a human-assigned final rating:
 
 ```
 kpi_score    = Σ over employee's KPI assignments:
-                 normalize(current, target, kpi.scoring_rule, kpi.min_threshold, kpi.cap_multiplier)
-                 × kpi.weight                                                          ∈ [0, Σ(weight × cap)]
+                 (current / target) × assignment.weight
 
 review_score = Σ over template_questions where question_type='rating' AND weight IS NOT NULL:
                  (rating_value / rating_scale_max) × weight                            ∈ [0, 100]
@@ -974,31 +910,22 @@ review_score = Σ over template_questions where question_type='rating' AND weigh
 final_rating = HR/manager decision (rating_scale_enum), informed by both numbers.
 ```
 
-### Per-KPI ratio
-
-| `scoring_rule` | Raw ratio |
-|---|---|
-| `linear` | `current / target` |
-| `inverse` | `target / current` if `current > 0` else `cap_multiplier` |
-| `binary` | `1` if `current >= target` else `0` |
-| `stepped` | App-defined; not required for MVP |
-
-Pipeline: `raw → 0 if raw < min_threshold/100 → clamp to [0, cap_multiplier]`.
+KPI achievement is **linear**: `ratio = current / target`. There is no threshold floor or upper cap — a KPI exceeding its target contributes proportionally more than its weight, which the app surfaces as over-achievement. For KPIs where lower is better (e.g. defect rate), express the target as the inverse metric (e.g. "uptime %") so that higher always means better.
 
 ### Worked Example
 
 Alice (`job_category = 'sales'`), cycle `2025 Q4`.
 
-| KPI | weight | rule | min | cap | target | current | ratio | contribution |
-|---|---|---|---|---|---|---|---|---|
-| Revenue | 60 | linear | 60 | 1.20 | 10M | 9M | 0.90 | 54.0 |
-| New clients | 30 | linear | 0 | 1.20 | 20 | 25 | 1.20 | 36.0 |
-| Complaint rate | 10 | inverse | 0 | 1.00 | 2.0 | 1.5 | 1.00 | 10.0 |
-| | | | | | | | | **`kpi_score = 100.0`** |
+| KPI | weight | target | current | ratio | contribution |
+|---|---|---|---|---|---|
+| Revenue | 60 | 10M | 9M | 0.90 | 54.0 |
+| New clients | 30 | 20 | 24 | 1.20 | 36.0 |
+| CSAT | 10 | 90 | 90 | 1.00 | 10.0 |
+| | | | | | **`kpi_score = 100.0`** |
 
 | Question | type | weight | rating_value | scale | contribution |
 |---|---|---|---|---|---|
-| Q1 (linked to Revenue) | rating | 40 | 4/5 | | 32.0 |
+| Q1 | rating | 40 | 4/5 | | 32.0 |
 | Q2 | rating | 40 | 3/5 | | 24.0 |
 | Q3 | rating | 20 | 5/5 | | 20.0 |
 | Q4 | text | NULL | — | | not scored |
@@ -1017,18 +944,22 @@ HR sees both, then picks `final_rating = exceeds_expectations`.
 
 ### Historical reporting (resolves issue #5)
 
-Reports that group performance results by department always read `department_id_snapshot` from `performance_reviews`. Live org charts use `users.department_id`. Time-travel queries (e.g. "who was in Sales on 2025-06-30") use `user_department_history`.
+`users.department_id` reflects the **current** org chart. To answer "who was in Sales on 2025-06-30" or to attribute a past cycle's results to the department the employee was in at the time, read from [`user_department_history`](#user_department_history): pick the membership row whose `[effective_from, effective_to)` window contains the cycle's reference date. Live dashboards use `users.department_id` directly.
 
 ### Cycle deadlines (resolves issue #6)
 
 All `TIMESTAMPTZ` columns store UTC. `performance_cycles.timezone` tells the UI which local wall-clock day a deadline lands on. Server-side enforcement uses `occurred_at_utc < deadline_utc`; UI displays `deadline_utc AT TIME ZONE cycle.timezone`.
 
-### 360 review flow (resolves issue #7)
+### Single-rater reviews
 
-1. Manager (or employee, depending on policy) invites peers and direct reports via [`review_participants`](#review_participants).
-2. Peers see the questions where `template_questions.applicable_to @> ARRAY['peer']`.
-3. Responses land in [`review_responses`](#review_responses) keyed by `respondent_id`.
-4. Aggregation: the UI shows averages per `respondent_type`, not individual peer answers, preserving peer anonymity.
+Reviews are evaluated by exactly two parties: the employee (`self`) and the assigned manager (`manager`). `review_responses` is keyed by `respondent_type`, so each question has at most one self answer and one manager answer. Peer / 360 / direct-report review is intentionally **not** modeled; if needed later, it would be added via a `review_participants` table plus expanded `respondent_type_enum` without disturbing the existing rows.
+
+### Cycle roster
+
+There is no dedicated participant table. The roster of a cycle is the set of [`performance_reviews`](#performance_reviews) rows sharing that `cycle_id` (unique on `(cycle_id, employee_id)`). HR generates these rows at cycle start for every expected participant; an employee who should not be reviewed simply has no row.
+
+- **Completion rate** is `count(status = 'completed') / count(*)` over the cycle's review rows, with `is_terminated_employee = true` rows excluded from the denominator. Because rows are created up front, the denominator is stable even as `users` changes later.
+- **Trade-off accepted:** there is no place to record *why* a specific employee was excluded (the row just doesn't exist). If that becomes a requirement, reintroduce a `cycle_participants` table.
 
 ### Template versioning (resolves issue #4)
 
@@ -1048,25 +979,12 @@ Goal-level and review-level threads use separate tables (`goal_comments`, `revie
 
 `user_identities` is intentionally minimal: it links external IdP subjects to internal `users`. When SSO is finalized (e.g. Google OIDC), the implementation only needs to: (a) validate the IdP token, (b) look up `(provider, provider_subject)`, (c) issue a session. No further schema change required. Local password auth (e.g. for HR break-glass) would add a sibling table; not designed here.
 
-### Department lifecycle
+### Departments are externally provisioned
 
-Departments are never hard-deleted. When an organizational unit is dissolved, HR closes it via `closed_at`. This keeps historical reports stable and avoids breaking FKs from snapshots (`performance_reviews.department_id_snapshot`) or history rows (`user_department_history.department_id`).
+The `departments` table is a **read-only mirror** of the organization's source-of-truth (e.g. the HR/HRIS system). Rows are seeded and refreshed by an external sync job; this service performs no create / edit / close operations on departments. Consequences:
 
-**Closure procedure** (enforced at the application layer):
-
-1. **Move out active users.** All `users` with `department_id = X` and `terminated_at IS NULL` must be transferred to another department first. Each transfer closes the current `user_department_history` row and opens a new one.
-2. **Reparent or close child departments.** If `X` has children (rows where `parent_id = X`), HR must either reparent them (set their `parent_id` to another active department) or close them recursively first.
-3. **Set `closed_at = now()`** and `closed_by = <hr_user_id>` on the department.
-4. **Audit.** A row is written to [`audit_logs`](#audit_logs) with `action = 'department_change'`, `resource_type = 'departments'`, `old_value = {closed_at: null}`, `new_value = {closed_at: ..., closed_by: ...}`.
-
-**Post-closure behavior:**
-
-- New users **cannot** be assigned to a closed department. The API rejects writes where `department_id` references a row with `closed_at IS NOT NULL`.
-- Org-chart UI hides closed departments by default; an "include retired" toggle reveals them with a visual marker.
-- Historical reports (e.g. "FY2024 performance distribution by department") continue to function because they read `department_id_snapshot`, which still resolves to a real row.
-- Cycle-time queries can compare `cycle.created_at` against `department.closed_at` to decide whether to show "Backend (closed 2025-08)" or filter it out.
-
-**Reopening** is permitted: setting `closed_at = NULL` reactivates the department and is itself audited as a `department_change`. This is rare but useful when a reorg is reversed.
+- There is no department lifecycle (`closed_at`, closure procedure) in this schema — retirement is the source system's concern. When a department is no longer active upstream, the sync stops marking it active, but the row remains so that `users.department_id` and `user_department_history.department_id` references never dangle.
+- New users may only be assigned to a `department_id` that exists in the seeded set.
 
 ### Encryption at rest
 
