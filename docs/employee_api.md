@@ -230,32 +230,6 @@ Response 200:
       "english_name": "Mei Lin",
       "email": "mei.lin@performanceplus.com"
     }
-  },
-  "cycle": {
-    "cycle_id": "cycle_2024_q3",
-    "name": "2024 Q3 年度績效考核",
-    "cycle_type": "quarterly",
-    "period_label": "2024-07-01~2024-09-30",
-    "start_date": "2024-07-01",
-    "end_date": "2024-09-30",
-    "timezone": "Asia/Taipei",
-    "status": "in_progress",
-    "is_locked": false,
-    "results_published_at": null,
-    "updated_at": "2024-09-20T10:30:00+08:00"
-  },
-  "review": {
-    "review_id": "review_2024_q3_user_001",
-    "status": "pending_manager_eval",
-    "manager": {
-      "user_id": "user_manager_001",
-      "name": "林美玲",
-      "english_name": "Mei Lin"
-    },
-    "co_manager": null,
-    "submitted_at": "2024-08-30T18:20:00+08:00",
-    "completed_at": null,
-    "updated_at": "2024-08-30T18:20:00+08:00"
   }
 }
 ```
