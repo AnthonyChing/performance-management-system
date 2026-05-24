@@ -18,10 +18,10 @@ jobs:
         working-directory: ./frontend
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Do nothing
         run: echo "Workflow passes without doing anything"
-
-      - uses: actions/checkout@v4
     
       - name: Use Node.js
         uses: actions/setup-node@v4
