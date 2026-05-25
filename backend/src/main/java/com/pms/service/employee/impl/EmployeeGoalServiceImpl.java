@@ -123,16 +123,25 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     public GoalProgressUpdateResponseDTO updateGoalProgress(String userId, String goalId, GoalProgressUpdateRequestDTO request) {
         GoalProgressUpdateDTO update = GoalProgressUpdateDTO.builder()
                 .progressUpdateId("progress_002")
+                .goalId(goalId)
                 .progressPercent(request.getProgressPercent())
                 .note(request.getNote())
                 .createdAt(OffsetDateTime.now())
                 .createdBy(GoalProgressUpdateDTO.ProgressUpdateCreatorDTO.builder().userId(userId).name("Alex Chen").build())
                 .build();
 
+        GoalProgressUpdateDTO latestUpdate = GoalProgressUpdateDTO.builder()
+                .progressUpdateId(update.getProgressUpdateId())
+                .progressPercent(update.getProgressPercent())
+                .note(update.getNote())
+                .createdAt(update.getCreatedAt())
+                .createdBy(update.getCreatedBy())
+                .build();
+
         GoalDTO goal = buildMockGoal();
         goal.setGoalId(goalId);
         goal.setProgressPercent(request.getProgressPercent());
-        goal.setLatestProgressUpdate(update);
+        goal.setLatestProgressUpdate(latestUpdate);
 
         return GoalProgressUpdateResponseDTO.builder().progressUpdate(update).goal(goal).build();
     }

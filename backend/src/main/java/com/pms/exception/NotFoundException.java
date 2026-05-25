@@ -3,12 +3,12 @@ package com.pms.exception;
 import org.springframework.http.HttpStatus;
 
 public class NotFoundException extends ApiException {
+
     public NotFoundException(String message) {
-        super(message);
+        super(HttpStatus.NOT_FOUND, "NOT_FOUND", message);
     }
 
-    @Override
-    public HttpStatus status() {
-        return HttpStatus.NOT_FOUND;
+    public NotFoundException(String code, String message) {
+        super(HttpStatus.NOT_FOUND, code, message);
     }
 }

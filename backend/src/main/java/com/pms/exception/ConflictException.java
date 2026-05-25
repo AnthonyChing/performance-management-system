@@ -3,12 +3,12 @@ package com.pms.exception;
 import org.springframework.http.HttpStatus;
 
 public class ConflictException extends ApiException {
+
     public ConflictException(String message) {
-        super(message);
+        super(HttpStatus.CONFLICT, "CONFLICT", message);
     }
 
-    @Override
-    public HttpStatus status() {
-        return HttpStatus.CONFLICT;
+    public ConflictException(String code, String message) {
+        super(HttpStatus.CONFLICT, code, message);
     }
 }
