@@ -453,7 +453,7 @@ Response 200:
     "start_date": "2026-07-01",
     "end_date": "2026-09-30",
     "timezone": "Asia/Taipei",
-    "status": "active",
+    "status": "in_progress",
     "is_review_locked": false,
     "review_locked_at": null
   },
@@ -941,7 +941,7 @@ Response 200:
   "cycle": {
     "cycle_id": "cycle_2026_q3",
     "name": "2026 Q3",
-    "status": "active",
+    "status": "in_progress",
     "is_review_locked": false
   },
   "overall_status": "in_progress",
@@ -996,7 +996,7 @@ Response 200:
   "cycle": {
     "cycle_id": "cycle_2026_q3",
     "name": "2026 Q3",
-    "status": "active",
+    "status": "in_progress",
     "is_review_locked": false
   },
   "overall_status": "no_goals",
