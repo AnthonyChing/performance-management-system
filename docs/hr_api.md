@@ -40,19 +40,29 @@
 
 | 功能模組 | Method | URL | 用途 |
 | --- | --- | --- | --- |
-| 模板管理 | POST | `/hr/questionnaire-templates` | 建立問卷模板 |
-| 模板管理 | PATCH | `/hr/questionnaire-templates/{template_id}` | 編輯/暫存問卷模板 |
-| 模板管理 | DELETE | `/hr/questionnaire-templates/{template_id}` | 刪除問卷模板 |
-| 模板管理 | GET | `/hr/questionnaire-templates/{template_id}` | 瀏覽特定問卷模板 |
-| 模板管理 | GET | `/hr/questionnaire-templates` | 瀏覽所有問卷模板 |
-| 模板管理 | POST | `/hr/questionnaire-templates/{template_id}/duplicate` | 複製問卷模板 |
-| 模板管理 | POST | `/hr/questionnaire-templates/{template_id}/publish` | 發布/啟用問卷模板 |
-| 問題管理 | POST | `/hr/questionnaire-templates/{template_id}/questions` | 新增問題至模板 |
-| 問題管理 | PATCH | `/hr/questionnaire-templates/{template_id}/questions/{question_id}` | 編輯特定問題 |
-| 問題管理 | DELETE | `/hr/questionnaire-templates/{template_id}/questions/{question_id}` | 刪除特定問題 |
-| 問題管理 | GET | `/hr/questionnaire-templates/{template_id}/questions/{question_id}` | 瀏覽特定問題細節 |
-| 問題管理 | GET | `/hr/questionnaire-templates/{template_id}/questions` | 瀏覽該模板下所有問題 |
-| 問題管理 | PATCH | `/hr/questionnaire-templates/{template_id}/questions/reorder` | 批次重新排序模板問題 |
+| 模板管理 | POST | `/hr/assessment-templates` | 建立問卷模板 |
+| 模板管理 | PATCH | `/hr/assessment-templates/{template_id}` | 編輯/暫存問卷模板 |
+| 模板管理 | DELETE | `/hr/assessment-templates/{template_id}` | 刪除問卷模板 |
+| 模板管理 | GET | `/hr/assessment-templates/{template_id}` | 瀏覽特定問卷模板 |
+| 模板管理 | GET | `/hr/assessment-templates` | 瀏覽所有問卷模板 |
+| 模板管理 | POST | `/hr/assessment-templates/{template_id}/duplicate` | 複製問卷模板 |
+| 模板管理 | POST | `/hr/assessment-templates/{template_id}/publish` | 發布/啟用問卷模板 |
+| 問題管理 | POST | `/hr/assessment-templates/{template_id}/questions` | 新增問題至模板 |
+| 問題管理 | PATCH | `/hr/assessment-templates/{template_id}/questions/{question_id}` | 編輯特定問題 |
+| 問題管理 | DELETE | `/hr/assessment-templates/{template_id}/questions/{question_id}` | 刪除特定問題 |
+| 問題管理 | GET | `/hr/assessment-templates/{template_id}/questions/{question_id}` | 瀏覽特定問題細節 |
+| 問題管理 | GET | `/hr/assessment-templates/{template_id}/questions` | 瀏覽該模板下所有問題 |
+| 問題管理 | PATCH | `/hr/assessment-templates/{template_id}/questions/reorder` | 批次重新排序模板問題 |
+| 模板套用 | POST | `/hr/assessment-templates/{template_id}/applications` | 套用模版至指定群組 |
+| 評估週期 | POST | `/hr/performance-cycles` | 設定評估週期 |
+| 評估週期 | GET | `/hr/performance-cycles` | 查看所有週期清單 |
+| 評估週期 | GET | `/hr/performance-cycles/{cycle_id}` | 查看單一週期設定細節 |
+| 評估週期 | PATCH | `/hr/performance-cycles/{cycle_id}` | 修改特定週期 |
+| 評估週期 | PATCH | `/hr/performance-cycles/{cycle_id}/status` | 手動切換週期狀態 |
+| 考核進度 | GET | `/hr/assessment-statuses` | 查看與篩選考核進度 |
+| 稽核紀錄 | GET | `/hr/audit-logs` | 查看與篩選稽核紀錄 |
+| 稽核紀錄 | POST | `/hr/audit-log-exports` | 匯出稽核紀錄 |
+| 通知設定 | POST | `/hr/notifications` | 設定與發送通知 |
 
 ## 3. 共用狀態與資料模型
 
@@ -79,6 +89,7 @@
 * `usage_count` 代表本模板被多少個 `performance_cycles` 使用中，前端可藉此判斷是否允許刪除或大幅度修改。
 * `updated_by` 代表最後一次修改該資源的使用者 ID。
 * 刪除操作為實作 Soft Delete，刪除後 `deleted_at` 寫入時間截記，且 `is_active` 設為 `false`。
+* **版本控制 (Template Versions)**：為確保歷史考核紀錄不受未來模板修改影響，實際的「題目」綁定於 `template_versions`。API 層隱藏了版本切換細節，但當編輯一個已發布的模板時，後端會自動產生新版本，舊的歷史紀錄仍會鎖定在原版本。
 
 ### 3.2 TemplateQuestion (模板問題模型)
 
@@ -100,6 +111,7 @@
 ```
 
 * `question_type` 可為 `rating`, `text`, `boolean`。當為 `rating` 時，`rating_scale_max` 必須有值（例如 5 或 10）。
+* **計分邏輯**：在考核計分中，只有 `rating` 類型的問題會被納入總分計算。`text` 類型用於純文字回饋，`boolean` 類型用於「是/否」確認，兩者皆不計分。
 
 ---
 
@@ -107,7 +119,7 @@
 
 ### 4.1 建立問卷模板
 - **Method**: POST
-- **URL**: `/hr/questionnaire-templates`
+- **URL**: `/hr/assessment-templates`
 - **用途**: 新增一個全新的模板草稿。
 - **欄位說明**:
   - Request: `name` (String, 模板名稱，必填), `description` (String, 描述), `job_function` (String, 適用的職能類別)。
@@ -141,7 +153,7 @@
 
 ### 4.2 編輯/暫存問卷模板
 - **Method**: PATCH
-- **URL**: `/hr/questionnaire-templates/{template_id}`
+- **URL**: `/hr/assessment-templates/{template_id}`
 - **用途**: 變更問卷的基本資訊（名稱、描述、職能分類）。
 - **欄位說明**:
   - Request: `name` (String), `description` (String), `job_function` (String)。皆為選填。
@@ -171,7 +183,7 @@
 
 ### 4.3 刪除問卷模板
 - **Method**: DELETE
-- **URL**: `/hr/questionnaire-templates/{template_id}`
+- **URL**: `/hr/assessment-templates/{template_id}`
 - **用途**: 刪除草稿或未使用過的模板。實作上請將其 `is_active` 設為 `false` (Soft Delete)。
 - **可能錯誤 (HTTP Status)**:
   - `404 RESOURCE_NOT_FOUND`: 找不到特定模板。
@@ -181,7 +193,7 @@
 
 ### 4.4 瀏覽特定問卷模板
 - **Method**: GET
-- **URL**: `/hr/questionnaire-templates/{template_id}`
+- **URL**: `/hr/assessment-templates/{template_id}`
 - **用途**: 取得單一模板的詳細資訊，通常搭配取得底下所有 questions 來渲染問卷預覽畫面。
 - **Response 200**:
   ```json
@@ -200,7 +212,7 @@
 
 ### 4.5 瀏覽所有問卷模板
 - **Method**: GET
-- **URL**: `/hr/questionnaire-templates`
+- **URL**: `/hr/assessment-templates`
 - **用途**: 列出所有模板，提供分頁與條件篩選。
 - **欄位說明**:
   - Request: Query params `page` (Integer), `status` (`draft` or `published`), `job_function` (String)。
@@ -226,7 +238,7 @@
 
 ### 4.6 複製問卷模板
 - **Method**: POST
-- **URL**: `/hr/questionnaire-templates/{template_id}/duplicate`
+- **URL**: `/hr/assessment-templates/{template_id}/duplicate`
 - **用途**: HR 常見需求：沿用舊模板修改。會複製原模板基本設定與所有問題，產出一個全新的 `draft` 狀態的模板。
 - **Response 201**:
   ```json
@@ -240,7 +252,7 @@
 
 ### 4.7 發布/啟用問卷模板
 - **Method**: POST
-- **URL**: `/hr/questionnaire-templates/{template_id}/publish`
+- **URL**: `/hr/assessment-templates/{template_id}/publish`
 - **用途**: 將 `draft` 狀態的模板正式轉為 `published`，只有 published 狀態的模板才可以被指派到考核週期中使用。若已發布，原則上不得隨意修改問題結構。
 - **可能錯誤 (HTTP Status)**:
   - `400 VALIDATION_ERROR`: 模板之下沒有任何問題（Questions count = 0），無法發布。
@@ -261,7 +273,7 @@
 
 ### 5.1 新增問題至模板
 - **Method**: POST
-- **URL**: `/hr/questionnaire-templates/{template_id}/questions`
+- **URL**: `/hr/assessment-templates/{template_id}/questions`
 - **用途**: 在特定模板下增加一個評量題目。新題目的 `sort_order` 可由後端預設排在最後。
 - **欄位說明**:
   - Request: `question_text` (String, 必填), `question_type` (Enum: `rating`, `text`, `boolean`, 必填), `rating_scale_max` (Integer, 若為 rating 則必填), `is_required` (Boolean, 預設 true)。
@@ -292,7 +304,7 @@
 
 ### 5.2 編輯特定問題
 - **Method**: PATCH
-- **URL**: `/hr/questionnaire-templates/{template_id}/questions/{question_id}`
+- **URL**: `/hr/assessment-templates/{template_id}/questions/{question_id}`
 - **用途**: 修改題目的文字、類型或必填屬性。
 - **可能錯誤 (HTTP Status)**:
   - `404 RESOURCE_NOT_FOUND`: 找不到特定題目。
@@ -307,14 +319,14 @@
 
 ### 5.3 刪除特定問題
 - **Method**: DELETE
-- **URL**: `/hr/questionnaire-templates/{template_id}/questions/{question_id}`
+- **URL**: `/hr/assessment-templates/{template_id}/questions/{question_id}`
 - **用途**: 刪除單一題目。若該模板還沒發布，可以直接移除並連帶在後端重算排序；若已發布或使用，請評估實作軟刪除或回傳 409。 
 - **Response 204**: 
   (No Content)
 
 ### 5.4 瀏覽特定問題細節
 - **Method**: GET
-- **URL**: `/hr/questionnaire-templates/{template_id}/questions/{question_id}`
+- **URL**: `/hr/assessment-templates/{template_id}/questions/{question_id}`
 - **用途**: 取得單一題目資料。
 - **Response 200**:
   ```json
@@ -331,7 +343,7 @@
 
 ### 5.5 瀏覽該模板下所有問題
 - **Method**: GET
-- **URL**: `/hr/questionnaire-templates/{template_id}/questions`
+- **URL**: `/hr/assessment-templates/{template_id}/questions`
 - **用途**: 依 `sort_order` 排序，回傳該模板所有建立的問題。
 - **Response 200**:
   ```json
@@ -355,7 +367,7 @@
 
 ### 5.6 批次重新排序模板問題
 - **Method**: PATCH
-- **URL**: `/hr/questionnaire-templates/{template_id}/questions/reorder`
+- **URL**: `/hr/assessment-templates/{template_id}/questions/reorder`
 - **用途**: 當使用者在前端拖拉調整順序時，將新的題號順序 ID 陣列送出，更新資料庫的 `sort_order`。
 - **欄位說明**:
   - Request: `ordered_question_ids` (Array of UUIDs，必填)，陣列的 Index 將成為新的 `sort_order`。
@@ -377,3 +389,92 @@
     "message": "Questions reordered successfully."
   }
   ```
+
+### 4.8 套用模版至指定員工群組
+- **Method**: POST
+- **URL**: `/hr/assessment-templates/{template_id}/applications`
+- **用途**: 將建立的模板應用至特定部門或員工群組。
+- **Request Body 範例**:
+  ```json
+  {
+    "target_departments": ["123e4567-e89b-12d3-a456-426614174000"],
+    "target_job_levels": ["L3", "L4"]
+  }
+  ```
+- **Response 200**:
+  ```json
+  {
+    "message": "Template applied successfully to selected groups."
+  }
+  ```
+
+---
+
+## 6. 評估週期管理 (Performance Cycles)
+
+### 6.1 設定評估週期
+- **Method**: POST
+- **URL**: `/hr/performance-cycles`
+- **用途**: 建立新的考核週期 (含名稱、起訖時間、涵蓋群組)。
+- **Request Body 範例**:
+  ```json
+  {
+    "name": "2026 總部員工績效考核",
+    "start_date": "2026-07-01",
+    "end_date": "2026-09-30",
+    "timezone": "Asia/Taipei",
+    "target_groups": []
+  }
+  ```
+- **Response 201**: 回傳新建週期，初始狀態通常為 `draft` 或 `not_started`。
+
+### 6.2 查看所有週期清單
+- **Method**: GET
+- **URL**: `/hr/performance-cycles`
+- **用途**: 顯示系統中所有曾經存在及進行中的週期，支援分頁與狀態篩選。
+- **Response 200**: 包含 `data` 與 `meta` 分頁資訊。
+
+### 6.3 查看單一週期設定細節
+- **Method**: GET
+- **URL**: `/hr/performance-cycles/{cycle_id}`
+- **用途**: 取得單一週期的詳細資訊。
+
+### 6.4 修改特定週期
+- **Method**: PATCH
+- **URL**: `/hr/performance-cycles/{cycle_id}`
+- **用途**: 在週期尚未結束前，修改起訖時間或名稱。
+
+### 6.5 手動切換週期狀態
+- **Method**: PATCH
+- **URL**: `/hr/performance-cycles/{cycle_id}/status`
+- **用途**: 手動將某週期狀態轉為 `in_progress` 或 `closed`。
+- **Request Body 範例**:
+  ```json
+  {
+    "status": "in_progress"
+  }
+  ```
+
+---
+
+## 7. 其他人資功能
+
+### 7.1 查看考核進度狀態
+- **Method**: GET
+- **URL**: `/hr/assessment-statuses`
+- **用途**: 查詢與篩選全公司的考核進度狀態。
+
+### 7.2 查詢與篩選稽核紀錄
+- **Method**: GET
+- **URL**: `/hr/audit-logs`
+- **用途**: 使用 API 查詢操作記錄，透過條件 (如日期、動作等) 篩選。
+
+### 7.3 匯出稽核紀錄
+- **Method**: POST
+- **URL**: `/hr/audit-log-exports`
+- **用途**: 觸發下載 csv 或 excel 檔案，包含指定範圍內的稽核紀錄。
+
+### 7.4 發送通知
+- **Method**: POST
+- **URL**: `/hr/notifications`
+- **用途**: 針對特定考核階段或員工群組發布系統或信件通知。
