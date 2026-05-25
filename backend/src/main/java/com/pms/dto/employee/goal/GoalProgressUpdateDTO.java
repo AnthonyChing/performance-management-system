@@ -12,6 +12,9 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class GoalProgressUpdateDTO {
     private String progressUpdateId;
+    // Present on the standalone progress_update object (POST .../progress-updates);
+    // null (and thus omitted) when embedded as goal.latest_progress_update.
+    private String goalId;
     private Integer progressPercent;
     private String note;
     private OffsetDateTime createdAt;
