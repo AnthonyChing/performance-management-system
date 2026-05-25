@@ -1,6 +1,6 @@
 # Database Schema — Revised
 
-This document supersedes [`schema.md`](./schema.md). It folds in the KPI scoring model from the previous revision **and** resolves the structural gaps identified during review:
+This document is the authoritative database design. It folds in the KPI scoring model from the previous revision **and** resolves the structural gaps identified during review:
 
 1. No identity/auth surface
 2. No history for goal/KPI progress
@@ -44,10 +44,12 @@ Naming change: `job_function` is renamed `job_category` everywhere.
   - [Goals & KPIs](#goals--kpis)
     - [goals](#goals)
     - [goal_progress_updates](#goal_progress_updates)
+    - [goal_reviews](#goal_reviews)
     - [goal_comments](#goal_comments)
     - [kpis](#kpis)
     - [kpi_assignments](#kpi_assignments)
     - [kpi_progress_snapshots](#kpi_progress_snapshots)
+    - [kpi_result_confirmations](#kpi_result_confirmations)
   - [Reviews & Appeals](#reviews--appeals)
     - [performance_reviews](#performance_reviews)
     - [review_responses](#review_responses)
@@ -117,12 +119,14 @@ erDiagram
     performance_cycles ||--o{ goals : "contains"
     users              ||--o{ goals : "owns"
     goals              ||--o{ goal_progress_updates : "tracked by"
+    goals              ||--o{ goal_reviews          : "reviewed by manager"
     goals              ||--o{ goal_comments         : "discussed in"
 
     performance_cycles ||--o{ kpis              : "contains"
     kpis               ||--o{ kpi_assignments    : "assigned via"
     users              ||--o{ kpi_assignments    : "responsible for"
     kpi_assignments    ||--o{ kpi_progress_snapshots : "tracked by"
+    performance_reviews ||--o{ kpi_result_confirmations : "confirmed by employee"
 
     performance_cycles  ||--o{ performance_reviews : "contains"
     users               ||--o{ performance_reviews : "evaluated in"
@@ -156,10 +160,13 @@ System users (employees, managers, HR, admins). Identity resolution from externa
 | `employee_id` | `VARCHAR(64)` | `UNIQUE, NOT NULL` | Company-issued employee ID |
 | `email` | `VARCHAR(255)` | `UNIQUE, NOT NULL` | Corporate email (canonical, maintained by HR) |
 | `full_name` | `VARCHAR(255)` | `NOT NULL` | Display name |
+| `english_name` | `VARCHAR(255)` | `NULLABLE` | Optional English display name |
+| `avatar_url` | `TEXT` | `NULLABLE` | Optional profile image URL or asset path |
 | `department_id` | `UUID` | `FK → departments.id, NOT NULL` | **Current** department; history in [`user_department_history`](#user_department_history) |
 | `manager_id` | `UUID` | `FK → users.id, NULLABLE` | Current direct manager |
 | `job_title` | `VARCHAR(128)` | `NOT NULL` | Free-text title (e.g. "Senior Software Engineer") |
 | `job_category` | `VARCHAR(64)` | `NOT NULL` | e.g. `engineering`, `sales`, `hr`. Drives template assignment |
+| `location` | `VARCHAR(128)` | `NULLABLE` | Work location shown on employee profile |
 | `employment_status` | `employment_status_enum` | `NOT NULL, DEFAULT 'active'` | |
 | `mfa_enabled` | `BOOLEAN` | `NOT NULL, DEFAULT false` | Mirrored from IdP `amr` claim |
 | `locale` | `VARCHAR(10)` | `NOT NULL, DEFAULT 'zh-TW'` | BCP 47 |
@@ -255,7 +262,7 @@ Tree-structured organizational units. **Read-only reference table**: rows are pr
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
 | `name` | `VARCHAR(128)` | `NOT NULL` | e.g. `2025 Q4 Quarterly Review` |
 | `cycle_type` | `cycle_type_enum` | `NOT NULL` | |
-| `status` | `cycle_status_enum` | `NOT NULL, DEFAULT 'draft'` | |
+| `status` | `cycle_status_enum` | `NOT NULL, DEFAULT 'not_started'` | |
 | `timezone` | `VARCHAR(64)` | `NOT NULL, DEFAULT 'Asia/Taipei'` | IANA TZ. All deadlines below are interpreted in this zone |
 | `self_eval_start` | `TIMESTAMPTZ` | `NOT NULL` | |
 | `self_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | |
@@ -358,10 +365,9 @@ Pins a specific template **version** to a cycle for a job category.
 | `goal_type` | `goal_type_enum` | `NOT NULL` | `individual` / `team` |
 | `title` | `VARCHAR(255)` | `NOT NULL` | |
 | `description` | `TEXT` | `NULLABLE` | SMART description |
-| `target_value` | `TEXT` | `NULLABLE` | |
-| `current_value` | `TEXT` | `NULLABLE` | **Cached** latest entry from [`goal_progress_updates`](#goal_progress_updates) |
+| `progress_percent` | `INTEGER` | `NOT NULL, DEFAULT 0` | Current completion percentage, `0` to `100`; cached from latest [`goal_progress_updates`](#goal_progress_updates) |
 | `due_date` | `DATE` | `NULLABLE` | |
-| `status` | `goal_status_enum` | `NOT NULL, DEFAULT 'active'` | |
+| `status` | `goal_status_enum` | `NOT NULL, DEFAULT 'pending_review'` | |
 | `published_at` | `TIMESTAMPTZ` | `NULLABLE` | |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
@@ -373,16 +379,31 @@ Pins a specific template **version** to a cycle for a job category.
 
 #### `goal_progress_updates`
 
-Append-only progress history. The latest entry's value is also cached on `goals.current_value` for fast reads.
+Append-only progress history. The latest entry's percentage is also cached on `goals.progress_percent` for fast reads.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
 | `goal_id` | `UUID` | `FK → goals.id, NOT NULL` | |
-| `value` | `TEXT` | `NOT NULL` | Free-form (mirrors `goals.target_value` format) |
+| `progress_percent` | `INTEGER` | `NOT NULL` | Completion percentage, `0` to `100` |
 | `note` | `TEXT` | `NULLABLE` | Update commentary |
 | `updated_by` | `UUID` | `FK → users.id, NOT NULL` | Usually `goals.owner_id`; managers can also update |
 | `recorded_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
+
+---
+
+#### `goal_reviews`
+
+Append-only manager decisions for employee-submitted goals. Employee APIs project the latest row as `goal.latest_review` and the review-result endpoint.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
+| `goal_id` | `UUID` | `FK → goals.id, NOT NULL` | |
+| `decision` | `goal_review_decision_enum` | `NOT NULL` | |
+| `comment` | `TEXT` | `NULLABLE` | Manager-facing review comment shown to the employee |
+| `reviewed_by` | `UUID` | `FK → users.id, NOT NULL` | Reviewing manager |
+| `reviewed_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 
 ---
 
@@ -455,6 +476,21 @@ Append-only history of KPI progress per assignment. Powers trend dashboards and 
 | `recorded_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 
 **FK pair:** `(kpi_id, user_id)` references `kpi_assignments(kpi_id, user_id)`.
+
+---
+
+#### `kpi_result_confirmations`
+
+One confirmation record per employee review once a published KPI result is accepted by the employee.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
+| `review_id` | `UUID` | `FK → performance_reviews.id, NOT NULL` | KPI result/review being confirmed |
+| `confirmed_by` | `UUID` | `FK → users.id, NOT NULL` | Usually `performance_reviews.employee_id` |
+| `confirmed_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
+
+**Unique:** `(review_id)`
 
 ---
 
@@ -554,6 +590,7 @@ Documents (e.g. from Google Drive) pinned as evidence.
 |---|---|---|---|
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
 | `review_id` | `UUID` | `FK → performance_reviews.id, NOT NULL` | |
+| `case_no` | `VARCHAR(32)` | `UNIQUE, NOT NULL` | Stable human-readable appeal number |
 | `filed_by` | `UUID` | `FK → users.id, NOT NULL` | |
 | `assigned_to_type` | `appeal_assignee_enum` | `NOT NULL` | |
 | `assigned_to` | `UUID` | `FK → users.id, NOT NULL` | |
@@ -561,6 +598,8 @@ Documents (e.g. from Google Drive) pinned as evidence.
 | `status` | `appeal_status_enum` | `NOT NULL, DEFAULT 'submitted'` | |
 | `filed_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
 | `resolved_at` | `TIMESTAMPTZ` | `NULLABLE` | |
+
+**Unique:** `(review_id)`
 
 ---
 
@@ -571,6 +610,7 @@ Documents (e.g. from Google Drive) pinned as evidence.
 | `id` | `UUID` | `PK, NOT NULL, DEFAULT gen_random_uuid()` | |
 | `appeal_id` | `UUID` | `FK → appeals.id, NOT NULL` | |
 | `responded_by` | `UUID` | `FK → users.id, NOT NULL` | |
+| `visibility` | `comment_visibility_enum` | `NOT NULL, DEFAULT 'participants'` | `participants` replies are visible to the employee; HR-only notes stay internal |
 | `response_text` | `TEXT` | `NOT NULL` | |
 | `is_final` | `BOOLEAN` | `NOT NULL, DEFAULT false` | |
 | `responded_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT now()` | |
@@ -651,7 +691,7 @@ CREATE TYPE cycle_type_enum AS ENUM (
 );
 
 CREATE TYPE cycle_status_enum AS ENUM (
-  'draft', 'active', 'locked', 'results_published', 'completed'
+  'not_started', 'in_progress', 'locked', 'results_published', 'completed', 'closed'
 );
 
 CREATE TYPE goal_type_enum AS ENUM (
@@ -659,7 +699,11 @@ CREATE TYPE goal_type_enum AS ENUM (
 );
 
 CREATE TYPE goal_status_enum AS ENUM (
-  'active', 'completed', 'cancelled'
+  'pending_review', 'in_progress', 'revision_requested', 'completed', 'cancelled'
+);
+
+CREATE TYPE goal_review_decision_enum AS ENUM (
+  'approved', 'revision_requested', 'cancelled'
 );
 
 CREATE TYPE review_status_enum AS ENUM (
@@ -681,13 +725,13 @@ CREATE TYPE appeal_assignee_enum AS ENUM (
 );
 
 CREATE TYPE appeal_status_enum AS ENUM (
-  'submitted', 'under_review', 'resolved'
+  'submitted', 'under_review', 'need_more_info', 'approved', 'rejected', 'cancelled'
 );
 
 CREATE TYPE notification_type_enum AS ENUM (
   'goal_published', 'kpi_published', 'goal_updated',
   'self_eval_reminder', 'manager_eval_reminder',
-  'results_published', 'appeal_received', 'appeal_responded', 'appeal_resolved'
+  'results_published', 'appeal_received', 'appeal_responded', 'appeal_decided'
 );
 
 CREATE TYPE notification_channel_enum AS ENUM (
@@ -845,13 +889,16 @@ CREATE INDEX idx_review_responses_review_question ON review_responses(review_id,
 CREATE INDEX idx_goals_cycle_id        ON goals(cycle_id);
 CREATE INDEX idx_goals_owner_id        ON goals(owner_id);
 CREATE INDEX idx_goal_updates_goal_time ON goal_progress_updates(goal_id, recorded_at DESC);
+CREATE INDEX idx_goal_reviews_goal_time ON goal_reviews(goal_id, reviewed_at DESC);
 
 -- kpis / progress
 CREATE INDEX idx_kpi_assignments_user_id  ON kpi_assignments(user_id);
 CREATE INDEX idx_kpi_snapshots_assignment ON kpi_progress_snapshots(kpi_id, user_id, recorded_at DESC);
+CREATE INDEX idx_kpi_confirmations_user   ON kpi_result_confirmations(confirmed_by);
 
 -- appeals
 CREATE INDEX idx_appeals_review_id     ON appeals(review_id);
+CREATE INDEX idx_appeals_case_no       ON appeals(case_no);
 CREATE INDEX idx_appeals_assigned_to   ON appeals(assigned_to);
 CREATE INDEX idx_appeals_status        ON appeals(status);
 
@@ -939,7 +986,7 @@ HR sees both, then picks `final_rating = exceeds_expectations`.
 
 ### Immutability & soft delete
 
-- `audit_logs`, `user_department_history`, `goal_progress_updates`, `kpi_progress_snapshots`, `template_questions` (once published) are **append-only**.
+- `audit_logs`, `user_department_history`, `goal_progress_updates`, `goal_reviews`, `kpi_progress_snapshots`, `kpi_result_confirmations`, `template_questions` (once published) are **append-only**.
 - Soft delete everywhere else: `users.terminated_at`, `evaluation_templates.is_active`, `performance_reviews.is_terminated_employee`, `goals.deleted_at`, `kpis.deleted_at`, `goal_comments.deleted_at`, `review_comments.deleted_at`.
 
 ### Historical reporting (resolves issue #5)
@@ -969,7 +1016,7 @@ There is no dedicated participant table. The roster of a cycle is the set of [`p
 
 ### Progress as a first-class concept (resolves issue #2)
 
-`goals.current_value` and `kpi_assignments.current_value` are **caches** of the most recent entries in the corresponding history tables. The application writes both atomically. Dashboards and trend charts always query the history tables.
+`goals.progress_percent` and `kpi_assignments.current_value` are **caches** of the most recent entries in the corresponding history tables. The application writes both atomically. Dashboards and trend charts always query the history tables.
 
 ### Discussion (resolves issue #3)
 

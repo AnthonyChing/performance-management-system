@@ -58,7 +58,7 @@
 #### 待處理異議列表 (Resource: Team-Appeals)
 - **GET /teams/{team_id}/appeals**: 查看部屬提交的異議申請列表
 - **GET /teams/{team_id}/appeals/{appeal_id}**: 查看部屬提交的異議申請資訊與相關佐證文件
-- **PATCH /teams/{team_id}/appeals/{appeal_id}**: 填寫處理意見 / 駁回或調整評分 (resolved)
+- **PATCH /teams/{team_id}/appeals/{appeal_id}**: 填寫處理意見 / 通過、駁回或取消異議
 
 ---
 
@@ -70,7 +70,7 @@
 
 ### 我的資料 (Resource: Employee-Profile)
 - **GET /me/profile**: 查看個人基本資料
-- **GET /me/performance-cycles**: 查看目前考核週期
+- **GET /me/performance-cycles/current**: 查看目前考核週期
 - **PATCH /me/password**: 重設密碼
 
 ### 查看通知 (Resource: Notifications)
@@ -86,9 +86,7 @@
 ### 查看個人績效 (Resource: Employee-KPIs)
 - **GET /me/kpis/standards**: 查看本期 KPI 標準
 - **GET /me/kpis/result**: 查看本期考核結果
-- **GET /me/kpis/progress**: 查看本期考核進度
 - **POST /me/kpis/result-confirmations**: 確認評估結果
-- **GET /me/kpis/audit-logs**: 查看本期考核操作紀錄
 - **GET /me/kpis/result?status=historical&page={page}**: 查看歷史 KPI
 
 ### 查看團隊績效 (Resource: Team-KPIs)
@@ -99,14 +97,9 @@
 - **GET /teams/{team_id}/kpis/result?status=historical&page={page}**: 查看歷史 KPI
 
 ### 個人績效異議 (Resource: Employee-Appeals)
-- **GET /me/appeals**: 讀取本期異議表格
-- **PUT /me/appeals**: 暫存異議表格
-- **POST /me/appeals**: 提交異議表格
-- **POST /me/appeals/attachments**: 上傳異議附件
-- **DELETE /me/appeals/attachments**: 刪除異議附件
-- **GET /me/appeals/progress**: 追蹤異議處理進度
+- **GET /me/appeals**: 讀取本期異議頁狀態
+- **POST /me/appeals/submit**: 提交績效異議
 - **GET /me/appeals/result**: 查看本期績效異議處理結果
-- **GET /me/appeals/result?status=historical&page={page}**: 查看歷史異議處理結果
 
 ---
 
@@ -203,7 +196,7 @@ This document outlines the frontend test cases based on the `site-plan.txt`. The
 |---|---|---|---|
 | M-APPL-01 | 異議列表查看 | 進入異議處理模組，查看待處理清單 (`GET /teams/{team_id}/appeals`) | 顯示所有提出異議的部屬名單與提案摘要 |
 | M-APPL-02 | 異議詳情檢視 | 進入單一異議案件，檢視說明內容與佐證檔案 (`GET .../{appeal_id}`) | 正確呈現員工陳述及其上傳的圖文附件 |
-| M-APPL-03 | 處理異議申請 | 填寫處理意見 (駁回或調整分數)，送出 (`PATCH .../{appeal_id}`) | 表單送出後，該異議案件標記為 resolved，提示會自動發送通知員工 |
+| M-APPL-03 | 處理異議申請 | 填寫處理意見 (通過、駁回或取消)，送出 (`PATCH .../{appeal_id}`) | 表單送出後，該異議案件標記為 `approved` / `rejected` / `cancelled`，提示會自動發送通知員工 |
 
 ---
 
@@ -213,7 +206,7 @@ This document outlines the frontend test cases based on the `site-plan.txt`. The
 | TC ID | 功能 | 測試情境描述 | 預期結果 |
 |---|---|---|---|
 | E-AUTH-01 | 登入 | 員工輸入有效的帳號密碼登入或使用 Google 登入 | 成功登入並導引至員工首頁 |
-| E-PROF-01 | 我的資料 | 進入個人資料頁查看基本資料與目前考核週期 (`GET /me/profile` & `/me/performance-cycles`) | 正確顯示姓名、部門、職位、考核週期階段等資訊 |
+| E-PROF-01 | 我的資料 | 進入個人資料頁查看基本資料與目前考核週期 (`GET /me/profile` & `/me/performance-cycles/current`) | 正確顯示姓名、部門、職位、考核週期階段等資訊 |
 | E-PROF-02 | 重設密碼 | 填寫舊密碼與新密碼後送出 (`PATCH /me/password`) | 密碼成功重設，可選擇是否踢除其他裝置登入登出 |
 
 ### 2.2 通知管理 (Notifications)
@@ -247,11 +240,9 @@ This document outlines the frontend test cases based on the `site-plan.txt`. The
 ### 2.6 個人績效異議 (Appeals)
 | TC ID | 功能 | 測試情境描述 | 預期結果 |
 |---|---|---|---|
-| E-APPL-01 | 發起異議 | 在考核結果畫面選擇發起績效異議，填寫理由後送出 (`POST /me/appeals`) | 異議成功建檔進入流程 |
-| E-APPL-02 | 暫存異議 | 填寫異議表單並儲存草稿 (`PUT /me/appeals`) | 成功存為草稿，尚未送出給主管 |
-| E-APPL-03 | 異議附件管理 | 上傳 PDF/圖片 作為異議佐證，或刪除已上傳檔案 (`POST/DELETE /me/appeals/attachments`) | 畫面上正確新增/移除檔案，上傳時應檢查檔案大小限制 |
-| E-APPL-04 | 追蹤異議進度 | 查看目前的異議案件處於「等待處理/審核中/已解決」狀態 (`GET /me/appeals/progress`) | 顯示進度時間軸，若主管回覆已處理，則應顯示決議結果 |
-| E-APPL-05 | 歷史異議查詢 | 查看過去曾經提出的績效異議的歷史紀錄 (`GET /me/appeals/result?status=historical&page=1`) | 分頁顯示過去的異議標籤與處理結果 |
+| E-APPL-01 | 發起異議 | 在考核結果畫面選擇發起績效異議，填寫理由後送出 (`POST /me/appeals/submit`) | 異議成功建檔進入流程 |
+| E-APPL-02 | 查看異議狀態 | 讀取目前本期異議頁狀態 (`GET /me/appeals`) | 尚未提交時顯示填寫表單，已提交時顯示案件狀態 |
+| E-APPL-03 | 查看處理結果 | 查看目前的異議案件處於 `submitted` / `under_review` / `need_more_info` / `approved` / `rejected` / `cancelled` 狀態 (`GET /me/appeals/result`) | 顯示最新員工端可見處理意見與最終結果 |
 
 ---
 
@@ -272,7 +263,7 @@ This document outlines the frontend test cases based on the `site-plan.txt`. The
 | HR-CYCL-01 | 設定評估週期 | 建立新的考核週期(含名稱、起訖時間、涵蓋群組) (`POST /hr/performance-cycles`) | 新週期建立成功並顯示在週期清單，狀態為未啟用 |
 | HR-CYCL-02 | 查看週期清單 | 顯示系統中所有曾經存在及進行中的週期 (`GET /hr/performance-cycles`) | 列表依時間排序顯示 |
 | HR-CYCL-03 | 修改週期設定 | 在週期尚未結束前，修改起訖時間或名稱 (`PATCH /hr/performance-cycles/{cycle_id}`) | 修改成功且生效 |
-| HR-CYCL-04 | 切換週期狀態 | 手動將某週期狀態轉為 Active/Closed (`PATCH /hr/performance-cycles/{cycle_id}/status`) | 狀態切換後，系統根據掛載的群組與模板，啟動/關閉相關評估表單 |
+| HR-CYCL-04 | 切換週期狀態 | 手動將某週期狀態轉為 `in_progress` / `closed` (`PATCH /hr/performance-cycles/{cycle_id}/status`) | 狀態切換後，系統根據掛載的群組與模板，啟動/關閉相關評估表單 |
 
 ### 3.3 稽核紀錄 (Audit Logs)
 | TC ID | 功能 | 測試情境描述 | 預期結果 |
