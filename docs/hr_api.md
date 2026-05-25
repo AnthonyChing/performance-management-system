@@ -67,14 +67,18 @@
   "is_active": true,
   "status": "published",
   "created_by": "123e4567-e89b-12d3-a456-426614174010",
+  "updated_by": "123e4567-e89b-12d3-a456-426614174010",
   "created_at": "2026-05-01T10:00:00+08:00",
   "updated_at": "2026-05-15T14:30:00+08:00",
+  "deleted_at": null,
   "usage_count": 2
 }
 ```
 
 * `status` 在實務流程上分為 `draft`（草稿）與 `published`（已發布可供週期綁定）。
 * `usage_count` 代表本模板被多少個 `performance_cycles` 使用中，前端可藉此判斷是否允許刪除或大幅度修改。
+* `updated_by` 代表最後一次修改該資源的使用者 ID。
+* 刪除操作為實作 Soft Delete，刪除後 `deleted_at` 寫入時間截記，且 `is_active` 設為 `false`。
 
 ### 3.2 TemplateQuestion (模板問題模型)
 
@@ -87,7 +91,11 @@
   "rating_scale_max": 5,
   "is_required": true,
   "sort_order": 1,
-  "created_at": "2026-05-01T10:05:00+08:00"
+  "created_by": "123e4567-e89b-12d3-a456-426614174010",
+  "updated_by": "123e4567-e89b-12d3-a456-426614174010",
+  "created_at": "2026-05-01T10:05:00+08:00",
+  "updated_at": "2026-05-01T10:05:00+08:00",
+  "deleted_at": null
 }
 ```
 
@@ -123,8 +131,11 @@
     "job_function": "sales",
     "status": "draft",
     "is_active": true,
+    "created_by": "123e4567-e89b-12d3-a456-426614174010",
+    "updated_by": "123e4567-e89b-12d3-a456-426614174010",
     "created_at": "2026-05-25T10:00:00+08:00",
-    "updated_at": "2026-05-25T10:00:00+08:00"
+    "updated_at": "2026-05-25T10:00:00+08:00",
+    "deleted_at": null
   }
   ```
 
@@ -153,6 +164,7 @@
     "job_function": "sales",
     "status": "draft",
     "is_active": true,
+    "updated_by": "123e4567-e89b-12d3-a456-426614174010",
     "updated_at": "2026-05-26T11:00:00+08:00"
   }
   ```
