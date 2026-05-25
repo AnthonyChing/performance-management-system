@@ -238,8 +238,6 @@ Response 200:
 
 | 情境 | HTTP status | 回傳方式 |
 | --- | --- | --- |
-| 登入者存在，目前沒有可顯示考核週期 | 200 | `cycle: null`, `review: null` |
-| 有目前考核週期，但登入者不在本週期 roster | 200 | `cycle` 正常回傳，`review: null` |
 | 登入者不存在或未完成 HR provision | 404 | `USER_NOT_FOUND` |
 
 ### 4.2 GET `/me/performance-cycles/current`
