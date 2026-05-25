@@ -12,11 +12,12 @@
   最後透過 `cycle_template_assignments` 把兩者綁起來宣告：「在 2025 Q4 週期，工程部門要用技術評估範本」。
 
 ## 模組三：目標與 KPI (Goals & KPIs)
-* **包含表**：`goals`, `kpis`, `kpi_assignments`
+* **包含表**：`goals`, `goal_progress_updates`, `goal_reviews`, `goal_comments`, `kpis`, `kpi_assignments`, `kpi_progress_snapshots`, `kpi_result_confirmations`
 * **運作邏輯**：
   在考核週期初，主管與員工會設定目標。
-  * `goals` 偏向質性或專案型目標（例如：優化系統架構）。
+  * `goals` 偏向質性或專案型目標（例如：優化系統架構），以 `progress_percent` 與 `goal_progress_updates` 追蹤進度，並以 `goal_reviews` 保留主管審核決策。
   * `kpis` 偏向量化指標。主管可以定義一個通用 KPI（例如：業績達標），然後透過 `kpi_assignments` 派發給底下的業務，每個業務可以有自己獨立的 `target_value`（例如 A 是 100萬、B 是 500萬）。
+  * `kpi_progress_snapshots` 保留 KPI 進度快照，`kpi_result_confirmations` 保存員工確認績效結果的簽核紀錄。
 
 ## 模組四：績效評估核心 (Performance Reviews)
 * **包含表**：`performance_reviews`, `review_responses`, `review_documents`

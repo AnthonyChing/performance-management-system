@@ -61,28 +61,26 @@
 
 ```json
 {
-  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "goal_id": "123e4567-e89b-12d3-a456-426614174000",
   "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
   "owner_id": "123e4567-e89b-12d3-a456-426614174010",
   "set_by": "123e4567-e89b-12d3-a456-426614174020",
   "goal_type": "individual",
   "title": "提升 Q3 季度客戶滿意度",
   "description": "計畫在第三季度將 CSAT 分數從 88% 提升至 92%。",
-  "weight": 20.00,
-  "target_value": "92%",
-  "current_value": "88%",
+  "progress_percent": 75,
   "due_date": "2026-09-30",
-  "status": "active",
+  "status": "in_progress",
   "published_at": "2026-06-01T10:00:00+08:00"
 }
 ```
-* `status` 對應資料庫 `goal_status_enum` (例如：`active`, `completed`, `cancelled`)。
+* `status` 對應資料庫 `goal_status_enum`：`pending_review`, `in_progress`, `revision_requested`, `completed`, `cancelled`。
 
 ### 3.2 SubordinateKPI (部屬KPI模型)
 
 ```json
 {
-  "id": "123e4567-e89b-12d3-a456-426614174030",
+  "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
   "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
   "created_by": "123e4567-e89b-12d3-a456-426614174020",
   "kpi_type": "individual",
@@ -123,7 +121,7 @@
 }
 ```
 
-狀態語意：`submitted` (已提交)、`under_review` (審核中)、`resolved` (已結案)。
+狀態語意：`submitted` (已提交)、`under_review` (審核中)、`need_more_info` (需補充資料)、`approved` (異議通過)、`rejected` (異議未通過)、`cancelled` (已取消)。
 
 ## 4. 目標與 KPI 管理
 
@@ -133,7 +131,7 @@
 - **用途**: 主管直接為該部屬指派新的個人 SMART 目標。
 - **欄位說明**:
   - Request: `title` (String, 目標名稱，必填), `description` (String, 內容說明), `goal_type` (String, `individual` 判斷), `weight` (Number, 權重), `target_value` (String, 預期目標), `due_date` (String, YYYY-MM-DD，必須落在週期內).
-  - Response: 回傳建立的目標資料包含了 `id`, `status` (`active`) 等預設資料。
+  - Response: 回傳建立的目標資料包含了 `goal_id`, `status` (`pending_review`) 等預設資料。
 - **可能錯誤 (HTTP Status)**:
   - `400 VALIDATION_ERROR`: 必填欄位缺失（如 `title`）或 `due_date` 格式不合 / 落在考核週期外。
   - `403 FORBIDDEN`: 登入主管沒有權限為該名 `{user_id}` 建立目標（非直屬部屬）。
@@ -142,19 +140,17 @@
 - **Response 201**: 回傳新建的目標資料。
   ```json
   {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "goal_id": "123e4567-e89b-12d3-a456-426614174000",
     "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
     "owner_id": "123e4567-e89b-12d3-a456-426614174010",
     "set_by": "123e4567-e89b-12d3-a456-426614174020",
     "goal_type": "individual",
     "title": "降低系統延遲時間",
     "description": "於 Q3 結束前優化資料庫查詢，降低 API 平均回應時間至 200ms 以內。",
-    "weight": 20.00,
-    "target_value": "200ms",
-    "current_value": null,
+    "progress_percent": 0,
     "due_date": "2026-09-30",
-    "status": "active",
-    "published_at": "2026-06-01T10:00:00+08:00"
+    "status": "pending_review",
+    "published_at": null
   }
   ```
 
@@ -163,7 +159,7 @@
 - **URL**: `/users/{user_id}/goals/{goal_id}`
 - **用途**: 調整已建立的目標內容，或審核員工提出的目標。針對員工提出的目標，可更新其 `status`。
 - **欄位說明**:
-  - Request: 可選欄位 `status` (String, 目標狀態 `active`, `completed`, `cancelled`), `title` (String), `description` (String), `weight` (Number), `target_value` (String), `due_date` (String)。
+  - Request: 可選欄位 `status` (String, 目標狀態 `pending_review`, `in_progress`, `revision_requested`, `completed`, `cancelled`), `title` (String), `description` (String), `due_date` (String)。
   - Response: 更新後的目標詳情資源。
 - **可能錯誤 (HTTP Status)**:
   - `400 VALIDATION_ERROR`: `status` 狀態不合法，或者變更後的目標內容格式錯誤。
@@ -173,7 +169,7 @@
 - **Request Body 範例**:
   ```json
   {
-    "status": "active",
+    "status": "in_progress",
     "title": "調整後的目標名稱",
     "weight": 25.00
   }
@@ -181,7 +177,7 @@
 - **Response 200**: 回傳編輯後的目標資料。
   ```json
   {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "goal_id": "123e4567-e89b-12d3-a456-426614174000",
     "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
     "owner_id": "123e4567-e89b-12d3-a456-426614174010",
     "set_by": "123e4567-e89b-12d3-a456-426614174020",
@@ -192,7 +188,7 @@
     "target_value": "200ms",
     "current_value": null,
     "due_date": "2026-09-30",
-    "status": "active",
+    "status": "in_progress",
     "published_at": "2026-06-05T10:00:00+08:00"
   }
   ```
@@ -214,7 +210,7 @@
   {
     "data": [
       {
-        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "goal_id": "123e4567-e89b-12d3-a456-426614174000",
         "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
         "owner_id": "123e4567-e89b-12d3-a456-426614174010",
         "set_by": "123e4567-e89b-12d3-a456-426614174020",
@@ -225,7 +221,7 @@
         "target_value": "92%",
         "current_value": "88%",
         "due_date": "2026-09-30",
-        "status": "active",
+        "status": "in_progress",
         "published_at": "2026-06-01T10:00:00+08:00"
       }
     ]
@@ -249,7 +245,7 @@
   {
     "data": [
       {
-        "id": "123e4567-e89b-12d3-a456-426614174030",
+        "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
         "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
         "created_by": "123e4567-e89b-12d3-a456-426614174020",
         "kpi_type": "individual",
@@ -289,7 +285,7 @@
 - **Response 200**:
   ```json
   {
-    "id": "123e4567-e89b-12d3-a456-426614174030",
+    "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
     "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
     "created_by": "123e4567-e89b-12d3-a456-426614174020",
     "kpi_type": "individual",
@@ -320,7 +316,7 @@
   {
     "data": [
       {
-        "id": "123e4567-e89b-12d3-a456-426614174030",
+        "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
         "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
         "created_by": "123e4567-e89b-12d3-a456-426614174020",
         "kpi_type": "individual",
@@ -342,7 +338,7 @@
 
 ### 5.1 填寫個人績效評分表
 - **Method**: PATCH
-- **URL**: `/users/{user_id}/evaluations/{review_id}`
+- **URL**: `/users/{user_id}/evaluations/{evaluation_id}`
 - **用途**: 針對進入評分階段的評估單，主管填寫各項問題的評分及總結語。
 - **欄位說明**:
   - Request: `status` (String, `manager_eval_in_progress` 或 `completed`), `final_rating` (String, 對應 `rating_scale_enum` 如 `meets_expectations`), `manager_comment` (String, 主管對該期績效的總評語), `responses` (Array, 對各 `question_id` 的回答，包含 `question_id`, `rating_value`, `text_value`)。
@@ -504,7 +500,7 @@
     "assigned_to_type": "senior_manager",
     "assigned_to": "123e4567-e89b-12d3-a456-426614174070",
     "reason": "評分範圍未考量 Q2 中途加入的臨時專案",
-    "status": "resolved",
+    "status": "approved",
     "filed_at": "2026-10-01T10:00:00+08:00",
     "resolved_at": "2026-10-05T14:20:00+08:00",
     "responses": [
