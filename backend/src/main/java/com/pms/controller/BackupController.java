@@ -77,7 +77,10 @@ public class BackupController {
                 return ResponseEntity.ok(response);
             } else {
                 BufferedReader errorReader =
-                        new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        process.getErrorStream(),
+                                        java.nio.charset.StandardCharsets.UTF_8));
                 StringBuilder errorOutput = new StringBuilder();
                 String line;
                 while ((line = errorReader.readLine()) != null) {
