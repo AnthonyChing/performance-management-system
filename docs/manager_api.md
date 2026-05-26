@@ -49,7 +49,8 @@
 | KPI 管理 | POST | `/users/{user_id}/kpis` | 為部屬設定或審核 KPI |
 | KPI 管理 | PATCH | `/users/{user_id}/kpis/{kpi_id}` | 調整 KPI 評分規則與權重 |
 | KPI 管理 | GET | `/users/{user_id}/kpis` | 查看個別部屬 KPI 列表 |
-| 績效評估 | PATCH | `/users/{user_id}/evaluations/{evaluation_id}` | 填寫主管的個人績效評分表 |
+| 績效評估 | PATCH | `/users/{user_id}/evaluations/{evaluation_id}/questionnaire` | 填寫主管的個人績效問卷評估 |
+| 績效評估 | PATCH | `/users/{user_id}/evaluations/{evaluation_id}/kpis` | 填寫 KPI 評分與總結成績 |
 | 歷史查詢 | GET | `/users/{user_id}/evaluations` | 查看部屬個人歷史考核結果 |
 | 異議處理 | GET | `/teams/{team_id}/appeals` | 查看團隊中所有待處理/已處理的異議申請 |
 | 異議處理 | GET | `/teams/{team_id}/appeals/{appeal_id}` | 查看部屬單筆異議申請詳情及佐證文件 |
@@ -336,24 +337,21 @@
 
 ## 5. 團隊績效評估與執行
 
-### 5.1 填寫個人績效評分表
+### 5.1 填寫個人績效評分表 - 問卷評估
 - **Method**: PATCH
-- **URL**: `/users/{user_id}/evaluations/{evaluation_id}`
-- **用途**: 針對進入評分階段的評估單，主管填寫各項問題的評分及總結語。
+- **URL**: `/users/{user_id}/evaluations/{evaluation_id}/questionnaire`
+- **用途**: 針對進入評分階段的評估單，主管針對 HR 設定的問卷模板（`TemplateQuestion`）進行逐題作答。
 - **欄位說明**:
-  - Request: `status` (String, `manager_eval_in_progress` 或 `completed`), `final_rating` (String, 對應 `rating_scale_enum` 如 `meets_expectations`), `manager_comment` (String, 主管對該期績效的總評語), `responses` (Array, 對各 `question_id` 的回答，包含 `question_id`, `rating_value`, `text_value`)。
-  - Response: 更新過後的評量詳情物件。
+  - Request: `responses` (Array, 對各 `question_id` 的回答，包含 `question_id`, `rating_value` (如有), `text_value`)。
+  - Response: 更新過後的評量/問卷詳情物件。
 - **可能錯誤 (HTTP Status)**:
-  - `400 VALIDATION_ERROR`: 回答必填問題缺失或格式錯誤。
+  - `400 VALIDATION_ERROR`: 回答必填問題缺失、或是數值超過 `rating_scale_max`。
   - `403 FORBIDDEN`: 非直屬或指定評核主管。
   - `404 RESOURCE_NOT_FOUND`: 表單 `review_id` 不存在。
   - `409 STATE_CONFLICT`: 現階段不在主管評核期（如：員工仍在自評階段，或是早已發布成績）。
 - **Request Body 範例**:
   ```json
   {
-    "status": "completed",
-    "final_rating": "exceeds_expectations",
-    "manager_comment": "該員工本期表現優異，超乎預期。",
     "responses": [
       {
         "question_id": "123e4567-e89b-12d3-a456-426614174090",
@@ -366,13 +364,7 @@
 - **Response 200**:
   ```json
   {
-    "id": "123e4567-e89b-12d3-a456-426614174060",
-    "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
-    "employee_id": "123e4567-e89b-12d3-a456-426614174010",
-    "manager_id": "123e4567-e89b-12d3-a456-426614174020",
-    "status": "completed",
-    "final_rating": "exceeds_expectations",
-    "manager_comment": "該員工本期表現優異，超乎預期。",
+    "review_id": "123e4567-e89b-12d3-a456-426614174060",
     "responses": [
       {
         "id": "123e4567-e89b-12d3-a456-426614174095",
@@ -387,7 +379,54 @@
   }
   ```
 
-### 5.2 查看個人歷史考核結果
+### 5.2 填寫個人績效評分表 - KPI 與總結
+- **Method**: PATCH
+- **URL**: `/users/{user_id}/evaluations/{evaluation_id}/kpis`
+- **用途**: 針對該員工當期的各項 KPI/目標給予評核給分，並提交最終的綜合評價及狀態修改。
+- **欄位說明**:
+  - Request: `status` (String, 如 `manager_eval_in_progress`, `completed`), `final_rating` (String, 對應 `rating_scale_enum` 如 `exceeds_expectations`), `manager_comment` (String, 總評語), `kpi_evaluations` (Array, 針對每一個 KPI assignment 的評分紀錄)。
+  - Response: 更新過後的整體評效詳情物件。
+- **可能錯誤 (HTTP Status)**:
+  - `400 VALIDATION_ERROR`: 存在無效的 KPI UUID。
+  - `403 FORBIDDEN`: 非直屬主管操作。
+  - `409 STATE_CONFLICT`: 現狀已鎖定或非管理員審核階段。
+- **Request Body 範例**:
+  ```json
+  {
+    "status": "completed",
+    "final_rating": "exceeds_expectations",
+    "manager_comment": "該員工本期 KPI 表現優異，且問卷評估展現高度跨部門領導力。",
+    "kpi_evaluations": [
+      {
+        "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
+        "manager_score": 95,
+        "manager_feedback": "第三季度業績達成率 110%"
+      }
+    ]
+  }
+  ```
+- **Response 200**:
+  ```json
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174060",
+    "cycle_id": "123e4567-e89b-12d3-a456-426614174001",
+    "employee_id": "123e4567-e89b-12d3-a456-426614174010",
+    "manager_id": "123e4567-e89b-12d3-a456-426614174020",
+    "status": "completed",
+    "final_rating": "exceeds_expectations",
+    "manager_comment": "該員工本期 KPI 表現優異，且問卷評估展現高度跨部門領導力。",
+    "kpi_evaluations": [
+      {
+        "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
+        "manager_score": 95,
+        "manager_feedback": "第三季度業績達成率 110%"
+      }
+    ],
+    "updated_at": "2026-06-01T15:35:00+08:00"
+  }
+  ```
+
+### 5.3 查看個人歷史考核結果
 - **Method**: GET
 - **URL**: `/users/{user_id}/evaluations`
 - **用途**: 查詢部屬過往的考核紀錄。
