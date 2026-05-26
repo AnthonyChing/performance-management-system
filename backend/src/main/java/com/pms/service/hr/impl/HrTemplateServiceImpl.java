@@ -1,5 +1,6 @@
 package com.pms.service.hr.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.hr.template.*;
 import com.pms.entity.AssessmentTemplate;
 import com.pms.entity.TemplateQuestion;
@@ -34,6 +35,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
 
     @Override
     @Transactional
+    @Auditable(action = "CREATE_TEMPLATE", resource = "assessment_template")
     public TemplateResponseDTO createTemplate(UUID actorId, TemplateCreateRequestDTO req) {
         AssessmentTemplate t = AssessmentTemplate.builder()
                 .id(UUID.randomUUID())
@@ -64,6 +66,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
 
     @Override
     @Transactional
+    @Auditable(action = "UPDATE_TEMPLATE", resource = "assessment_template", resourceIdFrom = "templateId")
     public TemplateResponseDTO patchTemplate(UUID actorId, UUID templateId, TemplatePatchRequestDTO req) {
         AssessmentTemplate t = findActiveTemplate(templateId);
         if (t.getStatus() == TemplateStatus.PUBLISHED && templateRepo.countCycleUsages(templateId) > 0) {
@@ -79,6 +82,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
 
     @Override
     @Transactional
+    @Auditable(action = "DELETE_TEMPLATE", resource = "assessment_template", resourceIdFrom = "templateId")
     public void deleteTemplate(UUID templateId) {
         AssessmentTemplate t = findActiveTemplate(templateId);
         if (templateRepo.countCycleUsages(templateId) > 0) {
@@ -91,6 +95,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
 
     @Override
     @Transactional
+    @Auditable(action = "DUPLICATE_TEMPLATE", resource = "assessment_template")
     public TemplateResponseDTO duplicateTemplate(UUID actorId, UUID templateId) {
         AssessmentTemplate source = findActiveTemplate(templateId);
         AssessmentTemplate copy = AssessmentTemplate.builder()
@@ -125,6 +130,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
 
     @Override
     @Transactional
+    @Auditable(action = "PUBLISH_TEMPLATE", resource = "assessment_template", resourceIdFrom = "templateId")
     public TemplateResponseDTO publishTemplate(UUID templateId) {
         AssessmentTemplate t = findActiveTemplate(templateId);
         if (t.getStatus() == TemplateStatus.PUBLISHED) {

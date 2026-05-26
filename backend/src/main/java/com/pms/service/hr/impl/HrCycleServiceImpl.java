@@ -1,5 +1,6 @@
 package com.pms.service.hr.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.hr.cycle.CycleCreateRequestDTO;
 import com.pms.dto.hr.cycle.CyclePatchRequestDTO;
 import com.pms.dto.hr.cycle.CyclePatchStatusRequestDTO;
@@ -33,6 +34,7 @@ public class HrCycleServiceImpl implements HrCycleService {
 
     @Override
     @Transactional
+    @Auditable(action = "CREATE_CYCLE", resource = "performance_cycle")
     public CycleResponseDTO createCycle(UUID actorId, CycleCreateRequestDTO req) {
         CycleType type = parseCycleType(req.getCycleType());
         PerformanceCycle cycle = PerformanceCycle.builder()
@@ -67,6 +69,7 @@ public class HrCycleServiceImpl implements HrCycleService {
 
     @Override
     @Transactional
+    @Auditable(action = "UPDATE_CYCLE", resource = "performance_cycle", resourceIdFrom = "cycleId")
     public CycleResponseDTO patchCycle(UUID actorId, UUID cycleId, CyclePatchRequestDTO req) {
         PerformanceCycle cycle = findCycle(cycleId);
         if (!MODIFIABLE_STATUSES.contains(cycle.getStatus())) {
@@ -86,6 +89,7 @@ public class HrCycleServiceImpl implements HrCycleService {
 
     @Override
     @Transactional
+    @Auditable(action = "UPDATE_CYCLE_STATUS", resource = "performance_cycle", resourceIdFrom = "cycleId")
     public CycleResponseDTO patchCycleStatus(UUID cycleId, CyclePatchStatusRequestDTO req) {
         PerformanceCycle cycle = findCycle(cycleId);
         CycleStatus newStatus = parseCycleStatus(req.getStatus());
