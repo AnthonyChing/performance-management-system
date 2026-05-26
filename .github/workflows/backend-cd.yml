@@ -1,0 +1,91 @@
+name: Backend CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-cd.yml'
+      - '!**.md'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-east1 
+  REPO_NAME: pms-repo
+  IMAGE_NAME: pms-backend # Name of the image in Artifact Registry
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for GCP Workload Identity Federation
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Docker metadata and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short,prefix=sha-
+            type=semver,pattern={{version}}
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}' # Uses a service account key for simplicity. Replace with Workload Identity Federation in production.
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use Google Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+          
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # Automatically determines target service and label based on git event
+      - name: Determine Deploy Target
+        id: deploy-target
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/v}"
+            echo "image_tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+            echo "cloud_run_service=backend-prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            echo "cloud_run_service=backend-staging" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ steps.deploy-target.outputs.cloud_run_service }}
+          region: ${{ env.REGION }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.deploy-target.outputs.image_tag }}
+          # Note: Staging and Prod environment variables are managed securely inside the GCP Console
+      
+      - name: Send Discord Notification (Success)
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" -d "{\"content\": \"✅ **Deploy Success!**\\nRevision deployed to Cloud Run.\\nURL: ${{ steps.deploy.outputs.url }}\"}" ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
+
+      - name: Send Discord Notification (Failure)
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" -d "{\"content\": \"❌ **Deploy Failed!**\\nPlease check GitHub Actions logs for details.\"}" ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
