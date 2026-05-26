@@ -9,14 +9,13 @@ import com.pms.repository.UserRepository;
 import com.pms.security.SecurityUtils;
 import com.pms.service.manager.ManagerAppealService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/teams/{teamId}/appeals")
@@ -29,16 +28,14 @@ public class ManagerAppealController {
 
     @GetMapping
     public ResponseEntity<Map<String, List<ManagerAppealListItemDTO>>> listAppeals(
-            @PathVariable UUID teamId,
-            @RequestParam(required = false) String status) {
+            @PathVariable UUID teamId, @RequestParam(required = false) String status) {
         assertTeamOwnership(teamId);
         return ResponseEntity.ok(Map.of("data", appealService.listAppeals(teamId, status)));
     }
 
     @GetMapping("/{appealId}")
     public ResponseEntity<ManagerAppealDetailDTO> getAppeal(
-            @PathVariable UUID teamId,
-            @PathVariable UUID appealId) {
+            @PathVariable UUID teamId, @PathVariable UUID appealId) {
         assertTeamOwnership(teamId);
         return ResponseEntity.ok(appealService.getAppeal(teamId, appealId));
     }
@@ -49,13 +46,15 @@ public class ManagerAppealController {
             @PathVariable UUID appealId,
             @Valid @RequestBody ManagerAppealPatchRequestDTO req) {
         assertTeamOwnership(teamId);
-        return ResponseEntity.ok(appealService.handleAppeal(SecurityUtils.currentUserId(), teamId, appealId, req));
+        return ResponseEntity.ok(
+                appealService.handleAppeal(SecurityUtils.currentUserId(), teamId, appealId, req));
     }
 
     private void assertTeamOwnership(UUID teamId) {
         UUID currentUserId = SecurityUtils.currentUserId();
         if (currentUserId.equals(teamId)) return;
-        userRepository.findById(teamId)
+        userRepository
+                .findById(teamId)
                 .orElseThrow(() -> new NotFoundException("RESOURCE_NOT_FOUND", "Team not found"));
         throw new ForbiddenException("FORBIDDEN", "You can only access your own team");
     }

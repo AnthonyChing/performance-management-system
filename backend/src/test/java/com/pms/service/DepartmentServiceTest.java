@@ -1,8 +1,16 @@
 package com.pms.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.pms.entity.Department;
 import com.pms.exception.NotFoundException;
 import com.pms.repository.DepartmentRepository;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,23 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class DepartmentServiceTest {
 
-    @Mock
-    private DepartmentRepository repository;
+    @Mock private DepartmentRepository repository;
 
-    @InjectMocks
-    private DepartmentService departmentService;
+    @InjectMocks private DepartmentService departmentService;
 
     private Department activeDept;
     private Department closedDept;
@@ -83,9 +80,12 @@ class DepartmentServiceTest {
         UUID id = UUID.randomUUID();
         when(repository.findById(id)).thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            departmentService.get(id);
-        });
+        NotFoundException exception =
+                assertThrows(
+                        NotFoundException.class,
+                        () -> {
+                            departmentService.get(id);
+                        });
 
         assertTrue(exception.getMessage().contains("department not found"));
         verify(repository, times(1)).findById(id);

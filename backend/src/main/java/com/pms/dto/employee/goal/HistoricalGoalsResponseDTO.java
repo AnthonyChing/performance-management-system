@@ -2,12 +2,11 @@ package com.pms.dto.employee.goal;
 
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.PaginationDTO;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @Builder

@@ -1,13 +1,13 @@
 package com.pms.dto.manager.appeal;
 
 import com.pms.entity.Appeal;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class ManagerAppealListItemDTO {
     private UUID id;
     private UUID reviewId;
@@ -23,7 +23,8 @@ public class ManagerAppealListItemDTO {
                 .id(a.getId())
                 .reviewId(a.getReviewId())
                 .filedBy(a.getFiledBy())
-                .assignedToType(a.getAssignedToType() != null ? a.getAssignedToType().getDbValue() : null)
+                .assignedToType(
+                        a.getAssignedToType() != null ? a.getAssignedToType().getDbValue() : null)
                 .assignedTo(a.getAssignedTo())
                 .reason(a.getReason())
                 .status(a.getStatus() != null ? a.getStatus().getDbValue() : null)

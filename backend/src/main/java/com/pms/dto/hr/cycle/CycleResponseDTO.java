@@ -1,13 +1,13 @@
 package com.pms.dto.hr.cycle;
 
 import com.pms.entity.PerformanceCycle;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class CycleResponseDTO {
     private UUID id;
     private String name;

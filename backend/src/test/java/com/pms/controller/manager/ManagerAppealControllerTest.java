@@ -1,9 +1,14 @@
 package com.pms.controller.manager;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
 import com.pms.config.TestcontainersConfig;
 import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -18,12 +23,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.List;
-import java.util.UUID;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -32,94 +31,104 @@ import static org.hamcrest.Matchers.*;
 class ManagerAppealControllerTest {
 
     // TEAM_ID is the manager's own UUID — used as the teamId path param
-    private static final String TEAM_ID   = "123e4567-e89b-12d3-a456-426614174020";
+    private static final String TEAM_ID = "123e4567-e89b-12d3-a456-426614174020";
     private static final String APPEAL_ID = "123e4567-e89b-12d3-a456-426614174050";
 
     @Autowired JwtUtil jwtUtil;
     @Autowired JdbcTemplate jdbc;
 
-    @LocalServerPort
-    int port;
+    @LocalServerPort int port;
 
     private String token;
 
     @BeforeAll
     void setUpAll() {
         token = jwtUtil.generateToken(UUID.fromString(TEAM_ID), List.of("manager"));
-        jdbc.execute("UPDATE appeals SET status = 'submitted', resolved_at = NULL WHERE id = '" + APPEAL_ID + "'");
+        jdbc.execute(
+                "UPDATE appeals SET status = 'submitted', resolved_at = NULL WHERE id = '"
+                        + APPEAL_ID
+                        + "'");
         jdbc.execute("DELETE FROM appeal_responses WHERE appeal_id = '" + APPEAL_ID + "'");
     }
 
     @BeforeEach
     void setUp() {
         RestAssured.reset();
-        RestAssured.requestSpecification = new RequestSpecBuilder()
-                .setPort(port)
-                .setBasePath("/api/v1/teams")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
+        RestAssured.requestSpecification =
+                new RequestSpecBuilder()
+                        .setPort(port)
+                        .setBasePath("/api/v1/teams")
+                        .addHeader("Authorization", "Bearer " + token)
+                        .build();
     }
 
-    @Test @Order(1)
+    @Test
+    @Order(1)
     void listAppeals_whenNotTeamManager_returns403() {
-        given()
-                .when().get("/00000000-0000-0000-0000-000000000099/appeals")
+        given().when()
+                .get("/00000000-0000-0000-0000-000000000099/appeals")
                 .then()
                 .statusCode(403)
                 .body("error.code", equalTo("FORBIDDEN"));
     }
 
-    @Test @Order(2)
+    @Test
+    @Order(2)
     void listAppeals_whenTeamNotFound_returns404() {
-        given()
-                .when().get("/00000000-0000-0000-0000-000000000000/appeals")
+        given().when()
+                .get("/00000000-0000-0000-0000-000000000000/appeals")
                 .then()
                 .statusCode(404)
                 .body("error.code", equalTo("RESOURCE_NOT_FOUND"));
     }
 
-    @Test @Order(3)
+    @Test
+    @Order(3)
     void listAppeals_returnsTeamAppeals() {
-        given()
-                .when().get("/" + TEAM_ID + "/appeals")
+        given().when()
+                .get("/" + TEAM_ID + "/appeals")
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
                 .body("data", notNullValue());
     }
 
-    @Test @Order(4)
+    @Test
+    @Order(4)
     void listAppeals_withStatusFilter_returnsFilteredAppeals() {
-        given()
-                .queryParam("status", "submitted")
-                .when().get("/" + TEAM_ID + "/appeals")
+        given().queryParam("status", "submitted")
+                .when()
+                .get("/" + TEAM_ID + "/appeals")
                 .then()
                 .statusCode(200)
                 .body("data", notNullValue());
     }
 
-    @Test @Order(5)
+    @Test
+    @Order(5)
     void getAppeal_whenNotAuthorized_returns403() {
-        given()
-                .when().get("/00000000-0000-0000-0000-000000000099/appeals/" + APPEAL_ID)
+        given().when()
+                .get("/00000000-0000-0000-0000-000000000099/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(403)
                 .body("error.code", equalTo("FORBIDDEN"));
     }
 
-    @Test @Order(6)
+    @Test
+    @Order(6)
     void getAppeal_whenAppealNotFound_returns404() {
-        given()
-                .when().get("/" + TEAM_ID + "/appeals/00000000-0000-0000-0000-000000000000")
+        given().when()
+                .get("/" + TEAM_ID + "/appeals/00000000-0000-0000-0000-000000000000")
                 .then()
                 .statusCode(404)
                 .body("error.code", equalTo("RESOURCE_NOT_FOUND"));
     }
 
-    @Test @Order(7)
+    @Test
+    @Order(7)
     void getAppeal_returnsAppealDetail() {
-        given()
-                .when().get("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
+        given().when()
+                .get("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
@@ -128,72 +137,80 @@ class ManagerAppealControllerTest {
                 .body("status", notNullValue());
     }
 
-    @Test @Order(8)
+    @Test
+    @Order(8)
     void respondToAppeal_withMissingResponseText_returns400() {
-        String body = """
+        String body =
+                """
                 {
                   "is_final": false
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
+                .when()
+                .patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(400)
                 .body("error.code", equalTo("VALIDATION_ERROR"));
     }
 
-    @Test @Order(9)
+    @Test
+    @Order(9)
     void respondToAppeal_whenNotAuthorized_returns403() {
-        String body = """
+        String body =
+                """
                 {
                   "response_text": "回應",
                   "is_final": false
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/00000000-0000-0000-0000-000000000099/appeals/" + APPEAL_ID)
+                .when()
+                .patch("/00000000-0000-0000-0000-000000000099/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(403)
                 .body("error.code", equalTo("FORBIDDEN"));
     }
 
-    @Test @Order(10)
+    @Test
+    @Order(10)
     void respondToAppeal_withNonFinalResponse_keepsAppealOpen() {
-        String body = """
+        String body =
+                """
                 {
                   "response_text": "已收到您的異議，目前正在審查中。",
                   "is_final": false
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
+                .when()
+                .patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(200)
                 .body("resolved_at", nullValue());
     }
 
-    @Test @Order(11)
+    @Test
+    @Order(11)
     void respondToAppeal_withFinalResponse_resolvesAppeal() {
-        String body = """
+        String body =
+                """
                 {
                   "response_text": "經核對附檔確認，Q2 專案表現確有貢獻。已同步更新評分表內容。",
                   "is_final": true
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
+                .when()
+                .patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(200)
                 .body("id", equalTo(APPEAL_ID))
@@ -201,19 +218,21 @@ class ManagerAppealControllerTest {
                 .body("responses.is_final", hasItem(true));
     }
 
-    @Test @Order(12)
+    @Test
+    @Order(12)
     void respondToAppeal_whenAppealAlreadyResolved_returns409() {
-        String body = """
+        String body =
+                """
                 {
                   "response_text": "試圖對已結案異議再次回應",
                   "is_final": false
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
+                .when()
+                .patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
                 .then()
                 .statusCode(409)
                 .body("error.code", equalTo("STATE_CONFLICT"));

@@ -9,11 +9,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Auditable {
     String action();
+
     String resource();
+
     /**
-     * How to extract the resourceId:
-     * - "return" → call getId() on the return value
-     * - any other string → name of the UUID parameter (e.g. "templateId")
+     * How to extract the resourceId: - "return" → call getId() on the return value - any other
+     * string → name of the UUID parameter (e.g. "templateId")
      */
     String resourceIdFrom() default "return";
 }

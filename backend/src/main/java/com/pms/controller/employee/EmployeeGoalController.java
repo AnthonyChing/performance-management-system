@@ -27,36 +27,42 @@ public class EmployeeGoalController {
             @RequestParam(required = false) String cycleId) {
 
         if ("historical".equals(status)) {
-            return ResponseEntity.ok(employeeGoalService.getHistoricalGoals(SecurityUtils.currentUserId(), page, pageSize, q, cycleId));
+            return ResponseEntity.ok(
+                    employeeGoalService.getHistoricalGoals(
+                            SecurityUtils.currentUserId(), page, pageSize, q, cycleId));
         }
 
-        return ResponseEntity.ok(employeeGoalService.getGoals(SecurityUtils.currentUserId(), status, q));
+        return ResponseEntity.ok(
+                employeeGoalService.getGoals(SecurityUtils.currentUserId(), status, q));
     }
 
     @PostMapping
-    public ResponseEntity<GoalCreationResponseDTO> createGoal(@Valid @RequestBody GoalRequestDTO request) {
+    public ResponseEntity<GoalCreationResponseDTO> createGoal(
+            @Valid @RequestBody GoalRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(employeeGoalService.createGoal(SecurityUtils.currentUserId(), request));
     }
 
     @PostMapping("/{goalId}")
     public ResponseEntity<GoalCreationResponseDTO> updateGoal(
-            @PathVariable String goalId,
-            @Valid @RequestBody GoalRequestDTO request) {
-        return ResponseEntity.ok(employeeGoalService.updateGoal(SecurityUtils.currentUserId(), goalId, request));
+            @PathVariable String goalId, @Valid @RequestBody GoalRequestDTO request) {
+        return ResponseEntity.ok(
+                employeeGoalService.updateGoal(SecurityUtils.currentUserId(), goalId, request));
     }
 
     @PostMapping("/{goalId}/progress-updates")
     public ResponseEntity<GoalProgressUpdateResponseDTO> updateGoalProgress(
-            @PathVariable String goalId,
-            @Valid @RequestBody GoalProgressUpdateRequestDTO request) {
+            @PathVariable String goalId, @Valid @RequestBody GoalProgressUpdateRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(employeeGoalService.updateGoalProgress(SecurityUtils.currentUserId(), goalId, request));
+                .body(
+                        employeeGoalService.updateGoalProgress(
+                                SecurityUtils.currentUserId(), goalId, request));
     }
 
     @GetMapping("/review-result")
     public ResponseEntity<GoalReviewResultResponseDTO> getGoalReviewResult(
             @RequestParam(required = false) String goalId) {
-        return ResponseEntity.ok(employeeGoalService.getGoalReviewResult(SecurityUtils.currentUserId(), goalId));
+        return ResponseEntity.ok(
+                employeeGoalService.getGoalReviewResult(SecurityUtils.currentUserId(), goalId));
     }
 }

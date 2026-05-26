@@ -14,17 +14,16 @@ import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
 import com.pms.repository.*;
 import com.pms.service.employee.EmployeeGoalService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +38,13 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     @Override
     public GoalsResponseDTO getGoals(UUID userId, String status, String q) {
-        PerformanceCycle cycle = getCurrentCycleOptional()
-                .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "No current performance cycle found"));
+        PerformanceCycle cycle =
+                getCurrentCycleOptional()
+                        .orElseThrow(
+                                () ->
+                                        new NotFoundException(
+                                                "CYCLE_NOT_FOUND",
+                                                "No current performance cycle found"));
 
         GoalStatus statusFilter = null;
         if (status != null && !status.isBlank()) {
@@ -51,18 +55,31 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             }
         }
 
-        List<Goal> goals = goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
+        List<Goal> goals =
+                goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
 
         final GoalStatus finalStatusFilter = statusFilter;
         if (finalStatusFilter != null) {
-            goals = goals.stream().filter(g -> g.getStatus() == finalStatusFilter).collect(Collectors.toList());
+            goals =
+                    goals.stream()
+                            .filter(g -> g.getStatus() == finalStatusFilter)
+                            .collect(Collectors.toList());
         }
         if (q != null && !q.isBlank()) {
             String lq = q.toLowerCase();
-            goals = goals.stream()
-                    .filter(g -> (g.getTitle() != null && g.getTitle().toLowerCase().contains(lq))
-                            || (g.getDescription() != null && g.getDescription().toLowerCase().contains(lq)))
-                    .collect(Collectors.toList());
+            goals =
+                    goals.stream()
+                            .filter(
+                                    g ->
+                                            (g.getTitle() != null
+                                                            && g.getTitle()
+                                                                    .toLowerCase()
+                                                                    .contains(lq))
+                                                    || (g.getDescription() != null
+                                                            && g.getDescription()
+                                                                    .toLowerCase()
+                                                                    .contains(lq)))
+                            .collect(Collectors.toList());
         }
 
         List<UUID> goalIds = goals.stream().map(Goal::getId).collect(Collectors.toList());
@@ -70,16 +87,21 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         Map<UUID, GoalProgressUpdate> latestProgressMap = Collections.emptyMap();
         Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
         if (!goalIds.isEmpty()) {
-            latestProgressMap = goalProgressUpdateRepository.findLatestByGoalIds(goalIds).stream()
-                    .collect(Collectors.toMap(GoalProgressUpdate::getGoalId, Function.identity()));
-            latestReviewMap = goalReviewRepository.findLatestByGoalIds(goalIds).stream()
-                    .collect(Collectors.toMap(GoalReview::getGoalId, Function.identity()));
+            latestProgressMap =
+                    goalProgressUpdateRepository.findLatestByGoalIds(goalIds).stream()
+                            .collect(
+                                    Collectors.toMap(
+                                            GoalProgressUpdate::getGoalId, Function.identity()));
+            latestReviewMap =
+                    goalReviewRepository.findLatestByGoalIds(goalIds).stream()
+                            .collect(Collectors.toMap(GoalReview::getGoalId, Function.identity()));
         }
 
         User owner = userRepository.findById(userId).orElse(null);
-        User manager = (owner != null && owner.getManagerId() != null)
-                ? userRepository.findById(owner.getManagerId()).orElse(null)
-                : null;
+        User manager =
+                (owner != null && owner.getManagerId() != null)
+                        ? userRepository.findById(owner.getManagerId()).orElse(null)
+                        : null;
 
         List<GoalDTO> goalDTOs = new ArrayList<>();
         for (Goal goal : goals) {
@@ -89,40 +111,52 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         }
 
         // All goals (unfiltered) for summary count
-        List<Goal> allGoals = goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
+        List<Goal> allGoals =
+                goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
         GoalSummaryDTO summary = buildSummary(allGoals);
 
         CycleSummaryDTO cycleDTO = buildCycleSummaryDTO(cycle);
 
         return GoalsResponseDTO.builder()
                 .cycle(cycleDTO)
-                .availableActions(AvailableActionsDTO.builder()
-                        .canCreateGoal(!cycle.getIsLocked())
-                        .build())
+                .availableActions(
+                        AvailableActionsDTO.builder().canCreateGoal(!cycle.getIsLocked()).build())
                 .summary(summary)
                 .goals(goalDTOs)
                 .build();
     }
 
     @Override
-    public HistoricalGoalsResponseDTO getHistoricalGoals(UUID userId, Integer page, Integer pageSize, String q, String cycleId) {
+    public HistoricalGoalsResponseDTO getHistoricalGoals(
+            UUID userId, Integer page, Integer pageSize, String q, String cycleId) {
         if (cycleId == null) {
-            List<CycleStatus> historicalStatuses = List.of(CycleStatus.COMPLETED, CycleStatus.CLOSED);
+            List<CycleStatus> historicalStatuses =
+                    List.of(CycleStatus.COMPLETED, CycleStatus.CLOSED);
             int pageIndex = (page != null && page > 0) ? page - 1 : 0;
             int size = (pageSize != null && pageSize > 0) ? pageSize : 10;
-            Page<PerformanceCycle> cyclePage = performanceCycleRepository.findByStatusInOrderByHrReviewEndDesc(
-                    historicalStatuses, PageRequest.of(pageIndex, size));
+            Page<PerformanceCycle> cyclePage =
+                    performanceCycleRepository.findByStatusInOrderByHrReviewEndDesc(
+                            historicalStatuses, PageRequest.of(pageIndex, size));
 
             List<CycleSummaryDTO> historicalCycles = new ArrayList<>();
             for (PerformanceCycle c : cyclePage.getContent()) {
-                List<Goal> cGoals = goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(c.getId(), userId);
+                List<Goal> cGoals =
+                        goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(c.getId(), userId);
                 int count = cGoals.size();
-                double avgCompletion = cGoals.isEmpty() ? 0.0
-                        : cGoals.stream().mapToInt(Goal::getProgressPercent).average().orElse(0.0);
+                double avgCompletion =
+                        cGoals.isEmpty()
+                                ? 0.0
+                                : cGoals.stream()
+                                        .mapToInt(Goal::getProgressPercent)
+                                        .average()
+                                        .orElse(0.0);
 
-                LocalDate startDate = c.getSelfEvalStart() != null ? c.getSelfEvalStart().toLocalDate() : null;
-                LocalDate endDate = c.getHrReviewEnd() != null ? c.getHrReviewEnd().toLocalDate() : null;
-                String periodLabel = (startDate != null && endDate != null) ? startDate + "~" + endDate : null;
+                LocalDate startDate =
+                        c.getSelfEvalStart() != null ? c.getSelfEvalStart().toLocalDate() : null;
+                LocalDate endDate =
+                        c.getHrReviewEnd() != null ? c.getHrReviewEnd().toLocalDate() : null;
+                String periodLabel =
+                        (startDate != null && endDate != null) ? startDate + "~" + endDate : null;
 
                 CycleSummaryDTO cs = buildCycleSummaryDTO(c);
                 cs.setPeriodLabel(periodLabel);
@@ -131,14 +165,15 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                 historicalCycles.add(cs);
             }
 
-            PaginationDTO pagination = PaginationDTO.builder()
-                    .page(page != null ? page : 1)
-                    .pageSize(size)
-                    .totalPages(cyclePage.getTotalPages())
-                    .totalCount((int) cyclePage.getTotalElements())
-                    .hasPrevious(cyclePage.hasPrevious())
-                    .hasNext(cyclePage.hasNext())
-                    .build();
+            PaginationDTO pagination =
+                    PaginationDTO.builder()
+                            .page(page != null ? page : 1)
+                            .pageSize(size)
+                            .totalPages(cyclePage.getTotalPages())
+                            .totalCount((int) cyclePage.getTotalElements())
+                            .hasPrevious(cyclePage.hasPrevious())
+                            .hasNext(cyclePage.hasNext())
+                            .build();
 
             return HistoricalGoalsResponseDTO.builder()
                     .mode("historical_cycles")
@@ -147,9 +182,15 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                     .build();
         } else {
             UUID cycleUUID = UUID.fromString(cycleId);
-            PerformanceCycle cycle = performanceCycleRepository.findById(cycleUUID)
-                    .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
-            if (cycle.getStatus() != CycleStatus.COMPLETED && cycle.getStatus() != CycleStatus.CLOSED) {
+            PerformanceCycle cycle =
+                    performanceCycleRepository
+                            .findById(cycleUUID)
+                            .orElseThrow(
+                                    () ->
+                                            new NotFoundException(
+                                                    "CYCLE_NOT_FOUND", "Cycle not found"));
+            if (cycle.getStatus() != CycleStatus.COMPLETED
+                    && cycle.getStatus() != CycleStatus.CLOSED) {
                 throw new NotFoundException("CYCLE_NOT_FOUND", "Cycle is not a historical cycle");
             }
 
@@ -157,13 +198,23 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             int size = (pageSize != null && pageSize > 0) ? pageSize : 10;
 
             // Apply q filter manually after fetch
-            List<Goal> allGoals = goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
+            List<Goal> allGoals =
+                    goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
             if (q != null && !q.isBlank()) {
                 String lq = q.toLowerCase();
-                allGoals = allGoals.stream()
-                        .filter(g -> (g.getTitle() != null && g.getTitle().toLowerCase().contains(lq))
-                                || (g.getDescription() != null && g.getDescription().toLowerCase().contains(lq)))
-                        .collect(Collectors.toList());
+                allGoals =
+                        allGoals.stream()
+                                .filter(
+                                        g ->
+                                                (g.getTitle() != null
+                                                                && g.getTitle()
+                                                                        .toLowerCase()
+                                                                        .contains(lq))
+                                                        || (g.getDescription() != null
+                                                                && g.getDescription()
+                                                                        .toLowerCase()
+                                                                        .contains(lq)))
+                                .collect(Collectors.toList());
             }
 
             int total = allGoals.size();
@@ -175,36 +226,56 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             Map<UUID, GoalProgressUpdate> latestProgressMap = Collections.emptyMap();
             Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
             if (!goalIds.isEmpty()) {
-                latestProgressMap = goalProgressUpdateRepository.findLatestByGoalIds(goalIds).stream()
-                        .collect(Collectors.toMap(GoalProgressUpdate::getGoalId, Function.identity()));
-                latestReviewMap = goalReviewRepository.findLatestByGoalIds(goalIds).stream()
-                        .collect(Collectors.toMap(GoalReview::getGoalId, Function.identity()));
+                latestProgressMap =
+                        goalProgressUpdateRepository.findLatestByGoalIds(goalIds).stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                GoalProgressUpdate::getGoalId,
+                                                Function.identity()));
+                latestReviewMap =
+                        goalReviewRepository.findLatestByGoalIds(goalIds).stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                GoalReview::getGoalId, Function.identity()));
             }
 
             User owner = userRepository.findById(userId).orElse(null);
-            User manager = (owner != null && owner.getManagerId() != null)
-                    ? userRepository.findById(owner.getManagerId()).orElse(null)
-                    : null;
+            User manager =
+                    (owner != null && owner.getManagerId() != null)
+                            ? userRepository.findById(owner.getManagerId()).orElse(null)
+                            : null;
 
             List<GoalDTO> goalDTOs = new ArrayList<>();
             for (Goal goal : pagedGoals) {
-                goalDTOs.add(buildGoalDTO(goal, owner, manager,
-                        latestProgressMap.get(goal.getId()), latestReviewMap.get(goal.getId()), cycle));
+                goalDTOs.add(
+                        buildGoalDTO(
+                                goal,
+                                owner,
+                                manager,
+                                latestProgressMap.get(goal.getId()),
+                                latestReviewMap.get(goal.getId()),
+                                cycle));
             }
 
             int totalPages = (total == 0) ? 1 : (int) Math.ceil((double) total / size);
-            PaginationDTO pagination = PaginationDTO.builder()
-                    .page(page != null ? page : 1)
-                    .pageSize(size)
-                    .totalPages(totalPages)
-                    .totalCount(total)
-                    .hasPrevious(pageIndex > 0)
-                    .hasNext(toIdx < total)
-                    .build();
+            PaginationDTO pagination =
+                    PaginationDTO.builder()
+                            .page(page != null ? page : 1)
+                            .pageSize(size)
+                            .totalPages(totalPages)
+                            .totalCount(total)
+                            .hasPrevious(pageIndex > 0)
+                            .hasNext(toIdx < total)
+                            .build();
 
             GoalSummaryDTO summary = buildSummary(allGoals);
-            double avgCompletion = allGoals.isEmpty() ? 0.0
-                    : allGoals.stream().mapToInt(Goal::getProgressPercent).average().orElse(0.0);
+            double avgCompletion =
+                    allGoals.isEmpty()
+                            ? 0.0
+                            : allGoals.stream()
+                                    .mapToInt(Goal::getProgressPercent)
+                                    .average()
+                                    .orElse(0.0);
             summary.setAverageCompletionPercent(avgCompletion);
             summary.setGoalCount(total);
 
@@ -221,8 +292,13 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     @Override
     @Transactional
     public GoalCreationResponseDTO createGoal(UUID userId, GoalRequestDTO request) {
-        PerformanceCycle cycle = getCurrentCycleOptional()
-                .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "No current performance cycle found"));
+        PerformanceCycle cycle =
+                getCurrentCycleOptional()
+                        .orElseThrow(
+                                () ->
+                                        new NotFoundException(
+                                                "CYCLE_NOT_FOUND",
+                                                "No current performance cycle found"));
 
         if (Boolean.TRUE.equals(cycle.getIsLocked())) {
             throw new ConflictException("REVIEW_LOCKED", "The review cycle is currently locked");
@@ -230,34 +306,37 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
         validateGoalRequest(request, cycle);
 
-        Goal goal = Goal.builder()
-                .id(UUID.randomUUID())
-                .cycleId(cycle.getId())
-                .ownerId(userId)
-                .setBy(userId)
-                .goalType(GoalType.INDIVIDUAL)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .dueDate(request.getDueDate())
-                .status(GoalStatus.PENDING_REVIEW)
-                .progressPercent(0)
-                .build();
+        Goal goal =
+                Goal.builder()
+                        .id(UUID.randomUUID())
+                        .cycleId(cycle.getId())
+                        .ownerId(userId)
+                        .setBy(userId)
+                        .goalType(GoalType.INDIVIDUAL)
+                        .title(request.getTitle())
+                        .description(request.getDescription())
+                        .dueDate(request.getDueDate())
+                        .status(GoalStatus.PENDING_REVIEW)
+                        .progressPercent(0)
+                        .build();
 
         goal = goalRepository.save(goal);
 
         User owner = userRepository.findById(userId).orElse(null);
-        User manager = (owner != null && owner.getManagerId() != null)
-                ? userRepository.findById(owner.getManagerId()).orElse(null)
-                : null;
+        User manager =
+                (owner != null && owner.getManagerId() != null)
+                        ? userRepository.findById(owner.getManagerId()).orElse(null)
+                        : null;
 
         GoalDTO goalDTO = buildGoalDTO(goal, owner, manager, null, null, cycle);
         // pending_review: all actions false
-        goalDTO.setAvailableActions(AvailableActionsDTO.builder()
-                .canEdit(false)
-                .editUnavailableReason("invalid_goal_status")
-                .canUpdateProgress(false)
-                .updateProgressUnavailableReason("invalid_goal_status")
-                .build());
+        goalDTO.setAvailableActions(
+                AvailableActionsDTO.builder()
+                        .canEdit(false)
+                        .editUnavailableReason("invalid_goal_status")
+                        .canUpdateProgress(false)
+                        .updateProgressUnavailableReason("invalid_goal_status")
+                        .build());
 
         return GoalCreationResponseDTO.builder().goal(goalDTO).build();
     }
@@ -266,23 +345,32 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     @Transactional
     public GoalCreationResponseDTO updateGoal(UUID userId, String goalId, GoalRequestDTO request) {
         UUID goalUUID = UUID.fromString(goalId);
-        Goal goal = goalRepository.findById(goalUUID)
-                .filter(g -> g.getDeletedAt() == null)
-                .orElseThrow(() -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
+        Goal goal =
+                goalRepository
+                        .findById(goalUUID)
+                        .filter(g -> g.getDeletedAt() == null)
+                        .orElseThrow(
+                                () -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
 
         if (!goal.getOwnerId().equals(userId)) {
-            throw new ForbiddenException("FORBIDDEN", "You do not have permission to update this goal");
+            throw new ForbiddenException(
+                    "FORBIDDEN", "You do not have permission to update this goal");
         }
 
-        PerformanceCycle cycle = performanceCycleRepository.findById(goal.getCycleId())
-                .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
+        PerformanceCycle cycle =
+                performanceCycleRepository
+                        .findById(goal.getCycleId())
+                        .orElseThrow(
+                                () -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
 
         if (Boolean.TRUE.equals(cycle.getIsLocked())) {
             throw new ConflictException("REVIEW_LOCKED", "The review cycle is currently locked");
         }
 
         if (goal.getStatus() != GoalStatus.REVISION_REQUESTED) {
-            throw new ConflictException("INVALID_GOAL_STATUS", "Goal can only be updated when status is revision_requested");
+            throw new ConflictException(
+                    "INVALID_GOAL_STATUS",
+                    "Goal can only be updated when status is revision_requested");
         }
 
         validateGoalRequest(request, cycle);
@@ -294,56 +382,70 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         goal = goalRepository.save(goal);
 
         User owner = userRepository.findById(userId).orElse(null);
-        User manager = (owner != null && owner.getManagerId() != null)
-                ? userRepository.findById(owner.getManagerId()).orElse(null)
-                : null;
+        User manager =
+                (owner != null && owner.getManagerId() != null)
+                        ? userRepository.findById(owner.getManagerId()).orElse(null)
+                        : null;
 
         GoalDTO goalDTO = buildGoalDTO(goal, owner, manager, null, null, cycle);
-        goalDTO.setAvailableActions(AvailableActionsDTO.builder()
-                .canEdit(false)
-                .editUnavailableReason("invalid_goal_status")
-                .canUpdateProgress(false)
-                .updateProgressUnavailableReason("invalid_goal_status")
-                .build());
+        goalDTO.setAvailableActions(
+                AvailableActionsDTO.builder()
+                        .canEdit(false)
+                        .editUnavailableReason("invalid_goal_status")
+                        .canUpdateProgress(false)
+                        .updateProgressUnavailableReason("invalid_goal_status")
+                        .build());
 
         return GoalCreationResponseDTO.builder().goal(goalDTO).build();
     }
 
     @Override
     @Transactional
-    public GoalProgressUpdateResponseDTO updateGoalProgress(UUID userId, String goalId, GoalProgressUpdateRequestDTO request) {
+    public GoalProgressUpdateResponseDTO updateGoalProgress(
+            UUID userId, String goalId, GoalProgressUpdateRequestDTO request) {
         UUID goalUUID = UUID.fromString(goalId);
-        Goal goal = goalRepository.findById(goalUUID)
-                .orElseThrow(() -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
+        Goal goal =
+                goalRepository
+                        .findById(goalUUID)
+                        .orElseThrow(
+                                () -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
 
         if (!goal.getOwnerId().equals(userId)) {
-            throw new ForbiddenException("FORBIDDEN", "You do not have permission to update this goal");
+            throw new ForbiddenException(
+                    "FORBIDDEN", "You do not have permission to update this goal");
         }
 
-        PerformanceCycle cycle = performanceCycleRepository.findById(goal.getCycleId())
-                .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
+        PerformanceCycle cycle =
+                performanceCycleRepository
+                        .findById(goal.getCycleId())
+                        .orElseThrow(
+                                () -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
 
         if (Boolean.TRUE.equals(cycle.getIsLocked())) {
             throw new ConflictException("REVIEW_LOCKED", "The review cycle is currently locked");
         }
 
         if (goal.getStatus() != GoalStatus.IN_PROGRESS) {
-            throw new ConflictException("INVALID_GOAL_STATUS", "Goal progress can only be updated when status is in_progress");
+            throw new ConflictException(
+                    "INVALID_GOAL_STATUS",
+                    "Goal progress can only be updated when status is in_progress");
         }
 
         int percent = request.getProgressPercent();
         if (percent < 0 || percent > 100) {
-            throw new ConflictException("INVALID_PROGRESS_PERCENT", "Progress percent must be between 0 and 100");
+            throw new ConflictException(
+                    "INVALID_PROGRESS_PERCENT", "Progress percent must be between 0 and 100");
         }
 
-        GoalProgressUpdate update = GoalProgressUpdate.builder()
-                .id(UUID.randomUUID())
-                .goalId(goalUUID)
-                .progressPercent(percent)
-                .note(request.getNote())
-                .updatedBy(userId)
-                .recordedAt(OffsetDateTime.now())
-                .build();
+        GoalProgressUpdate update =
+                GoalProgressUpdate.builder()
+                        .id(UUID.randomUUID())
+                        .goalId(goalUUID)
+                        .progressPercent(percent)
+                        .note(request.getNote())
+                        .updatedBy(userId)
+                        .recordedAt(OffsetDateTime.now())
+                        .build();
         update = goalProgressUpdateRepository.save(update);
 
         goal.setProgressPercent(percent);
@@ -353,23 +455,26 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         goal = goalRepository.save(goal);
 
         User owner = userRepository.findById(userId).orElse(null);
-        User manager = (owner != null && owner.getManagerId() != null)
-                ? userRepository.findById(owner.getManagerId()).orElse(null)
-                : null;
+        User manager =
+                (owner != null && owner.getManagerId() != null)
+                        ? userRepository.findById(owner.getManagerId()).orElse(null)
+                        : null;
 
-        GoalProgressUpdateDTO progressDTO = GoalProgressUpdateDTO.builder()
-                .progressUpdateId(update.getId().toString())
-                .goalId(goalId)
-                .progressPercent(update.getProgressPercent())
-                .note(update.getNote())
-                .createdAt(update.getRecordedAt())
-                .createdBy(owner != null
-                        ? GoalProgressUpdateDTO.ProgressUpdateCreatorDTO.builder()
-                        .userId(owner.getId().toString())
-                        .name(owner.getFullName())
-                        .build()
-                        : null)
-                .build();
+        GoalProgressUpdateDTO progressDTO =
+                GoalProgressUpdateDTO.builder()
+                        .progressUpdateId(update.getId().toString())
+                        .goalId(goalId)
+                        .progressPercent(update.getProgressPercent())
+                        .note(update.getNote())
+                        .createdAt(update.getRecordedAt())
+                        .createdBy(
+                                owner != null
+                                        ? GoalProgressUpdateDTO.ProgressUpdateCreatorDTO.builder()
+                                                .userId(owner.getId().toString())
+                                                .name(owner.getFullName())
+                                                .build()
+                                        : null)
+                        .build();
 
         GoalDTO goalDTO = buildGoalDTO(goal, owner, manager, update, null, cycle);
 
@@ -381,24 +486,32 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     @Override
     public GoalReviewResultResponseDTO getGoalReviewResult(UUID userId, String goalId) {
-        PerformanceCycle cycle = getCurrentCycleOptional()
-                .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "No current performance cycle found"));
+        PerformanceCycle cycle =
+                getCurrentCycleOptional()
+                        .orElseThrow(
+                                () ->
+                                        new NotFoundException(
+                                                "CYCLE_NOT_FOUND",
+                                                "No current performance cycle found"));
 
         // If specific goalId requested, validate ownership
         if (goalId != null) {
             UUID goalUUID = UUID.fromString(goalId);
-            goalRepository.findById(goalUUID)
+            goalRepository
+                    .findById(goalUUID)
                     .filter(g -> g.getOwnerId().equals(userId))
                     .orElseThrow(() -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
         }
 
-        List<Goal> allGoals = goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
+        List<Goal> allGoals =
+                goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
         List<UUID> goalIds = allGoals.stream().map(Goal::getId).collect(Collectors.toList());
 
         Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
         if (!goalIds.isEmpty()) {
-            latestReviewMap = goalReviewRepository.findLatestByGoalIds(goalIds).stream()
-                    .collect(Collectors.toMap(GoalReview::getGoalId, Function.identity()));
+            latestReviewMap =
+                    goalReviewRepository.findLatestByGoalIds(goalIds).stream()
+                            .collect(Collectors.toMap(GoalReview::getGoalId, Function.identity()));
         }
 
         String overallStatus = computeOverallStatus(allGoals);
@@ -409,22 +522,25 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         // Find latest reviewer from most recent goal review
         if (!goalIds.isEmpty()) {
             final Map<UUID, GoalReview> finalMap = latestReviewMap;
-            Optional<GoalReview> latestReview = allGoals.stream()
-                    .map(g -> finalMap.get(g.getId()))
-                    .filter(Objects::nonNull)
-                    .max(Comparator.comparing(GoalReview::getReviewedAt));
+            Optional<GoalReview> latestReview =
+                    allGoals.stream()
+                            .map(g -> finalMap.get(g.getId()))
+                            .filter(Objects::nonNull)
+                            .max(Comparator.comparing(GoalReview::getReviewedAt));
 
             if (latestReview.isPresent()) {
                 reviewedAt = latestReview.get().getReviewedAt();
-                User reviewerUser = userRepository.findById(latestReview.get().getReviewedBy()).orElse(null);
+                User reviewerUser =
+                        userRepository.findById(latestReview.get().getReviewedBy()).orElse(null);
                 if (reviewerUser != null) {
-                    reviewer = ManagerDTO.builder()
-                            .userId(reviewerUser.getId().toString())
-                            .name(reviewerUser.getFullName())
-                            .englishName(reviewerUser.getEnglishName())
-                            .email(reviewerUser.getEmail())
-                            .title(reviewerUser.getJobTitle())
-                            .build();
+                    reviewer =
+                            ManagerDTO.builder()
+                                    .userId(reviewerUser.getId().toString())
+                                    .name(reviewerUser.getFullName())
+                                    .englishName(reviewerUser.getEnglishName())
+                                    .email(reviewerUser.getEmail())
+                                    .title(reviewerUser.getJobTitle())
+                                    .build();
                 }
             }
         }
@@ -432,29 +548,43 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         GoalSummaryDTO summary = buildSummary(allGoals);
 
         final Map<UUID, GoalReview> latestReviewMapFinal = latestReviewMap;
-        List<GoalReviewResultDTO> results = allGoals.stream().map(goal -> {
-            GoalReview gr = latestReviewMapFinal.get(goal.getId());
-            ManagerDTO grReviewer = null;
-            if (gr != null) {
-                User rv = userRepository.findById(gr.getReviewedBy()).orElse(null);
-                if (rv != null) {
-                    grReviewer = ManagerDTO.builder()
-                            .userId(rv.getId().toString())
-                            .name(rv.getFullName())
-                            .title(rv.getJobTitle())
-                            .build();
-                }
-            }
-            return GoalReviewResultDTO.builder()
-                    .goalId(goal.getId().toString())
-                    .title(goal.getTitle())
-                    .status(goal.getStatus() != null ? goal.getStatus().getDbValue() : null)
-                    .decision(gr != null && gr.getDecision() != null ? gr.getDecision().getDbValue() : null)
-                    .comment(gr != null ? gr.getComment() : null)
-                    .reviewedAt(gr != null ? gr.getReviewedAt() : null)
-                    .reviewer(grReviewer)
-                    .build();
-        }).collect(Collectors.toList());
+        List<GoalReviewResultDTO> results =
+                allGoals.stream()
+                        .map(
+                                goal -> {
+                                    GoalReview gr = latestReviewMapFinal.get(goal.getId());
+                                    ManagerDTO grReviewer = null;
+                                    if (gr != null) {
+                                        User rv =
+                                                userRepository
+                                                        .findById(gr.getReviewedBy())
+                                                        .orElse(null);
+                                        if (rv != null) {
+                                            grReviewer =
+                                                    ManagerDTO.builder()
+                                                            .userId(rv.getId().toString())
+                                                            .name(rv.getFullName())
+                                                            .title(rv.getJobTitle())
+                                                            .build();
+                                        }
+                                    }
+                                    return GoalReviewResultDTO.builder()
+                                            .goalId(goal.getId().toString())
+                                            .title(goal.getTitle())
+                                            .status(
+                                                    goal.getStatus() != null
+                                                            ? goal.getStatus().getDbValue()
+                                                            : null)
+                                            .decision(
+                                                    gr != null && gr.getDecision() != null
+                                                            ? gr.getDecision().getDbValue()
+                                                            : null)
+                                            .comment(gr != null ? gr.getComment() : null)
+                                            .reviewedAt(gr != null ? gr.getReviewedAt() : null)
+                                            .reviewer(grReviewer)
+                                            .build();
+                                })
+                        .collect(Collectors.toList());
 
         return GoalReviewResultResponseDTO.builder()
                 .cycle(buildCycleSummaryDTO(cycle))
@@ -468,9 +598,13 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     // ---- helper methods ----
 
-    private GoalDTO buildGoalDTO(Goal goal, User owner, User manager,
-                                  GoalProgressUpdate latestProgress, GoalReview latestReview,
-                                  PerformanceCycle cycle) {
+    private GoalDTO buildGoalDTO(
+            Goal goal,
+            User owner,
+            User manager,
+            GoalProgressUpdate latestProgress,
+            GoalReview latestReview,
+            PerformanceCycle cycle) {
         boolean locked = Boolean.TRUE.equals(cycle.getIsLocked());
         GoalStatus status = goal.getStatus();
 
@@ -497,39 +631,44 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
         GoalDTO.GoalOwnerDTO ownerDTO = null;
         if (owner != null) {
-            Department dept = owner.getDepartmentId() != null
-                    ? departmentRepository.findById(owner.getDepartmentId()).orElse(null)
-                    : null;
-            ownerDTO = GoalDTO.GoalOwnerDTO.builder()
-                    .userId(owner.getId().toString())
-                    .name(owner.getFullName())
-                    .department(dept != null ? dept.getName() : null)
-                    .build();
+            Department dept =
+                    owner.getDepartmentId() != null
+                            ? departmentRepository.findById(owner.getDepartmentId()).orElse(null)
+                            : null;
+            ownerDTO =
+                    GoalDTO.GoalOwnerDTO.builder()
+                            .userId(owner.getId().toString())
+                            .name(owner.getFullName())
+                            .department(dept != null ? dept.getName() : null)
+                            .build();
         }
 
         ManagerDTO reviewerDTO = null;
         if (manager != null) {
-            reviewerDTO = ManagerDTO.builder()
-                    .userId(manager.getId().toString())
-                    .name(manager.getFullName())
-                    .englishName(manager.getEnglishName())
-                    .email(manager.getEmail())
-                    .title(manager.getJobTitle())
-                    .build();
+            reviewerDTO =
+                    ManagerDTO.builder()
+                            .userId(manager.getId().toString())
+                            .name(manager.getFullName())
+                            .englishName(manager.getEnglishName())
+                            .email(manager.getEmail())
+                            .title(manager.getJobTitle())
+                            .build();
         }
 
         GoalProgressUpdateDTO latestProgressDTO = null;
         if (latestProgress != null) {
-            latestProgressDTO = GoalProgressUpdateDTO.builder()
-                    .progressUpdateId(latestProgress.getId().toString())
-                    .progressPercent(latestProgress.getProgressPercent())
-                    .note(latestProgress.getNote())
-                    .createdAt(latestProgress.getRecordedAt())
-                    .createdBy(GoalProgressUpdateDTO.ProgressUpdateCreatorDTO.builder()
-                            .userId(latestProgress.getUpdatedBy().toString())
-                            .name(owner != null ? owner.getFullName() : null)
-                            .build())
-                    .build();
+            latestProgressDTO =
+                    GoalProgressUpdateDTO.builder()
+                            .progressUpdateId(latestProgress.getId().toString())
+                            .progressPercent(latestProgress.getProgressPercent())
+                            .note(latestProgress.getNote())
+                            .createdAt(latestProgress.getRecordedAt())
+                            .createdBy(
+                                    GoalProgressUpdateDTO.ProgressUpdateCreatorDTO.builder()
+                                            .userId(latestProgress.getUpdatedBy().toString())
+                                            .name(owner != null ? owner.getFullName() : null)
+                                            .build())
+                            .build();
         }
 
         GoalReviewDTO latestReviewDTO = null;
@@ -537,19 +676,24 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             ManagerDTO reviewerOfReview = null;
             User reviewerUser = userRepository.findById(latestReview.getReviewedBy()).orElse(null);
             if (reviewerUser != null) {
-                reviewerOfReview = ManagerDTO.builder()
-                        .userId(reviewerUser.getId().toString())
-                        .name(reviewerUser.getFullName())
-                        .title(reviewerUser.getJobTitle())
-                        .build();
+                reviewerOfReview =
+                        ManagerDTO.builder()
+                                .userId(reviewerUser.getId().toString())
+                                .name(reviewerUser.getFullName())
+                                .title(reviewerUser.getJobTitle())
+                                .build();
             }
-            latestReviewDTO = GoalReviewDTO.builder()
-                    .reviewId(latestReview.getId().toString())
-                    .decision(latestReview.getDecision() != null ? latestReview.getDecision().getDbValue() : null)
-                    .comment(latestReview.getComment())
-                    .reviewedAt(latestReview.getReviewedAt())
-                    .reviewer(reviewerOfReview)
-                    .build();
+            latestReviewDTO =
+                    GoalReviewDTO.builder()
+                            .reviewId(latestReview.getId().toString())
+                            .decision(
+                                    latestReview.getDecision() != null
+                                            ? latestReview.getDecision().getDbValue()
+                                            : null)
+                            .comment(latestReview.getComment())
+                            .reviewedAt(latestReview.getReviewedAt())
+                            .reviewer(reviewerOfReview)
+                            .build();
         }
 
         return GoalDTO.builder()
@@ -565,12 +709,13 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                 .reviewer(reviewerDTO)
                 .latestProgressUpdate(latestProgressDTO)
                 .latestReview(latestReviewDTO)
-                .availableActions(AvailableActionsDTO.builder()
-                        .canEdit(canEdit)
-                        .editUnavailableReason(editUnavailableReason)
-                        .canUpdateProgress(canUpdateProgress)
-                        .updateProgressUnavailableReason(updateProgressUnavailableReason)
-                        .build())
+                .availableActions(
+                        AvailableActionsDTO.builder()
+                                .canEdit(canEdit)
+                                .editUnavailableReason(editUnavailableReason)
+                                .canUpdateProgress(canUpdateProgress)
+                                .updateProgressUnavailableReason(updateProgressUnavailableReason)
+                                .build())
                 .publishedAt(goal.getPublishedAt())
                 .createdAt(goal.getCreatedAt())
                 .updatedAt(goal.getUpdatedAt())
@@ -599,14 +744,22 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     private String computeOverallStatus(List<Goal> goals) {
         if (goals.isEmpty()) return "no_goals";
-        boolean anyRevision = goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.REVISION_REQUESTED);
+        boolean anyRevision =
+                goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.REVISION_REQUESTED);
         if (anyRevision) return "revision_requested";
-        boolean anyPending = goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.PENDING_REVIEW);
+        boolean anyPending =
+                goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.PENDING_REVIEW);
         if (anyPending) return "pending_review";
-        boolean anyInProgress = goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.IN_PROGRESS);
+        boolean anyInProgress =
+                goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.IN_PROGRESS);
         if (anyInProgress) return "in_progress";
         boolean anyCompleted = goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.COMPLETED);
-        boolean allDone = goals.stream().allMatch(g -> g.getStatus() == GoalStatus.COMPLETED || g.getStatus() == GoalStatus.CANCELLED);
+        boolean allDone =
+                goals.stream()
+                        .allMatch(
+                                g ->
+                                        g.getStatus() == GoalStatus.COMPLETED
+                                                || g.getStatus() == GoalStatus.CANCELLED);
         if (allDone && anyCompleted) return "completed";
         boolean allCancelled = goals.stream().allMatch(g -> g.getStatus() == GoalStatus.CANCELLED);
         if (allCancelled) return "cancelled";
@@ -614,33 +767,45 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     }
 
     private void validateGoalRequest(GoalRequestDTO request, PerformanceCycle cycle) {
-        if (request.getTitle() == null || request.getTitle().isBlank() || request.getTitle().length() > 100) {
-            throw new ConflictException("INVALID_TITLE", "Title must be between 1 and 100 characters");
+        if (request.getTitle() == null
+                || request.getTitle().isBlank()
+                || request.getTitle().length() > 100) {
+            throw new ConflictException(
+                    "INVALID_TITLE", "Title must be between 1 and 100 characters");
         }
-        if (request.getDescription() != null && (request.getDescription().isBlank() || request.getDescription().length() > 2000)) {
-            throw new ConflictException("INVALID_DESCRIPTION", "Description must be between 1 and 2000 characters");
+        if (request.getDescription() != null
+                && (request.getDescription().isBlank()
+                        || request.getDescription().length() > 2000)) {
+            throw new ConflictException(
+                    "INVALID_DESCRIPTION", "Description must be between 1 and 2000 characters");
         }
         if (request.getDueDate() != null) {
             LocalDate cycleStart = cycle.getSelfEvalStart().toLocalDate();
             LocalDate cycleEnd = cycle.getHrReviewEnd().toLocalDate();
-            if (request.getDueDate().isBefore(cycleStart) || request.getDueDate().isAfter(cycleEnd)) {
-                throw new ConflictException("INVALID_DUE_DATE", "Due date must be within the cycle period");
+            if (request.getDueDate().isBefore(cycleStart)
+                    || request.getDueDate().isAfter(cycleEnd)) {
+                throw new ConflictException(
+                        "INVALID_DUE_DATE", "Due date must be within the cycle period");
             }
         }
     }
 
     private Optional<PerformanceCycle> getCurrentCycleOptional() {
-        List<CycleStatus> activeStatuses = List.of(
-                CycleStatus.NOT_STARTED,
-                CycleStatus.IN_PROGRESS,
-                CycleStatus.LOCKED,
-                CycleStatus.RESULTS_PUBLISHED,
-                CycleStatus.COMPLETED
-        );
+        List<CycleStatus> activeStatuses =
+                List.of(
+                        CycleStatus.NOT_STARTED,
+                        CycleStatus.IN_PROGRESS,
+                        CycleStatus.LOCKED,
+                        CycleStatus.RESULTS_PUBLISHED,
+                        CycleStatus.COMPLETED);
         List<PerformanceCycle> cycles = performanceCycleRepository.findByStatusIn(activeStatuses);
         return cycles.stream()
-                .min(Comparator.comparingInt((PerformanceCycle c) -> statusPriority(c.getStatus()))
-                        .thenComparing(Comparator.comparing(PerformanceCycle::getUpdatedAt).reversed()));
+                .min(
+                        Comparator.comparingInt(
+                                        (PerformanceCycle c) -> statusPriority(c.getStatus()))
+                                .thenComparing(
+                                        Comparator.comparing(PerformanceCycle::getUpdatedAt)
+                                                .reversed()));
     }
 
     private int statusPriority(CycleStatus status) {
@@ -655,9 +820,12 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     }
 
     private CycleSummaryDTO buildCycleSummaryDTO(PerformanceCycle cycle) {
-        LocalDate startDate = cycle.getSelfEvalStart() != null ? cycle.getSelfEvalStart().toLocalDate() : null;
-        LocalDate endDate = cycle.getHrReviewEnd() != null ? cycle.getHrReviewEnd().toLocalDate() : null;
-        String periodLabel = (startDate != null && endDate != null) ? startDate + "~" + endDate : null;
+        LocalDate startDate =
+                cycle.getSelfEvalStart() != null ? cycle.getSelfEvalStart().toLocalDate() : null;
+        LocalDate endDate =
+                cycle.getHrReviewEnd() != null ? cycle.getHrReviewEnd().toLocalDate() : null;
+        String periodLabel =
+                (startDate != null && endDate != null) ? startDate + "~" + endDate : null;
         return CycleSummaryDTO.builder()
                 .cycleId(cycle.getId().toString())
                 .name(cycle.getName())

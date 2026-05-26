@@ -5,14 +5,14 @@ import com.pms.dto.employee.PaginationDTO;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 public class KpiResponsesDTO {
-    
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -38,6 +38,7 @@ public class KpiResponsesDTO {
     public static class KpiConfirmationRequestDTO {
         @NotBlank(message = "Result ID is required")
         private String resultId;
+
         @NotNull(message = "Confirmed is required")
         @AssertTrue(message = "Confirmed must be true")
         private Boolean confirmed;

@@ -1,12 +1,12 @@
 package com.pms.dto.hr.template;
 
 import com.pms.entity.AssessmentTemplate;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class TemplateListItemDTO {
     private UUID id;
     private String name;

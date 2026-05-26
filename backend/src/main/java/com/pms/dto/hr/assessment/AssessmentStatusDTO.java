@@ -1,11 +1,11 @@
 package com.pms.dto.hr.assessment;
 
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class AssessmentStatusDTO {
     private UUID reviewId;
     private UUID cycleId;

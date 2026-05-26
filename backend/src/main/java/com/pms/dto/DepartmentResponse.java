@@ -1,7 +1,6 @@
 package com.pms.dto;
 
 import com.pms.entity.Department;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -11,8 +10,7 @@ public record DepartmentResponse(
         UUID parentId,
         OffsetDateTime closedAt,
         UUID closedBy,
-        OffsetDateTime createdAt
-) {
+        OffsetDateTime createdAt) {
     public static DepartmentResponse from(Department d) {
         return new DepartmentResponse(
                 d.getId(),
@@ -20,7 +18,6 @@ public record DepartmentResponse(
                 d.getParentId(),
                 d.getClosedAt(),
                 d.getClosedBy(),
-                d.getCreatedAt()
-        );
+                d.getCreatedAt());
     }
 }

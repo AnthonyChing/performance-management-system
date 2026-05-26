@@ -5,9 +5,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class ManagerAppealPatchRequestDTO {
-    @NotBlank
-    private String responseText;
+    @NotBlank private String responseText;
     private Boolean isFinal;
 }
