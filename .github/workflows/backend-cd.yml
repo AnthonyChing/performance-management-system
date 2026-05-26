@@ -19,7 +19,7 @@ env:
   IMAGE_NAME: pms-backend # Name of the image in Artifact Registry
 
 jobs:
-  build-and-deploy:
+  backend-build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
