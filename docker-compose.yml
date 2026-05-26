@@ -93,6 +93,17 @@ services:
       - pms-network
     restart: unless-stopped
 
+  sonarqube:
+    image: sonarqube:10.5-community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    networks:
+      - pms-network
+    restart: unless-stopped
+
 volumes:
   pms-postgres-data:
 
