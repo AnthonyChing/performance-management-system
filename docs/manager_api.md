@@ -449,6 +449,23 @@
         "status": "completed",
         "final_rating": "meets_expectations",
         "manager_comment": "上一季表現傑出，專案全數達標。",
+        "responses": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174096",
+            "question_id": "123e4567-e89b-12d3-a456-426614174091",
+            "respondent_type": "manager",
+            "rating_value": 4,
+            "text_value": "具備良好的跨部門溝通能力",
+            "responded_at": "2026-07-05T09:30:00+08:00"
+          }
+        ],
+        "kpi_evaluations": [
+          {
+            "kpi_id": "123e4567-e89b-12d3-a456-426614174031",
+            "manager_score": 90,
+            "manager_feedback": "核心達成率符合預期標準"
+          }
+        ],
         "manager_submitted_at": "2026-07-05T10:00:00+08:00"
       }
     ]
