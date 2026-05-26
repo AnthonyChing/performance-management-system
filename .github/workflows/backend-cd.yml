@@ -26,7 +26,7 @@ jobs:
       id-token: write # Required for GCP Workload Identity Federation
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Extract Docker metadata and tags
@@ -38,7 +38,7 @@ jobs:
             type=sha,format=short,prefix=sha-
             type=semver,pattern={{version}}
 
-      - name: Google Auth
+      - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
         with:
@@ -47,9 +47,8 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Docker Auth
-        run: |-
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      - name: Configure Docker to use Google Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
           
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
@@ -73,9 +72,20 @@ jobs:
           fi
 
       - name: Deploy to Cloud Run
+        id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ steps.deploy-target.outputs.cloud_run_service }}
           region: ${{ env.REGION }}
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.deploy-target.outputs.image_tag }}
           # Note: Staging and Prod environment variables are managed securely inside the GCP Console
+      
+      - name: Send Discord Notification (Success)
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" -d "{\"content\": \"✅ **Deploy Success!**\\nRevision deployed to Cloud Run.\\nURL: ${{ steps.deploy.outputs.url }}\"}" ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
+
+      - name: Send Discord Notification (Failure)
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" -d "{\"content\": \"❌ **Deploy Failed!**\\nPlease check GitHub Actions logs for details.\"}" ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}

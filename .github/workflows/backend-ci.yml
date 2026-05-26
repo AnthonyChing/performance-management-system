@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend CI - Quality and Security Checks
 
 on:
   pull_request:
@@ -27,5 +27,14 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run Tests
+      - name: Check Code Formatting (Spotless)
+        run: mvn spotless:check
+
+      - name: Check Code Quality (Checkstyle)
+        run: mvn checkstyle:check
+
+      - name: Find Bugs (SpotBugs)
+        run: mvn spotbugs:check
+
+      - name: Run Unit Tests
         run: mvn clean test
