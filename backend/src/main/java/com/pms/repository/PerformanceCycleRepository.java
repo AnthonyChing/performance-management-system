@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -32,4 +33,18 @@ public interface PerformanceCycleRepository extends JpaRepository<PerformanceCyc
     default Page<PerformanceCycle> findByStatusInOrderByHrReviewEndDesc(List<CycleStatus> statuses, Pageable pageable) {
         return findByStatusInStringsOrderByHrReviewEndDesc(statuses.stream().map(CycleStatus::getDbValue).toList(), pageable);
     }
+
+    @Query(value = """
+            SELECT * FROM performance_cycles
+            WHERE (:status IS NULL OR status::text = :status)
+            ORDER BY created_at DESC
+            """,
+            countQuery = """
+            SELECT count(*) FROM performance_cycles
+            WHERE (:status IS NULL OR status::text = :status)
+            """,
+            nativeQuery = true)
+    Page<PerformanceCycle> findAllFiltered(@Param("status") String status, Pageable pageable);
+
+    Optional<PerformanceCycle> findById(UUID id);
 }

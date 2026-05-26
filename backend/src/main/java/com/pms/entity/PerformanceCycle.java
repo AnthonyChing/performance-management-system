@@ -47,10 +47,10 @@ public class PerformanceCycle {
     @Column(name = "timezone", nullable = false)
     private String timezone;
 
-    @Column(name = "self_eval_start", nullable = false)
+    @Column(name = "self_eval_start")
     private OffsetDateTime selfEvalStart;
 
-    @Column(name = "self_eval_end", nullable = false)
+    @Column(name = "self_eval_end")
     private OffsetDateTime selfEvalEnd;
 
     @Column(name = "manager_eval_start", nullable = false)
