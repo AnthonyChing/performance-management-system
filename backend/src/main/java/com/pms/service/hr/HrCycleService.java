@@ -4,9 +4,8 @@ import com.pms.dto.hr.cycle.CycleCreateRequestDTO;
 import com.pms.dto.hr.cycle.CyclePatchRequestDTO;
 import com.pms.dto.hr.cycle.CyclePatchStatusRequestDTO;
 import com.pms.dto.hr.cycle.CycleResponseDTO;
-import org.springframework.data.domain.Page;
-
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface HrCycleService {
 

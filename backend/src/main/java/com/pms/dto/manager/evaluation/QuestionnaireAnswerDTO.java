@@ -1,12 +1,13 @@
 package com.pms.dto.manager.evaluation;
 
+import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.UUID;
-
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class QuestionnaireAnswerDTO {
     private UUID questionId;
     private Integer ratingValue;

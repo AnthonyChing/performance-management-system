@@ -31,6 +31,7 @@ public class AppealResponsesDTO {
     public static class AppealSubmitRequestDTO {
         @NotBlank(message = "Period ID is required")
         private String periodId;
+
         @NotBlank(message = "Reason is required")
         private String reason;
     }

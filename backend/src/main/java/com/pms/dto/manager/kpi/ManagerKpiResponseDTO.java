@@ -2,14 +2,14 @@ package com.pms.dto.manager.kpi;
 
 import com.pms.entity.Kpi;
 import com.pms.entity.KpiAssignment;
-import lombok.Builder;
-import lombok.Getter;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.Builder;
+import lombok.Getter;
 
-@Getter @Builder
+@Getter
+@Builder
 public class ManagerKpiResponseDTO {
     private UUID kpiId;
     private UUID cycleId;
@@ -21,7 +21,8 @@ public class ManagerKpiResponseDTO {
     private AssignmentDTO assignment;
     private OffsetDateTime publishedAt;
 
-    @Getter @Builder
+    @Getter
+    @Builder
     public static class AssignmentDTO {
         private BigDecimal targetValue;
         private BigDecimal currentValue;
@@ -29,11 +30,14 @@ public class ManagerKpiResponseDTO {
     }
 
     public static ManagerKpiResponseDTO from(Kpi kpi, KpiAssignment assignment) {
-        AssignmentDTO assignmentDTO = assignment == null ? null : AssignmentDTO.builder()
-                .targetValue(assignment.getTargetValue())
-                .currentValue(assignment.getCurrentValue())
-                .lastUpdatedAt(assignment.getLastUpdatedAt())
-                .build();
+        AssignmentDTO assignmentDTO =
+                assignment == null
+                        ? null
+                        : AssignmentDTO.builder()
+                                .targetValue(assignment.getTargetValue())
+                                .currentValue(assignment.getCurrentValue())
+                                .lastUpdatedAt(assignment.getLastUpdatedAt())
+                                .build();
         return ManagerKpiResponseDTO.builder()
                 .kpiId(kpi.getId())
                 .cycleId(kpi.getCycleId())

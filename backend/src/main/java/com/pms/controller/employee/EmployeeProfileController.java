@@ -26,6 +26,7 @@ public class EmployeeProfileController {
 
     @GetMapping("/performance-cycles/current")
     public ResponseEntity<CurrentCycleResponseDTO> getCurrentCycle() {
-        return ResponseEntity.ok(employeeProfileService.getCurrentCycle(SecurityUtils.currentUserId()));
+        return ResponseEntity.ok(
+                employeeProfileService.getCurrentCycle(SecurityUtils.currentUserId()));
     }
 }

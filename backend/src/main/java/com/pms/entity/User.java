@@ -7,6 +7,8 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,9 +16,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -62,7 +61,10 @@ public class User {
     private String location;
 
     @Convert(converter = EmploymentStatusConverter.class)
-    @Column(name = "employment_status", nullable = false, columnDefinition = "employment_status_enum")
+    @Column(
+            name = "employment_status",
+            nullable = false,
+            columnDefinition = "employment_status_enum")
     private EmploymentStatus employmentStatus;
 
     @Column(name = "terminated_at")

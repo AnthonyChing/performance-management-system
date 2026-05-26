@@ -1,12 +1,12 @@
 package com.pms.dto.hr.template;
 
 import com.pms.entity.TemplateQuestion;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class QuestionResponseDTO {
     private UUID id;
     private UUID templateId;

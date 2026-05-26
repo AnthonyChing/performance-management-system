@@ -1,12 +1,13 @@
 package com.pms.dto.hr.cycle;
 
+import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
-
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class CyclePatchRequestDTO {
     private String name;
     private String timezone;

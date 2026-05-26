@@ -6,10 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class TemplateCreateRequestDTO {
-    @NotBlank @Size(max = 255)
+    @NotBlank
+    @Size(max = 255)
     private String name;
+
     private String description;
     private String jobFunction;
 }

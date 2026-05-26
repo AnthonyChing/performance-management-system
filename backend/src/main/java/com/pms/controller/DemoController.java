@@ -1,10 +1,10 @@
 package com.pms.controller;
 
+import com.pms.service.DiscordAlertService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.pms.service.DiscordAlertService;
 
 @RestController
 @RequestMapping("/api/demo")
@@ -19,16 +19,18 @@ public class DemoController {
     @GetMapping("/crash")
     public ResponseEntity<String> crashApplication() {
         discordAlertService.sendCrashAlert("【DEMO】觸發手動崩潰測試 (System.exit)。Cloud Run 將會自動重啟容器。");
-        
+
         // 建立一條執行緒在回應後讓系統崩潰，確保前端能收到回傳值
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                // Ignore
-            }
-            System.exit(1);
-        }).start();
+        new Thread(
+                        () -> {
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                                // Ignore
+                            }
+                            System.exit(1);
+                        })
+                .start();
 
         return ResponseEntity.ok("應用程式將在 1 秒後崩潰並觸發 Discord 警報。");
     }

@@ -1,14 +1,14 @@
 package com.pms;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Minimal diagnostic test - no Spring context, just raw Testcontainers.
- * If this fails, the issue is Docker access, not Spring config.
+ * Minimal diagnostic test - no Spring context, just raw Testcontainers. If this fails, the issue is
+ * Docker access, not Spring config.
  */
 class DockerDiagnosticTest {
 

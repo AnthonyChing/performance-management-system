@@ -6,12 +6,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class QuestionCreateRequestDTO {
-    @NotBlank
-    private String questionText;
-    @NotNull
-    private String questionType;
+    @NotBlank private String questionText;
+    @NotNull private String questionType;
     private Integer ratingScaleMax;
     private Boolean isRequired = true;
 }

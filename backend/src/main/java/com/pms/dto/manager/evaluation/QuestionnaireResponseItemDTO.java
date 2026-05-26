@@ -1,13 +1,13 @@
 package com.pms.dto.manager.evaluation;
 
 import com.pms.entity.ReviewResponse;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class QuestionnaireResponseItemDTO {
     private UUID id;
     private UUID questionId;
