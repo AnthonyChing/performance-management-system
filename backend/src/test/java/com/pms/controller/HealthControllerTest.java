@@ -2,6 +2,7 @@ package com.pms.controller;
 
 import com.pms.config.TestcontainersConfig;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,8 +41,11 @@ class HealthControllerTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        RestAssured.basePath = "/api/v1";
+        RestAssured.reset();
+        RestAssured.requestSpecification = new RequestSpecBuilder()
+                .setPort(port)
+                .setBasePath("/api/v1")
+                .build();
     }
 
     @Test
@@ -92,4 +96,3 @@ class HealthControllerTest {
                 .time(lessThan(500L));
     }
 }
-
