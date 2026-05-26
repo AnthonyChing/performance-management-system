@@ -36,6 +36,3 @@ jobs:
       - name: Run Unit Tests
         run: mvn test
 
-      - name: Check Dependencies Security (OWASP)
-        run: mvn dependency-check:check
-        continue-on-error: true
