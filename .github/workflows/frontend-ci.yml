@@ -10,7 +10,7 @@ on:
       - '!**.md'
 
 jobs:
-  test:
+  frontend-test:
     runs-on: ubuntu-latest
     defaults:
       run:
