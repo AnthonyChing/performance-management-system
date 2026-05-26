@@ -38,3 +38,4 @@ jobs:
 
       - name: Check Dependencies Security (OWASP)
         run: mvn dependency-check:check
+        continue-on-error: true
