@@ -1,7 +1,9 @@
 package com.pms.controller.employee;
 
 import com.pms.config.TestcontainersConfig;
+import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -15,6 +17,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.util.List;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -32,12 +37,18 @@ class EmployeeGoalControllerTest {
     private static final String GOAL_PENDING_REVIEW    = "00000000-0000-0000-0000-000000030001";
     private static final String GOAL_REVISION_REQUESTED = "00000000-0000-0000-0000-000000030003";
     private static final String GOAL_NONEXISTENT       = "00000000-0000-0000-0000-999999999999";
+    private static final String USER_ID                = "00000000-0000-0000-0000-0000000000c1";
 
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    JwtUtil jwtUtil;
+
     @LocalServerPort
     int port;
+
+    private String token;
 
     @BeforeAll
     void resetGoals() {
@@ -50,12 +61,16 @@ class EmployeeGoalControllerTest {
         // Restore revision_requested status on goal 3 in case it was updated by a previous run
         jdbc.execute("UPDATE goals SET status = 'revision_requested', title = '優化系統監控指標' " +
                 "WHERE id = '00000000-0000-0000-0000-000000030003'");
+        token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
     }
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/v1/me";
+        RestAssured.requestSpecification = new RequestSpecBuilder()
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
     }
 
     @Test

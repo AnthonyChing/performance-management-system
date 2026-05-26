@@ -1,7 +1,9 @@
 package com.pms.controller.employee;
 
 import com.pms.config.TestcontainersConfig;
+import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -15,6 +17,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.util.List;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -32,23 +37,33 @@ class EmployeeAppealControllerTest {
     private static final String CYCLE_ID_ALREADY_APPEALED = "00000000-0000-0000-0000-000000010003";
     // Review ID for Cycle 1 (the one that gets appealed in Order 5)
     private static final String REVIEW_ID_CYCLE1 = "00000000-0000-0000-0000-000000020001";
+    private static final String USER_ID          = "00000000-0000-0000-0000-0000000000c1";
 
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    JwtUtil jwtUtil;
+
     @LocalServerPort
     int port;
+
+    private String token;
 
     @BeforeAll
     void resetAppeals() {
         // Remove any appeal for Cycle 1's review created by previous test runs
         jdbc.execute("DELETE FROM appeals WHERE review_id = '" + REVIEW_ID_CYCLE1 + "'");
+        token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
     }
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/v1/me";
+        RestAssured.requestSpecification = new RequestSpecBuilder()
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
     }
 
     @Test

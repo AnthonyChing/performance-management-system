@@ -1,7 +1,10 @@
 package com.pms.controller;
 
 import com.pms.config.TestcontainersConfig;
+import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,9 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
@@ -27,22 +34,38 @@ import static org.hamcrest.Matchers.equalTo;
 @Import(TestcontainersConfig.class)
 class DepartmentControllerTest {
 
+    private static final String USER_ID = "00000000-0000-0000-0000-0000000000c1";
+
     @LocalServerPort
     int port;
 
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    JwtUtil jwtUtil;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/v1";
 
-        // users.department_id FK forces deleting users before departments.
-        jdbc.update("DELETE FROM user_department_history");
-        jdbc.update("DELETE FROM user_roles");
-        jdbc.update("DELETE FROM users");
-        jdbc.update("DELETE FROM departments");
+        String token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
+        RestAssured.requestSpecification = new RequestSpecBuilder()
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
+
+        // CASCADE handles all FK dependencies (performance_cycles, users, etc.)
+        jdbc.execute("TRUNCATE TABLE departments CASCADE");
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        // Restore test seed so other test classes find the expected data
+        String sql = new String(
+                new ClassPathResource("db/test-seed/R__test_seed.sql").getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8);
+        jdbc.execute(sql);
     }
 
     @Test

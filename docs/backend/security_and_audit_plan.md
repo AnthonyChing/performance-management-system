@@ -35,6 +35,36 @@
   public ResponseEntity<Void> evaluate() { ... }
   ```
 
+### 1.3 RBAC 實作注意事項 (Known Gaps)
+
+以下四個問題在設計 JWT Filter 與 Controller 權限前必須明確決策：
+
+#### 問題一：主管也是員工（角色重疊）
+* **現象**: 資料庫中的 `user_roles` 僅記錄 `manager`，但 `/me/*` 系列 API（查看個人 Profile、提交申訴等）需要 `EMPLOYEE` 角色才能呼叫。若主管只有 `manager` 角色，呼叫 `/me/profile` 將被擋下。
+* **解決方案（擇一）**:
+  * **方案 A（資料面）**: 在登入建立帳號時，為具有 `manager` 角色的使用者同時寫入 `employee` 角色至 `user_roles`。
+  * **方案 B（邏輯面）**: 在 `JwtAuthenticationFilter` 中，若偵測到 `manager` 角色，自動隱式授予 `EMPLOYEE`（角色繼承）。
+  * **方案 C（Permission 面）**: 不使用 `hasRole('EMPLOYEE')`，改為 `hasAnyRole('EMPLOYEE', 'MANAGER', 'HR')` 明確列舉所有允許的角色。
+
+#### 問題二：DB 角色名稱 vs Spring Security 命名規範
+* **現象**: 資料庫 `user_roles` 存的是小寫字串（`employee`、`manager`、`hr`），而 Spring Security 的 `hasRole('EMPLOYEE')` 實際上比對的是 `ROLE_EMPLOYEE`（自動加上 `ROLE_` 前綴）。若 JWT Payload 直接塞入 `employee`，則 `hasRole('EMPLOYEE')` 永遠不會成立。
+* **必要動作**: `JwtAuthenticationFilter` 解析角色時，必須做兩步轉換：
+  1. 大寫化：`employee` → `EMPLOYEE`
+  2. 加前綴：`EMPLOYEE` → `ROLE_EMPLOYEE`（或使用 `SimpleGrantedAuthority("ROLE_EMPLOYEE")`）
+
+#### 問題三：資源層級授權（Ownership Check）未文件化
+* **現象**: 目前 Service 層已實作所有權驗證，例如主管只能評分自己部門的員工，若存取他人資源則拋出 `ForbiddenException`（HTTP 403）。此邏輯散落在各 Service 實作中，但未在安全性文件中說明。
+* **建議補充**:
+  * 明確定義哪些端點需要 Ownership Check（除了 RBAC 角色外，還需驗證「操作對象是否屬於自己」）。
+  * 文件化 ownership 驗證的標準做法：Service 層注入 `SecurityContextHolder` 取出 `user_id`，再比對目標資源的 owner/department，不符合則拋 `ForbiddenException`。
+
+#### 問題四：HR 角色的存取範圍未定義
+* **現象**: 文件中僅描述 `EMPLOYEE` 與 `MANAGER` 的典型使用情境，`HR` 角色可以呼叫哪些端點（包含是否能呼叫 `/me/*`、是否能代理員工查詢、能否讀取所有考核結果）完全未說明。
+* **建議決策事項**:
+  * HR 是否能呼叫 `/me/*` API（作為員工身分）？
+  * HR 是否有一個獨立的 `/hr/*` API 群組？其存取範圍？
+  * HR 是否能存取任意員工的 Review / Goal 資料（全域讀取權）？
+
 ---
 
 ## 2. 系統稽核日誌 (Audit Log)

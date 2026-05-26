@@ -1,13 +1,19 @@
 package com.pms.controller.employee;
 
 import com.pms.config.TestcontainersConfig;
+import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.util.List;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -23,10 +29,17 @@ class EmployeeProfileControllerTest {
     @LocalServerPort
     int port;
 
+    @Autowired
+    JwtUtil jwtUtil;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         RestAssured.basePath = "/api/v1/me";
+        String token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
+        RestAssured.requestSpecification = new RequestSpecBuilder()
+                .addHeader("Authorization", "Bearer " + token)
+                .build();
     }
 
     @Test
