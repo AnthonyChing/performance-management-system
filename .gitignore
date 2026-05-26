@@ -33,3 +33,5 @@ Thumbs.db
 .gradle/
 build/
 *.pid
+
+me.md

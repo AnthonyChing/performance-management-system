@@ -9,16 +9,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
-@RequestMapping("/me")
+@RequestMapping("/api/v1/me")
 @RequiredArgsConstructor
 public class EmployeeProfileController {
 
     private final EmployeeProfileService employeeProfileService;
 
-    // Simulate logged in user for now
-    private String getCurrentUserId() {
-        return "user_001";
+    private UUID getCurrentUserId() {
+        return UUID.fromString("00000000-0000-0000-0000-0000000000c1");
     }
 
     @GetMapping("/profile")

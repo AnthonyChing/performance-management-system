@@ -2,6 +2,9 @@ package com.pms.dto.employee.kpi;
 
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.PaginationDTO;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,7 +36,10 @@ public class KpiResponsesDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class KpiConfirmationRequestDTO {
+        @NotBlank(message = "Result ID is required")
         private String resultId;
+        @NotNull(message = "Confirmed is required")
+        @AssertTrue(message = "Confirmed must be true")
         private Boolean confirmed;
     }
 

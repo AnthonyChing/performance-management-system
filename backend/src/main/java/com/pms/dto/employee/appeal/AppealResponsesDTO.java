@@ -3,6 +3,7 @@ package com.pms.dto.employee.appeal;
 import com.pms.dto.employee.AvailableActionsDTO;
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.kpi.KpiResultSummaryDTO.DisputePeriodDTO;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,7 +29,9 @@ public class AppealResponsesDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AppealSubmitRequestDTO {
+        @NotBlank(message = "Period ID is required")
         private String periodId;
+        @NotBlank(message = "Reason is required")
         private String reason;
     }
 
