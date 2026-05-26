@@ -16,11 +16,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private final DiscordAlertService discordAlertService;
-
-    public GlobalExceptionHandler(DiscordAlertService discordAlertService) {
-        this.discordAlertService = discordAlertService;
-    }
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DiscordAlertService discordAlertService;
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApi(ApiException ex) {
@@ -42,10 +39,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) throws Exception {
+        // 讓 Spring Security 自行處理權限相關的例外 (避免 403 變成 500)
+        if (ex.getClass().getName().startsWith("org.springframework.security.")) {
+            throw ex;
+        }
+
         // Send alert to Discord
-        discordAlertService.sendCrashAlert(
-                ex.getMessage() != null ? ex.getMessage() : ex.getClass().getName());
+        if (discordAlertService != null) {
+            discordAlertService.sendCrashAlert(
+                    ex.getMessage() != null ? ex.getMessage() : ex.getClass().getName());
+        }
         return build(
                 HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", ex.getMessage(), null);
     }
