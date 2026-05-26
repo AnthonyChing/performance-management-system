@@ -28,6 +28,7 @@ import ViewQuestionnaireTemplate from './pages/hr/ViewQuestionnaireTemplate';
 import EditQuestionnaireTemplate from './pages/hr/EditQuestionnaireTemplate';
 import CreateQuestionnaireTemplate from './pages/hr/CreateQuestionnaireTemplate';
 import CreateTemplate from './pages/hr/CreateTemplate';
+import DepartmentsDemo from './pages/demo/DepartmentsDemo';
 
 export default function App() {
   return (
@@ -62,6 +63,10 @@ export default function App() {
             <Route path="questionnaires/:id" element={<ViewQuestionnaireTemplate />} />
             <Route path="questionnaires/:id/edit" element={<EditQuestionnaireTemplate />} />
           </Route>
+          
+          {/* Cloud Setup Demo Route */}
+          <Route path="demo" element={<DepartmentsDemo />} />
+
           {/* Catch-all redirect to profile */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

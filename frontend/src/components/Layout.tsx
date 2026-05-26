@@ -148,6 +148,8 @@ export default function Layout() {
     if (path.startsWith('/hr/questionnaires/') && path !== '/hr/questionnaires/new') return <BreadcrumbList items={['HR 專區', '問卷模板', '瀏覽問卷模板']} />;
     if (path.startsWith('/hr/questionnaires')) return <BreadcrumbList items={['HR 專區', '問卷模板']} />;
 
+    if (path.startsWith('/demo')) return <BreadcrumbList items={['Cloud Demo', 'Departments API Debug']} />;
+
     return <BreadcrumbList items={['系統']} />;
   };
 
@@ -182,6 +184,8 @@ export default function Layout() {
             <SidebarSubItem to="/hr/templates" label="考核模板" />
             <SidebarSubItem to="/hr/questionnaires" label="問卷模板" />
           </SidebarGroup>
+
+          <SidebarItem to="/demo" icon={Settings} label="Cloud Demo" isSidebarOpen={isSidebarOpen} isGroupStyle={true} />
         </nav>
 
         <div className="p-4 mt-auto border-t border-slate-100 flex flex-col space-y-2 shrink-0">
