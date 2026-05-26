@@ -35,7 +35,8 @@ jobs:
         with:
           images: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,format=short,prefix=sha-
+            # Only create 'sha-' tags for branch pushes, avoid duplicate immutable tags on releases
+            type=sha,format=short,prefix=sha-,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
 
       - name: Authenticate to Google Cloud
