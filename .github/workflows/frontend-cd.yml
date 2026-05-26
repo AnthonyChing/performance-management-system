@@ -42,7 +42,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAGE_ETCHING_496105_K7 }}
           projectId: ${{ secrets.GCP_PROJECT_ID }}
           channelId: staging
           entryPoint: ./frontend
@@ -53,7 +53,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAGE_ETCHING_496105_K7 }}
           projectId: ${{ secrets.GCP_PROJECT_ID }}
-          channelId: production
+          channelId: live
           entryPoint: ./frontend
