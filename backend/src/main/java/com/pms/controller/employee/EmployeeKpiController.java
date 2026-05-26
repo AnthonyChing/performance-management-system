@@ -2,20 +2,23 @@ package com.pms.controller.employee;
 
 import com.pms.dto.employee.kpi.KpiResponsesDTO.*;
 import com.pms.service.employee.EmployeeKpiService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
-@RequestMapping("/me/kpis")
+@RequestMapping("/api/v1/me/kpis")
 @RequiredArgsConstructor
 public class EmployeeKpiController {
 
     private final EmployeeKpiService employeeKpiService;
 
-    private String getCurrentUserId() {
-        return "user_001";
+    private UUID getCurrentUserId() {
+        return UUID.fromString("00000000-0000-0000-0000-0000000000c1");
     }
 
     @GetMapping("/standards")
@@ -40,7 +43,7 @@ public class EmployeeKpiController {
 
     @PostMapping("/result-confirmations")
     public ResponseEntity<KpiConfirmationResponseDTO> confirmKpiResult(
-            @RequestBody KpiConfirmationRequestDTO request) {
+            @Valid @RequestBody KpiConfirmationRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(employeeKpiService.confirmKpiResult(getCurrentUserId(), request));
     }

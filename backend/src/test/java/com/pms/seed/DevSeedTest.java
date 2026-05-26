@@ -17,10 +17,9 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Validates db/seed/R__dev_seed.sql directly: the test profile excludes the seed
- * location, so each test cleans the org tables (roles are kept — seeded by V1)
- * and runs the seed script itself via JDBC. This makes the test order-independent
- * and lets us assert both correctness and idempotency.
+ * Validates db/seed/R__dev_seed.sql directly against the test container.
+ * Each test truncates the org tables via CASCADE (which also clears performance tables),
+ * then runs the dev seed and the test seed to restore a clean state.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
@@ -32,11 +31,9 @@ class DevSeedTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        jdbc.update("DELETE FROM user_department_history");
-        jdbc.update("DELETE FROM user_roles");
-        jdbc.update("DELETE FROM users");
-        jdbc.update("DELETE FROM departments");
-        runSeed();
+        jdbc.execute("TRUNCATE TABLE departments CASCADE");
+        runDevSeed();
+        runTestSeed();
     }
 
     @Test
@@ -78,7 +75,7 @@ class DevSeedTest {
     @Test
     @DisplayName("re-running the seed is idempotent (no duplicates, no errors)")
     void seed_isIdempotent() throws IOException {
-        runSeed();
+        runDevSeed();
 
         assertEquals(6, count("departments"));
         assertEquals(4, count("users"));
@@ -92,9 +89,16 @@ class DevSeedTest {
         return jdbc.queryForObject("SELECT count(*) FROM " + table, Integer.class);
     }
 
-    private void runSeed() throws IOException {
+    private void runDevSeed() throws IOException {
         String sql = new String(
                 new ClassPathResource("db/seed/R__dev_seed.sql").getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8);
+        jdbc.execute(sql);
+    }
+
+    private void runTestSeed() throws IOException {
+        String sql = new String(
+                new ClassPathResource("db/test-seed/R__test_seed.sql").getInputStream().readAllBytes(),
                 StandardCharsets.UTF_8);
         jdbc.execute(sql);
     }

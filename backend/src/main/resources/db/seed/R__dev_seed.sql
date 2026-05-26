@@ -51,3 +51,101 @@ WHERE u.id IN (
   AND NOT EXISTS (
         SELECT 1 FROM user_department_history h
         WHERE h.user_id = u.id AND h.effective_to IS NULL);
+
+-- ---- performance_cycles ----------------------------------------
+INSERT INTO performance_cycles (
+  id, name, cycle_type, status, timezone,
+  self_eval_start, self_eval_end,
+  manager_eval_start, manager_eval_end,
+  hr_review_end, appeal_deadline_days, is_locked, created_by
+) VALUES (
+  '00000000-0000-0000-0000-000000010001',
+  '2026 Q3 Quarterly Review',
+  'quarterly', 'in_progress', 'Asia/Taipei',
+  '2026-07-01T00:00:00+08:00', '2026-08-31T23:59:59+08:00',
+  '2026-09-01T00:00:00+08:00', '2026-09-30T23:59:59+08:00',
+  '2026-10-15T23:59:59+08:00', 7, false,
+  '00000000-0000-0000-0000-0000000000a1'
+) ON CONFLICT (id) DO NOTHING;
+
+-- ---- performance_reviews ----------------------------------------
+INSERT INTO performance_reviews (
+  id, cycle_id, employee_id, manager_id, status, is_terminated_employee
+) VALUES (
+  '00000000-0000-0000-0000-000000020001',
+  '00000000-0000-0000-0000-000000010001',
+  '00000000-0000-0000-0000-0000000000c1',
+  '00000000-0000-0000-0000-0000000000b1',
+  'self_eval_in_progress', false
+) ON CONFLICT (id) DO NOTHING;
+
+-- ---- goals (2 個) ----------------------------------------
+INSERT INTO goals (id, cycle_id, owner_id, set_by, goal_type, title, description, progress_percent, due_date, status)
+VALUES (
+  '00000000-0000-0000-0000-000000030001',
+  '00000000-0000-0000-0000-000000010001',
+  '00000000-0000-0000-0000-0000000000c1',
+  '00000000-0000-0000-0000-0000000000c1',
+  'individual',
+  '提升 API 回應效能',
+  '透過快取優化與查詢調整，將核心 API p95 延遲降至 200ms 以下。',
+  0, '2026-09-30', 'pending_review'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO goals (id, cycle_id, owner_id, set_by, goal_type, title, description, progress_percent, due_date, status, published_at)
+VALUES (
+  '00000000-0000-0000-0000-000000030002',
+  '00000000-0000-0000-0000-000000010001',
+  '00000000-0000-0000-0000-0000000000c1',
+  '00000000-0000-0000-0000-0000000000c1',
+  'individual',
+  '完成 CI/CD pipeline 自動化',
+  '建立完整的自動化部署流程，涵蓋 build、test、deploy 各階段。',
+  40, '2026-08-31', 'in_progress',
+  '2026-07-15T10:00:00+08:00'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO goal_reviews (id, goal_id, decision, comment, reviewed_by, reviewed_at)
+VALUES (
+  '00000000-0000-0000-0000-000000040001',
+  '00000000-0000-0000-0000-000000030002',
+  'approved', '方向正確，請繼續推進。',
+  '00000000-0000-0000-0000-0000000000b1',
+  '2026-07-15T10:00:00+08:00'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO goal_progress_updates (id, goal_id, progress_percent, note, updated_by, recorded_at)
+VALUES (
+  '00000000-0000-0000-0000-000000050001',
+  '00000000-0000-0000-0000-000000030002',
+  40, '已完成 build 和 test 階段設定，deploy 尚在進行中。',
+  '00000000-0000-0000-0000-0000000000c1',
+  '2026-07-20T09:00:00+08:00'
+) ON CONFLICT (id) DO NOTHING;
+
+-- ---- kpis (2 個) ----------------------------------------
+INSERT INTO kpis (id, cycle_id, created_by, kpi_type, title, description, unit, target_operator, target_value, target_unit, target_display_text, published_at)
+VALUES (
+  '00000000-0000-0000-0000-000000060001',
+  '00000000-0000-0000-0000-000000010001',
+  '00000000-0000-0000-0000-0000000000b1',
+  'individual', 'Code Review 通過率', '程式碼審核一次通過率須達 90% 以上。', '%',
+  'gte', 90.0, 'percent', '通過率 >= 90%', '2026-07-01T09:00:00+08:00'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO kpis (id, cycle_id, created_by, kpi_type, title, description, unit, target_operator, target_value, target_unit, target_display_text, published_at)
+VALUES (
+  '00000000-0000-0000-0000-000000060002',
+  '00000000-0000-0000-0000-000000010001',
+  '00000000-0000-0000-0000-0000000000b1',
+  'individual', '功能交付數量', 'Q3 完成並上線的功能模組數量。', 'modules',
+  'gte', 4.0, 'module', '完成 >= 4 個功能模組', '2026-07-01T09:00:00+08:00'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO kpi_assignments (kpi_id, user_id, weight, target_value, current_value)
+VALUES ('00000000-0000-0000-0000-000000060001', '00000000-0000-0000-0000-0000000000c1', 60.0, 90.0, 85.0)
+ON CONFLICT (kpi_id, user_id) DO NOTHING;
+
+INSERT INTO kpi_assignments (kpi_id, user_id, weight, target_value, current_value)
+VALUES ('00000000-0000-0000-0000-000000060002', '00000000-0000-0000-0000-0000000000c1', 40.0, 4.0, 2.0)
+ON CONFLICT (kpi_id, user_id) DO NOTHING;
