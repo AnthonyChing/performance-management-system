@@ -18,18 +18,18 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, AuditLog.Aud
             SELECT * FROM audit_logs
             WHERE (:action IS NULL OR action = :action)
               AND (:resource IS NULL OR resource = :resource)
-              AND (:actorId IS NULL OR actor_id = :actorId::uuid)
-              AND (:from IS NULL OR created_at >= :from)
-              AND (:to IS NULL OR created_at <= :to)
+              AND (:actorId IS NULL OR actor_id = CAST(:actorId AS uuid))
+              AND (CAST(:from AS timestamptz) IS NULL OR created_at >= CAST(:from AS timestamptz))
+              AND (CAST(:to AS timestamptz) IS NULL OR created_at <= CAST(:to AS timestamptz))
             ORDER BY created_at DESC
             """,
             countQuery = """
             SELECT count(*) FROM audit_logs
             WHERE (:action IS NULL OR action = :action)
               AND (:resource IS NULL OR resource = :resource)
-              AND (:actorId IS NULL OR actor_id = :actorId::uuid)
-              AND (:from IS NULL OR created_at >= :from)
-              AND (:to IS NULL OR created_at <= :to)
+              AND (:actorId IS NULL OR actor_id = CAST(:actorId AS uuid))
+              AND (CAST(:from AS timestamptz) IS NULL OR created_at >= CAST(:from AS timestamptz))
+              AND (CAST(:to AS timestamptz) IS NULL OR created_at <= CAST(:to AS timestamptz))
             """,
             nativeQuery = true)
     Page<AuditLog> findFiltered(

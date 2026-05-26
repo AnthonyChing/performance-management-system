@@ -19,7 +19,7 @@ public interface KpiRepository extends JpaRepository<Kpi, UUID> {
             JOIN kpi_assignments ka ON ka.kpi_id = k.id
             WHERE ka.user_id = :userId
               AND k.deleted_at IS NULL
-              AND (:cycleId IS NULL OR k.cycle_id = :cycleId::uuid)
+              AND (:cycleId IS NULL OR k.cycle_id = CAST(:cycleId AS uuid))
             ORDER BY k.created_at DESC
             """, nativeQuery = true)
     List<Kpi> findByUserIdAndOptionalCycle(

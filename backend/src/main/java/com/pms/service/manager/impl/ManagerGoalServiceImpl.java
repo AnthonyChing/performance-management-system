@@ -43,6 +43,11 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
         PerformanceCycle cycle = getCurrentCycle();
         assertNotLocked(cycle);
 
+        if (req.getDueDate() != null && req.getDueDate().isAfter(cycle.getHrReviewEnd().toLocalDate())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                    "Due date must be within the active performance cycle");
+        }
+
         GoalType type = req.getGoalType() != null ? parseGoalType(req.getGoalType()) : GoalType.INDIVIDUAL;
         Goal goal = Goal.builder()
                 .id(UUID.randomUUID())

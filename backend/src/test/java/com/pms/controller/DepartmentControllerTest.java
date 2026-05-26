@@ -47,11 +47,12 @@ class DepartmentControllerTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        RestAssured.basePath = "/api/v1";
+        RestAssured.reset();
 
         String token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
         RestAssured.requestSpecification = new RequestSpecBuilder()
+                .setPort(port)
+                .setBasePath("/api/v1")
                 .addHeader("Authorization", "Bearer " + token)
                 .build();
 

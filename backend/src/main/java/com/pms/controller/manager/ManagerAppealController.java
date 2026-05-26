@@ -4,6 +4,8 @@ import com.pms.dto.manager.appeal.ManagerAppealDetailDTO;
 import com.pms.dto.manager.appeal.ManagerAppealListItemDTO;
 import com.pms.dto.manager.appeal.ManagerAppealPatchRequestDTO;
 import com.pms.exception.ForbiddenException;
+import com.pms.exception.NotFoundException;
+import com.pms.repository.UserRepository;
 import com.pms.security.SecurityUtils;
 import com.pms.service.manager.ManagerAppealService;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class ManagerAppealController {
 
     private final ManagerAppealService appealService;
+    private final UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, List<ManagerAppealListItemDTO>>> listAppeals(
@@ -50,8 +53,10 @@ public class ManagerAppealController {
     }
 
     private void assertTeamOwnership(UUID teamId) {
-        if (!SecurityUtils.currentUserId().equals(teamId)) {
-            throw new ForbiddenException("FORBIDDEN", "You can only access your own team");
-        }
+        UUID currentUserId = SecurityUtils.currentUserId();
+        if (currentUserId.equals(teamId)) return;
+        userRepository.findById(teamId)
+                .orElseThrow(() -> new NotFoundException("RESOURCE_NOT_FOUND", "Team not found"));
+        throw new ForbiddenException("FORBIDDEN", "You can only access your own team");
     }
 }

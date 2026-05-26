@@ -1,6 +1,7 @@
 package com.pms.controller.manager;
 
 import com.pms.dto.manager.evaluation.ManagerEvaluationResponseDTO;
+import com.pms.dto.manager.evaluation.ManagerEvaluationUpdateRequestDTO;
 import com.pms.dto.manager.evaluation.ManagerKpiEvaluationUpdateRequestDTO;
 import com.pms.dto.manager.evaluation.ManagerQuestionnaireResponseDTO;
 import com.pms.dto.manager.evaluation.ManagerQuestionnaireUpdateRequestDTO;
@@ -30,6 +31,15 @@ public class ManagerEvaluationController {
             @RequestParam(name = "cycle_id", required = false) String cycleId) {
         return ResponseEntity.ok(Map.of("data",
                 evaluationService.listEvaluations(SecurityUtils.currentUserId(), userId, cycleId)));
+    }
+
+    @PatchMapping("/{evaluationId}")
+    public ResponseEntity<ManagerEvaluationResponseDTO> updateEvaluation(
+            @PathVariable UUID userId,
+            @PathVariable UUID evaluationId,
+            @RequestBody ManagerEvaluationUpdateRequestDTO req) {
+        return ResponseEntity.ok(evaluationService.updateEvaluation(
+                SecurityUtils.currentUserId(), userId, evaluationId, req));
     }
 
     @PatchMapping("/{evaluationId}/questionnaire")

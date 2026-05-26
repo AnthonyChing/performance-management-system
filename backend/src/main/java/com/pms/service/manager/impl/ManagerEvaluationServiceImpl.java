@@ -1,6 +1,13 @@
 package com.pms.service.manager.impl;
 
-import com.pms.dto.manager.evaluation.*;
+import com.pms.dto.manager.evaluation.KpiEvaluationItemDTO;
+import com.pms.dto.manager.evaluation.ManagerEvaluationResponseDTO;
+import com.pms.dto.manager.evaluation.ManagerEvaluationUpdateRequestDTO;
+import com.pms.dto.manager.evaluation.ManagerKpiEvaluationUpdateRequestDTO;
+import com.pms.dto.manager.evaluation.ManagerQuestionnaireResponseDTO;
+import com.pms.dto.manager.evaluation.ManagerQuestionnaireUpdateRequestDTO;
+import com.pms.dto.manager.evaluation.QuestionnaireAnswerDTO;
+import com.pms.dto.manager.evaluation.QuestionnaireResponseItemDTO;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
@@ -34,6 +41,61 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final ReviewResponseRepository reviewResponseRepo;
     private final KpiEvaluationRepository kpiEvalRepo;
     private final UserRepository userRepo;
+
+    @Override
+    @Transactional
+    public ManagerEvaluationResponseDTO updateEvaluation(
+            UUID managerId, UUID subordinateId, UUID evaluationId,
+            ManagerEvaluationUpdateRequestDTO req) {
+
+        PerformanceReview review = getReviewAndValidate(managerId, subordinateId, evaluationId);
+        if (!MANAGER_EVAL_STATUSES.contains(review.getStatus())) {
+            throw new ConflictException("STATE_CONFLICT", "Review is not in manager evaluation phase");
+        }
+        if ("completed".equals(req.getStatus())
+                && (req.getResponses() == null || req.getResponses().isEmpty())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                    "Responses are required when completing evaluation");
+        }
+
+        if (req.getResponses() != null) {
+            for (QuestionnaireAnswerDTO ans : req.getResponses()) {
+                ReviewResponse existing = reviewResponseRepo
+                        .findByReviewIdAndQuestionIdAndRespondentType(evaluationId, ans.getQuestionId(), RESPONDENT_TYPE)
+                        .orElse(null);
+                if (existing != null) {
+                    existing.setRatingValue(ans.getRatingValue());
+                    existing.setTextValue(ans.getTextValue());
+                    existing.setRespondedAt(OffsetDateTime.now());
+                    reviewResponseRepo.save(existing);
+                } else {
+                    reviewResponseRepo.save(ReviewResponse.builder()
+                            .id(UUID.randomUUID())
+                            .reviewId(evaluationId)
+                            .questionId(ans.getQuestionId())
+                            .respondentId(managerId)
+                            .respondentType(RESPONDENT_TYPE)
+                            .ratingValue(ans.getRatingValue())
+                            .textValue(ans.getTextValue())
+                            .respondedAt(OffsetDateTime.now())
+                            .build());
+                }
+            }
+        }
+
+        if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
+        if (req.getFinalRating() != null) review.setFinalRating(parseRatingScale(req.getFinalRating()));
+        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW || review.getStatus() == ReviewStatus.COMPLETED) {
+            review.setManagerSubmittedAt(OffsetDateTime.now());
+        }
+        reviewRepo.save(review);
+
+        return ManagerEvaluationResponseDTO.from(
+                review,
+                reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(evaluationId, RESPONDENT_TYPE),
+                kpiEvalRepo.findByReviewId(evaluationId));
+    }
 
     @Override
     @Transactional

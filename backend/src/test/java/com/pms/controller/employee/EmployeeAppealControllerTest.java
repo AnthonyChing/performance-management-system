@@ -59,9 +59,10 @@ class EmployeeAppealControllerTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        RestAssured.basePath = "/api/v1/me";
+        RestAssured.reset();
         RestAssured.requestSpecification = new RequestSpecBuilder()
+                .setPort(port)
+                .setBasePath("/api/v1/me")
                 .addHeader("Authorization", "Bearer " + token)
                 .build();
     }

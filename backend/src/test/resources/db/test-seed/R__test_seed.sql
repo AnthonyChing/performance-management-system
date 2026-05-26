@@ -211,6 +211,182 @@ VALUES (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================================
+-- Manager test users (for ManagerGoalControllerTest, ManagerKpiControllerTest, etc.)
+-- Manager UUID = TEAM_ID; Subordinate reports to this manager
+-- Non-subordinate user exists for 403 tests
+-- =====================================================================
+INSERT INTO users (id, employee_id, email, full_name, department_id, manager_id, job_title, job_category) VALUES
+  ('123e4567-e89b-12d3-a456-426614174020', 'E-MGR-TEST', 'mgr.test@acme.test', 'Test Manager',
+   '00000000-0000-0000-0000-000000000111', NULL, 'Engineering Manager', 'engineering'),
+  ('123e4567-e89b-12d3-a456-426614174010', 'E-EMP-TEST', 'emp.test@acme.test', 'Test Employee',
+   '00000000-0000-0000-0000-000000000111', '123e4567-e89b-12d3-a456-426614174020', 'Backend Engineer', 'engineering'),
+  ('00000000-0000-0000-0000-000000000099', 'E-OTHER-001', 'other@acme.test', 'Other User',
+   '00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-0000000000b1', 'Other Employee', 'engineering')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO user_roles (user_id, role_id, granted_by)
+SELECT seed.user_id, r.id, '00000000-0000-0000-0000-0000000000a1'::uuid
+FROM (VALUES
+  ('123e4567-e89b-12d3-a456-426614174020'::uuid, 'manager'),
+  ('123e4567-e89b-12d3-a456-426614174010'::uuid, 'employee'),
+  ('00000000-0000-0000-0000-000000000099'::uuid,  'employee')
+) AS seed(user_id, role_name)
+JOIN roles r ON r.name = seed.role_name
+ON CONFLICT (user_id, role_id) DO NOTHING;
+
+-- =====================================================================
+-- Manager test cycles
+--   Active cycle: in_progress, not locked (for create/list/update operations)
+--   Locked cycle: status=locked, is_locked=true (for STATE_CONFLICT tests)
+-- =====================================================================
+INSERT INTO performance_cycles (
+  id, name, cycle_type, status, timezone,
+  self_eval_start, self_eval_end,
+  manager_eval_start, manager_eval_end,
+  hr_review_end, appeal_deadline_days, is_locked, created_by, created_at, updated_at
+) VALUES (
+  '123e4567-e89b-12d3-a456-426614174001',
+  'Manager Test Active Cycle', 'quarterly', 'in_progress', 'Asia/Taipei',
+  '2026-01-01T00:00:00+08:00', '2026-09-30T23:59:59+08:00',
+  '2026-01-01T00:00:00+08:00', '2026-12-31T23:59:59+08:00',
+  '2026-12-31T23:59:59+08:00', 7, false,
+  '00000000-0000-0000-0000-0000000000a1',
+  '2020-01-01T00:00:00+00:00', '2020-01-01T00:00:00+00:00'
+) ON CONFLICT (id) DO UPDATE SET updated_at = '2020-01-01T00:00:00+00:00';
+
+INSERT INTO performance_cycles (
+  id, name, cycle_type, status, timezone,
+  self_eval_start, self_eval_end,
+  manager_eval_start, manager_eval_end,
+  hr_review_end, appeal_deadline_days, is_locked, created_by, created_at, updated_at
+) VALUES (
+  '123e4567-e89b-12d3-a456-426614174002',
+  'Manager Test Locked Cycle', 'quarterly', 'locked', 'Asia/Taipei',
+  '2025-01-01T00:00:00+08:00', '2025-09-30T23:59:59+08:00',
+  '2025-01-01T00:00:00+08:00', '2025-12-31T23:59:59+08:00',
+  '2025-12-31T23:59:59+08:00', 7, true,
+  '00000000-0000-0000-0000-0000000000a1',
+  '2020-01-01T00:00:00+00:00', '2020-01-01T00:00:00+00:00'
+) ON CONFLICT (id) DO UPDATE SET updated_at = '2020-01-01T00:00:00+00:00';
+
+-- =====================================================================
+-- Manager test goals
+--   GOAL_ID in active cycle (pending_review) — for approve/requestRevision tests
+--   LOCKED_GOAL_ID in locked cycle (pending_review) — for cycle-locked 409 test
+-- =====================================================================
+INSERT INTO goals (id, cycle_id, owner_id, set_by, goal_type, title, description, progress_percent, due_date, status)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174000',
+  '123e4567-e89b-12d3-a456-426614174001',
+  '123e4567-e89b-12d3-a456-426614174010',
+  '123e4567-e89b-12d3-a456-426614174010',
+  'individual', '提升測試覆蓋率', '提升至 80% 以上', 0, '2026-09-30', 'pending_review'
+) ON CONFLICT (id) DO UPDATE SET status = 'pending_review';
+
+INSERT INTO goals (id, cycle_id, owner_id, set_by, goal_type, title, description, progress_percent, due_date, status)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174004',
+  '123e4567-e89b-12d3-a456-426614174002',
+  '123e4567-e89b-12d3-a456-426614174010',
+  '123e4567-e89b-12d3-a456-426614174010',
+  'individual', '舊週期目標', '舊週期', 0, '2025-09-30', 'pending_review'
+) ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================================
+-- Manager test KPIs
+--   KPI_ID in active cycle — for update/list tests
+--   LOCKED_KPI_ID in locked cycle — for cycle-locked 409 test
+-- =====================================================================
+INSERT INTO kpis (id, cycle_id, created_by, kpi_type, title, description, unit,
+  target_operator, target_value, target_unit, target_display_text)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174030',
+  '123e4567-e89b-12d3-a456-426614174001',
+  '123e4567-e89b-12d3-a456-426614174020',
+  'individual', '季銷售目標', '達成季銷售指標', 'NTD',
+  'gte', 1000000.0, 'dollar', '>= 100萬'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO kpi_assignments (kpi_id, user_id, weight, target_value, current_value)
+VALUES ('123e4567-e89b-12d3-a456-426614174030', '123e4567-e89b-12d3-a456-426614174010', 0.0, 1000000.0, 0.0)
+ON CONFLICT (kpi_id, user_id) DO NOTHING;
+
+INSERT INTO kpis (id, cycle_id, created_by, kpi_type, title, description, unit,
+  target_operator, target_value, target_unit, target_display_text)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174031',
+  '123e4567-e89b-12d3-a456-426614174002',
+  '123e4567-e89b-12d3-a456-426614174020',
+  'individual', '舊週期KPI', '舊週期指標', 'NTD',
+  'gte', 500000.0, 'dollar', '>= 50萬'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO kpi_assignments (kpi_id, user_id, weight, target_value, current_value)
+VALUES ('123e4567-e89b-12d3-a456-426614174031', '123e4567-e89b-12d3-a456-426614174010', 0.0, 500000.0, 0.0)
+ON CONFLICT (kpi_id, user_id) DO NOTHING;
+
+-- =====================================================================
+-- Manager test assessment template + question
+--   Required so review_responses FK to template_questions doesn't fail
+-- =====================================================================
+INSERT INTO assessment_templates (id, name, status, is_active, created_by, updated_by)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174080',
+  'Manager Test Template', 'published', true,
+  '00000000-0000-0000-0000-0000000000a1',
+  '00000000-0000-0000-0000-0000000000a1'
+) ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO template_questions (id, template_id, question_text, question_type, rating_scale_max, is_required, sort_order, created_by, updated_by)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174090',
+  '123e4567-e89b-12d3-a456-426614174080',
+  '整體工作表現評分', 'rating', 5, true, 1,
+  '00000000-0000-0000-0000-0000000000a1',
+  '00000000-0000-0000-0000-0000000000a1'
+) ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================================
+-- Manager test performance reviews
+--   EVALUATION_ID in manager_eval_in_progress — for evaluation update tests
+--   EVALUATION_ID_WRONG_STAGE in self_eval_in_progress — for STATE_CONFLICT test
+-- =====================================================================
+INSERT INTO performance_reviews (id, cycle_id, employee_id, manager_id, status, is_terminated_employee)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174060',
+  '123e4567-e89b-12d3-a456-426614174001',
+  '123e4567-e89b-12d3-a456-426614174010',
+  '123e4567-e89b-12d3-a456-426614174020',
+  'manager_eval_in_progress', false
+) ON CONFLICT (id) DO UPDATE SET status = 'manager_eval_in_progress';
+
+INSERT INTO performance_reviews (id, cycle_id, employee_id, manager_id, status, is_terminated_employee)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174061',
+  '123e4567-e89b-12d3-a456-426614174002',
+  '123e4567-e89b-12d3-a456-426614174010',
+  '123e4567-e89b-12d3-a456-426614174020',
+  'self_eval_in_progress', false
+) ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================================
+-- Manager test appeal
+--   APPEAL_ID assigned to test manager — for listAppeals / getAppeal / respondToAppeal tests
+-- =====================================================================
+INSERT INTO appeals (id, review_id, case_no, filed_by, assigned_to_type, assigned_to, reason, status, filed_at)
+VALUES (
+  '123e4567-e89b-12d3-a456-426614174050',
+  '123e4567-e89b-12d3-a456-426614174060',
+  'MGR-TEST-0001',
+  '123e4567-e89b-12d3-a456-426614174010',
+  'senior_manager',
+  '123e4567-e89b-12d3-a456-426614174020',
+  '測試異議原因：績效評分有誤。',
+  'submitted',
+  '2026-05-01T10:00:00+08:00'
+) ON CONFLICT (id) DO UPDATE SET status = 'submitted', resolved_at = NULL;
+
+-- =====================================================================
 -- Cycle 3: results_published - for "already submitted appeal" test
 --   Eric's review in this cycle has a pre-existing appeal
 --   results_published_at = NOW()-2 days so the appeal period is still open

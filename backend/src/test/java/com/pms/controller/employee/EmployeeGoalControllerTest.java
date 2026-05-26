@@ -52,8 +52,8 @@ class EmployeeGoalControllerTest {
 
     @BeforeAll
     void resetGoals() {
-        // Delete goals created by previous test runs (keep only the 4 seed goals)
-        jdbc.execute("DELETE FROM goals WHERE id NOT IN (" +
+        // Delete Eric's goals created by previous test runs (keep seed fixtures for other controller suites)
+        jdbc.execute("DELETE FROM goals WHERE owner_id = '" + USER_ID + "' AND id NOT IN (" +
                 "'00000000-0000-0000-0000-000000030001'," +
                 "'00000000-0000-0000-0000-000000030002'," +
                 "'00000000-0000-0000-0000-000000030003'," +
@@ -66,9 +66,10 @@ class EmployeeGoalControllerTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        RestAssured.basePath = "/api/v1/me";
+        RestAssured.reset();
         RestAssured.requestSpecification = new RequestSpecBuilder()
+                .setPort(port)
+                .setBasePath("/api/v1/me")
                 .addHeader("Authorization", "Bearer " + token)
                 .build();
     }

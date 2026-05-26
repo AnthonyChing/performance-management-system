@@ -51,7 +51,7 @@ class DevSeedTest {
     @Test
     @DisplayName("seed creates users with manager links, roles, and open department history")
     void seeds_users() {
-        assertEquals(4, count("users"));
+        assertEquals(7, count("users"));
 
         String managerOfEric = jdbc.queryForObject(
                 "SELECT m.full_name FROM users u JOIN users m ON m.id = u.manager_id "
@@ -78,8 +78,8 @@ class DevSeedTest {
         runDevSeed();
 
         assertEquals(6, count("departments"));
-        assertEquals(4, count("users"));
-        assertEquals(4, count("user_roles"));
+        assertEquals(7, count("users"));
+        assertEquals(7, count("user_roles"));
         assertEquals(4, jdbc.queryForObject(
                 "SELECT count(*) FROM user_department_history WHERE effective_to IS NULL",
                 Integer.class));
