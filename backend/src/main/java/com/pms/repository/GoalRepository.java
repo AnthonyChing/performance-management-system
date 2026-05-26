@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -15,4 +16,8 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
     List<Goal> findByCycleIdAndOwnerIdAndDeletedAtIsNull(UUID cycleId, UUID ownerId);
 
     Page<Goal> findByCycleIdAndOwnerIdAndDeletedAtIsNull(UUID cycleId, UUID ownerId, Pageable pageable);
+
+    Optional<Goal> findByIdAndDeletedAtIsNull(UUID id);
+
+    List<Goal> findByOwnerIdAndDeletedAtIsNull(UUID ownerId);
 }
