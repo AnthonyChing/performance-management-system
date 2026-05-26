@@ -1,14 +1,14 @@
 package com.pms.dto.manager.goal;
 
 import com.pms.entity.Goal;
-import lombok.Builder;
-import lombok.Getter;
-
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.Builder;
+import lombok.Getter;
 
-@Getter @Builder
+@Getter
+@Builder
 public class ManagerGoalResponseDTO {
     private UUID goalId;
     private UUID cycleId;

@@ -16,7 +16,7 @@ public class GoalSummaryDTO {
     private Integer revisionRequestedCount;
     private Integer completedCount;
     private Integer cancelledCount;
-    
+
     // For historical
     private Double averageCompletionPercent;
     private Integer goalCount;

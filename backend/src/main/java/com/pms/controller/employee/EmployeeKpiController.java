@@ -32,7 +32,9 @@ public class EmployeeKpiController {
             @RequestParam(required = false) String cycleId) {
 
         if ("historical".equals(status)) {
-            return ResponseEntity.ok(employeeKpiService.getHistoricalKpiResults(SecurityUtils.currentUserId(), page, pageSize, q, cycleId));
+            return ResponseEntity.ok(
+                    employeeKpiService.getHistoricalKpiResults(
+                            SecurityUtils.currentUserId(), page, pageSize, q, cycleId));
         }
 
         return ResponseEntity.ok(employeeKpiService.getKpiResult(SecurityUtils.currentUserId()));

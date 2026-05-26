@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,13 +14,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 /**
- * Organizational department. Tree-structured via {@link #parentId}; soft-closed
- * via {@link #closedAt} so historical snapshots (performance reviews, audit logs)
- * remain valid after a department is dissolved.
+ * Organizational department. Tree-structured via {@link #parentId}; soft-closed via {@link
+ * #closedAt} so historical snapshots (performance reviews, audit logs) remain valid after a
+ * department is dissolved.
  *
  * <p>Schema: see V1__init_org.sql and docs/database/new-schema.md.
  */

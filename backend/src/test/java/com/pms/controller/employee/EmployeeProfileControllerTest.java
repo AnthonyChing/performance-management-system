@@ -1,9 +1,14 @@
 package com.pms.controller.employee;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
 import com.pms.config.TestcontainersConfig;
 import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,41 +17,33 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.List;
-import java.util.UUID;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
 class EmployeeProfileControllerTest {
 
-    private static final String USER_ID  = "00000000-0000-0000-0000-0000000000c1";
+    private static final String USER_ID = "00000000-0000-0000-0000-0000000000c1";
     private static final String CYCLE_ID = "00000000-0000-0000-0000-000000010001";
 
-    @LocalServerPort
-    int port;
+    @LocalServerPort int port;
 
-    @Autowired
-    JwtUtil jwtUtil;
+    @Autowired JwtUtil jwtUtil;
 
     @BeforeEach
     void setUp() {
         RestAssured.reset();
         String token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
-        RestAssured.requestSpecification = new RequestSpecBuilder()
-                .setPort(port)
-                .setBasePath("/api/v1/me")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
+        RestAssured.requestSpecification =
+                new RequestSpecBuilder()
+                        .setPort(port)
+                        .setBasePath("/api/v1/me")
+                        .addHeader("Authorization", "Bearer " + token)
+                        .build();
     }
 
     @Test
     void getProfile_returnsProfileWithCycleAndReview() {
-        given()
-                .when()
+        given().when()
                 .get("/profile")
                 .then()
                 .statusCode(200)
@@ -60,8 +57,7 @@ class EmployeeProfileControllerTest {
 
     @Test
     void getCurrentCycle_returnsCurrentCycle() {
-        given()
-                .when()
+        given().when()
                 .get("/performance-cycles/current")
                 .then()
                 .statusCode(200)

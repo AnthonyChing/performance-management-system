@@ -1,10 +1,9 @@
 package com.pms.service.hr;
 
 import com.pms.dto.hr.template.*;
-import org.springframework.data.domain.Page;
-
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 public interface HrTemplateService {
 
@@ -12,9 +11,11 @@ public interface HrTemplateService {
 
     TemplateResponseDTO getTemplate(UUID templateId);
 
-    Page<TemplateListItemDTO> listTemplates(String status, String jobFunction, int page, int pageSize);
+    Page<TemplateListItemDTO> listTemplates(
+            String status, String jobFunction, int page, int pageSize);
 
-    TemplateResponseDTO patchTemplate(UUID actorId, UUID templateId, TemplatePatchRequestDTO request);
+    TemplateResponseDTO patchTemplate(
+            UUID actorId, UUID templateId, TemplatePatchRequestDTO request);
 
     void deleteTemplate(UUID templateId);
 
@@ -24,9 +25,11 @@ public interface HrTemplateService {
 
     void applyTemplate(UUID templateId, TemplateApplicationRequestDTO request);
 
-    QuestionResponseDTO addQuestion(UUID actorId, UUID templateId, QuestionCreateRequestDTO request);
+    QuestionResponseDTO addQuestion(
+            UUID actorId, UUID templateId, QuestionCreateRequestDTO request);
 
-    QuestionResponseDTO patchQuestion(UUID actorId, UUID templateId, UUID questionId, QuestionPatchRequestDTO request);
+    QuestionResponseDTO patchQuestion(
+            UUID actorId, UUID templateId, UUID questionId, QuestionPatchRequestDTO request);
 
     void deleteQuestion(UUID templateId, UUID questionId);
 

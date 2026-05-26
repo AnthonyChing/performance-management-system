@@ -9,12 +9,10 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * Shared Testcontainers configuration for integration tests.
  *
- * <p>Starts a PostgreSQL 15 container once per test suite and uses
- * {@code @ServiceConnection} to automatically override the Spring datasource
- * properties — no manual JDBC URL wiring needed.
+ * <p>Starts a PostgreSQL 15 container once per test suite and uses {@code @ServiceConnection} to
+ * automatically override the Spring datasource properties — no manual JDBC URL wiring needed.
  *
- * <p>Usage: annotate any integration test class with
- * {@code @Import(TestcontainersConfig.class)}.
+ * <p>Usage: annotate any integration test class with {@code @Import(TestcontainersConfig.class)}.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfig {

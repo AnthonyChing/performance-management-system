@@ -1,12 +1,12 @@
 package com.pms.dto.hr.audit;
 
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
-@Getter @Builder
+@Getter
+@Builder
 public class AuditLogDTO {
     private UUID id;
     private UUID actorId;

@@ -6,15 +6,14 @@ import com.pms.dto.manager.goal.ManagerGoalResponseDTO;
 import com.pms.security.SecurityUtils;
 import com.pms.service.manager.ManagerGoalService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users/{userId}/goals")
@@ -26,10 +25,12 @@ public class ManagerGoalController {
 
     @PostMapping
     public ResponseEntity<ManagerGoalResponseDTO> createGoal(
-            @PathVariable UUID userId,
-            @Valid @RequestBody ManagerGoalCreateRequestDTO req) {
-        ManagerGoalResponseDTO created = goalService.createGoal(SecurityUtils.currentUserId(), userId, req);
-        return ResponseEntity.created(URI.create("/api/v1/users/" + userId + "/goals/" + created.getGoalId())).body(created);
+            @PathVariable UUID userId, @Valid @RequestBody ManagerGoalCreateRequestDTO req) {
+        ManagerGoalResponseDTO created =
+                goalService.createGoal(SecurityUtils.currentUserId(), userId, req);
+        return ResponseEntity.created(
+                        URI.create("/api/v1/users/" + userId + "/goals/" + created.getGoalId()))
+                .body(created);
     }
 
     @PatchMapping("/{goalId}")
@@ -37,7 +38,8 @@ public class ManagerGoalController {
             @PathVariable UUID userId,
             @PathVariable UUID goalId,
             @RequestBody ManagerGoalPatchRequestDTO req) {
-        return ResponseEntity.ok(goalService.patchGoal(SecurityUtils.currentUserId(), userId, goalId, req));
+        return ResponseEntity.ok(
+                goalService.patchGoal(SecurityUtils.currentUserId(), userId, goalId, req));
     }
 
     @GetMapping
@@ -45,6 +47,10 @@ public class ManagerGoalController {
             @PathVariable UUID userId,
             @RequestParam(name = "cycle_id", required = false) String cycleId,
             @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(Map.of("data", goalService.listGoals(SecurityUtils.currentUserId(), userId, cycleId, status)));
+        return ResponseEntity.ok(
+                Map.of(
+                        "data",
+                        goalService.listGoals(
+                                SecurityUtils.currentUserId(), userId, cycleId, status)));
     }
 }

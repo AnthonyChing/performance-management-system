@@ -1,10 +1,15 @@
 package com.pms.controller.hr;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+
 import com.pms.config.TestcontainersConfig;
 import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.specification.RequestSpecification;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,12 +19,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.List;
-import java.util.UUID;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -28,14 +27,11 @@ class HrPerformanceCycleControllerTest {
     private static final String HR_ID = "00000000-0000-0000-0000-0000000000a1";
     private static final String CYCLE_ID = "123e4567-e89b-12d3-a456-4266141740c1";
 
-    @LocalServerPort
-    int port;
+    @LocalServerPort int port;
 
-    @Autowired
-    JwtUtil jwtUtil;
+    @Autowired JwtUtil jwtUtil;
 
-    @Autowired
-    JdbcTemplate jdbc;
+    @Autowired JdbcTemplate jdbc;
 
     private RequestSpecification requestSpec;
 
@@ -45,7 +41,8 @@ class HrPerformanceCycleControllerTest {
 
         jdbc.update("DELETE FROM cycle_template_assignments WHERE cycle_id = ?::uuid", CYCLE_ID);
         jdbc.update("DELETE FROM performance_cycles WHERE id = ?::uuid", CYCLE_ID);
-        jdbc.update("""
+        jdbc.update(
+                """
                 INSERT INTO performance_cycles (
                   id, name, cycle_type, status, timezone,
                   self_eval_start, self_eval_end,
@@ -57,14 +54,17 @@ class HrPerformanceCycleControllerTest {
                   '2026-02-01T00:00:00+08:00', '2026-02-28T23:59:59+08:00',
                   '2026-03-15T23:59:59+08:00', 7, false, ?::uuid
                 )
-                """, CYCLE_ID, HR_ID);
+                """,
+                CYCLE_ID,
+                HR_ID);
 
         String token = jwtUtil.generateToken(UUID.fromString(HR_ID), List.of("hr"));
-        requestSpec = new RequestSpecBuilder()
-                .setPort(port)
-                .setBasePath("/api/v1/hr/performance-cycles")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
+        requestSpec =
+                new RequestSpecBuilder()
+                        .setPort(port)
+                        .setBasePath("/api/v1/hr/performance-cycles")
+                        .addHeader("Authorization", "Bearer " + token)
+                        .build();
     }
 
     private RequestSpecification given() {
@@ -73,7 +73,8 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void createCycle_returnsCreatedCycle() {
-        String body = """
+        String body =
+                """
                 {
                   "name": "2026 總部員工績效考核",
                   "cycle_type": "quarterly",
@@ -87,10 +88,10 @@ class HrPerformanceCycleControllerTest {
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().post()
+                .when()
+                .post()
                 .then()
                 .statusCode(201)
                 .contentType("application/json")
@@ -101,7 +102,8 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void createCycle_withMissingName_returns400() {
-        String body = """
+        String body =
+                """
                 {
                   "cycle_type": "quarterly",
                   "manager_eval_start": "2026-08-01T00:00:00+08:00",
@@ -110,10 +112,10 @@ class HrPerformanceCycleControllerTest {
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().post()
+                .when()
+                .post()
                 .then()
                 .statusCode(400)
                 .body("error.code", equalTo("VALIDATION_ERROR"));
@@ -121,8 +123,8 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void listCycles_returnsPagedResult() {
-        given()
-                .when().get()
+        given().when()
+                .get()
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
@@ -132,9 +134,9 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void listCycles_withStatusFilter_returnsFiltered() {
-        given()
-                .queryParam("status", "not_started")
-                .when().get()
+        given().queryParam("status", "not_started")
+                .when()
+                .get()
                 .then()
                 .statusCode(200)
                 .body("data", notNullValue());
@@ -142,8 +144,8 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void getCycle_returnsCycleDetail() {
-        given()
-                .when().get("/" + CYCLE_ID)
+        given().when()
+                .get("/" + CYCLE_ID)
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
@@ -153,8 +155,8 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void getCycle_withNonExistentId_returns404() {
-        given()
-                .when().get("/00000000-0000-0000-0000-000000000000")
+        given().when()
+                .get("/00000000-0000-0000-0000-000000000000")
                 .then()
                 .statusCode(404)
                 .body("error.code", equalTo("RESOURCE_NOT_FOUND"));
@@ -162,17 +164,18 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void updateCycle_returnsUpdatedCycle() {
-        String body = """
+        String body =
+                """
                 {
                   "name": "2026 總部員工績效考核 (修訂版)",
                   "manager_eval_end": "2026-10-15T23:59:59+08:00"
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + CYCLE_ID)
+                .when()
+                .patch("/" + CYCLE_ID)
                 .then()
                 .statusCode(200)
                 .body("name", equalTo("2026 總部員工績效考核 (修訂版)"));
@@ -180,16 +183,17 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void changeCycleStatus_toInProgress_returnsUpdatedCycle() {
-        String body = """
+        String body =
+                """
                 {
                   "status": "in_progress"
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + CYCLE_ID + "/status")
+                .when()
+                .patch("/" + CYCLE_ID + "/status")
                 .then()
                 .statusCode(200)
                 .body("status", equalTo("in_progress"));
@@ -197,16 +201,17 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void changeCycleStatus_toClosed_returnsUpdatedCycle() {
-        String body = """
+        String body =
+                """
                 {
                   "status": "closed"
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + CYCLE_ID + "/status")
+                .when()
+                .patch("/" + CYCLE_ID + "/status")
                 .then()
                 .statusCode(200)
                 .body("status", equalTo("closed"));
@@ -214,16 +219,17 @@ class HrPerformanceCycleControllerTest {
 
     @Test
     void changeCycleStatus_withInvalidStatus_returns400() {
-        String body = """
+        String body =
+                """
                 {
                   "status": "invalid_status"
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(body)
-                .when().patch("/" + CYCLE_ID + "/status")
+                .when()
+                .patch("/" + CYCLE_ID + "/status")
                 .then()
                 .statusCode(400)
                 .body("error.code", equalTo("VALIDATION_ERROR"));
