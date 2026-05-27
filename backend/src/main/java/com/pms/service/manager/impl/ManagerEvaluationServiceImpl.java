@@ -1,5 +1,6 @@
 package com.pms.service.manager.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.manager.evaluation.KpiEvaluationItemDTO;
 import com.pms.dto.manager.evaluation.ManagerEvaluationResponseDTO;
 import com.pms.dto.manager.evaluation.ManagerEvaluationUpdateRequestDTO;
@@ -44,6 +45,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
     @Override
     @Transactional
+    @Auditable(action = "SAVE_EVALUATION", resource = "performance_review", resourceIdFrom = "evaluationId")
     public ManagerEvaluationResponseDTO updateEvaluation(
             UUID managerId, UUID subordinateId, UUID evaluationId,
             ManagerEvaluationUpdateRequestDTO req) {
@@ -99,6 +101,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
     @Override
     @Transactional
+    @Auditable(action = "SAVE_QUESTIONNAIRE", resource = "performance_review", resourceIdFrom = "evaluationId")
     public ManagerQuestionnaireResponseDTO updateQuestionnaire(
             UUID managerId, UUID subordinateId, UUID evaluationId,
             ManagerQuestionnaireUpdateRequestDTO req) {
@@ -146,6 +149,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
     @Override
     @Transactional
+    @Auditable(action = "SAVE_KPI_EVALUATION", resource = "performance_review", resourceIdFrom = "evaluationId")
     public ManagerEvaluationResponseDTO updateKpiEvaluation(
             UUID managerId, UUID subordinateId, UUID evaluationId,
             ManagerKpiEvaluationUpdateRequestDTO req) {

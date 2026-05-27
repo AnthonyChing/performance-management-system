@@ -1,5 +1,6 @@
 package com.pms.service.employee.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.employee.AvailableActionsDTO;
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.ManagerDTO;
@@ -220,6 +221,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     @Override
     @Transactional
+    @Auditable(action = "CREATE_GOAL", resource = "goal", resourceIdFrom = "return.goal.goalId")
     public GoalCreationResponseDTO createGoal(UUID userId, GoalRequestDTO request) {
         PerformanceCycle cycle = getCurrentCycleOptional()
                 .orElseThrow(() -> new NotFoundException("CYCLE_NOT_FOUND", "No current performance cycle found"));
@@ -264,6 +266,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     @Override
     @Transactional
+    @Auditable(action = "RESUBMIT_GOAL", resource = "goal", resourceIdFrom = "goalId")
     public GoalCreationResponseDTO updateGoal(UUID userId, String goalId, GoalRequestDTO request) {
         UUID goalUUID = UUID.fromString(goalId);
         Goal goal = goalRepository.findById(goalUUID)
@@ -311,6 +314,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     @Override
     @Transactional
+    @Auditable(action = "UPDATE_GOAL_PROGRESS", resource = "goal", resourceIdFrom = "goalId")
     public GoalProgressUpdateResponseDTO updateGoalProgress(UUID userId, String goalId, GoalProgressUpdateRequestDTO request) {
         UUID goalUUID = UUID.fromString(goalId);
         Goal goal = goalRepository.findById(goalUUID)
