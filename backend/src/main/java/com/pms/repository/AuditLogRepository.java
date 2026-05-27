@@ -1,6 +1,7 @@
 package com.pms.repository;
 
 import com.pms.entity.AuditLog;
+import java.time.OffsetDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,13 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, AuditLog.AuditLogId> {
 
-    @Query(value = """
+    @Query(
+            value =
+                    """
             SELECT * FROM audit_logs
             WHERE (:action IS NULL OR action = :action)
               AND (:resource IS NULL OR resource = :resource)
@@ -23,7 +23,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, AuditLog.Aud
               AND (CAST(:to AS timestamptz) IS NULL OR created_at <= CAST(:to AS timestamptz))
             ORDER BY created_at DESC
             """,
-            countQuery = """
+            countQuery =
+                    """
             SELECT count(*) FROM audit_logs
             WHERE (:action IS NULL OR action = :action)
               AND (:resource IS NULL OR resource = :resource)

@@ -2,14 +2,13 @@ package com.pms.controller;
 
 import com.pms.dto.DepartmentResponse;
 import com.pms.service.DepartmentService;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.UUID;
 
 // Departments are provisioned externally (HR source-of-truth) and seeded into
 // this database; this service exposes read-only access only.

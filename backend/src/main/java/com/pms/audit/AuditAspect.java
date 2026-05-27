@@ -3,6 +3,9 @@ package com.pms.audit;
 import com.pms.entity.AuditLog;
 import com.pms.repository.AuditLogRepository;
 import com.pms.security.SecurityUtils;
+import java.lang.reflect.Method;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -10,10 +13,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Method;
-import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Aspect
 @Component
@@ -31,16 +30,20 @@ public class AuditAspect {
             UUID actorId = resolveActorId();
             UUID resourceId = resolveResourceId(pjp, auditable, result);
 
-            auditLogRepository.save(AuditLog.builder()
-                    .id(UUID.randomUUID())
-                    .createdAt(OffsetDateTime.now())
-                    .actorId(actorId)
-                    .action(auditable.action())
-                    .resource(auditable.resource())
-                    .resourceId(resourceId)
-                    .build());
+            auditLogRepository.save(
+                    AuditLog.builder()
+                            .id(UUID.randomUUID())
+                            .createdAt(OffsetDateTime.now())
+                            .actorId(actorId)
+                            .action(auditable.action())
+                            .resource(auditable.resource())
+                            .resourceId(resourceId)
+                            .build());
         } catch (Exception e) {
-            log.warn("Failed to write audit log for action={}: {}", auditable.action(), e.getMessage());
+            log.warn(
+                    "Failed to write audit log for action={}: {}",
+                    auditable.action(),
+                    e.getMessage());
         }
 
         return result;

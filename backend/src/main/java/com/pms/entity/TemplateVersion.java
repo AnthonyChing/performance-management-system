@@ -1,14 +1,17 @@
 package com.pms.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.*;
 
 @Entity
 @Table(name = "template_versions")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TemplateVersion {
 
     @Id

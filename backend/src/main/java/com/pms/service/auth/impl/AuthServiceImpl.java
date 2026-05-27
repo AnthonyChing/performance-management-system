@@ -14,16 +14,15 @@ import com.pms.repository.UserIdentityRepository;
 import com.pms.repository.UserRepository;
 import com.pms.security.JwtUtil;
 import com.pms.service.auth.AuthService;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -48,9 +47,10 @@ public class AuthServiceImpl implements AuthService {
         String subject = payload.getSubject();
         String email = payload.getEmail();
 
-        UserIdentity identity = userIdentityRepository
-                .findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject)
-                .orElseGet(() -> autoLink(subject, email));
+        UserIdentity identity =
+                userIdentityRepository
+                        .findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject)
+                        .orElseGet(() -> autoLink(subject, email));
 
         UUID userId = identity.getUserId();
         List<String> roles = userRepository.findRoleNamesByUserId(userId);
@@ -67,41 +67,51 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserIdentity autoLink(String googleSubject, String googleEmail) {
-        User user = userRepository.findByEmail(googleEmail)
-                .orElseThrow(() -> new ApiException(
-                        HttpStatus.UNAUTHORIZED,
-                        "ACCOUNT_NOT_FOUND",
-                        "No PMS account found for email: " + googleEmail));
+        User user =
+                userRepository
+                        .findByEmail(googleEmail)
+                        .orElseThrow(
+                                () ->
+                                        new ApiException(
+                                                HttpStatus.UNAUTHORIZED,
+                                                "ACCOUNT_NOT_FOUND",
+                                                "No PMS account found for email: " + googleEmail));
 
-        UserIdentity identity = UserIdentity.builder()
-                .id(UUID.randomUUID())
-                .userId(user.getId())
-                .provider(IdentityProvider.GOOGLE)
-                .providerSubject(googleSubject)
-                .providerEmail(googleEmail)
-                .linkedAt(OffsetDateTime.now())
-                .build();
+        UserIdentity identity =
+                UserIdentity.builder()
+                        .id(UUID.randomUUID())
+                        .userId(user.getId())
+                        .provider(IdentityProvider.GOOGLE)
+                        .providerSubject(googleSubject)
+                        .providerEmail(googleEmail)
+                        .linkedAt(OffsetDateTime.now())
+                        .build();
 
         return userIdentityRepository.save(identity);
     }
 
     private GoogleIdToken.Payload verifyGoogleToken(String idTokenString) {
         try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
+            GoogleIdTokenVerifier verifier =
+                    new GoogleIdTokenVerifier.Builder(
+                                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                            .setAudience(Collections.singletonList(googleClientId))
+                            .build();
 
             GoogleIdToken idToken = verifier.verify(idTokenString);
             if (idToken == null) {
-                throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_GOOGLE_TOKEN",
+                throw new ApiException(
+                        HttpStatus.UNAUTHORIZED,
+                        "INVALID_GOOGLE_TOKEN",
                         "Google ID token verification failed");
             }
             return idToken.getPayload();
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_GOOGLE_TOKEN",
+            throw new ApiException(
+                    HttpStatus.UNAUTHORIZED,
+                    "INVALID_GOOGLE_TOKEN",
                     "Google ID token verification failed");
         }
     }

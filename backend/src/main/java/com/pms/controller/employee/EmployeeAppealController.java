@@ -32,6 +32,7 @@ public class EmployeeAppealController {
 
     @GetMapping("/result")
     public ResponseEntity<AppealResultResponseDTO> getAppealResult() {
-        return ResponseEntity.ok(employeeAppealService.getAppealResult(SecurityUtils.currentUserId()));
+        return ResponseEntity.ok(
+                employeeAppealService.getAppealResult(SecurityUtils.currentUserId()));
     }
 }

@@ -1,0 +1,40 @@
+name: Backend CI - Quality and Security Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - '!**.md'
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Check Code Formatting (Spotless)
+        run: mvn spotless:check
+
+      - name: Check Code Quality (Checkstyle)
+        run: mvn checkstyle:check
+
+      - name: Find Bugs (SpotBugs)
+        run: mvn spotbugs:check
+
+      - name: Run Unit Tests
+        run: mvn clean test

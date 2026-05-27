@@ -17,5 +17,6 @@ public class GoalProgressUpdateRequestDTO {
     @Min(value = 0, message = "Progress percent must be at least 0")
     @Max(value = 100, message = "Progress percent must be at most 100")
     private Integer progressPercent;
+
     private String note;
 }

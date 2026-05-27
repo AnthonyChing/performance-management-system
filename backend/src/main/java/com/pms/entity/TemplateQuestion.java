@@ -3,16 +3,19 @@ package com.pms.entity;
 import com.pms.entity.converter.QuestionTypeConverter;
 import com.pms.entity.enums.QuestionType;
 import jakarta.persistence.*;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 @Entity
 @Table(name = "template_questions")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TemplateQuestion {
 
     @Id

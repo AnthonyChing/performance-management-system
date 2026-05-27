@@ -1,0 +1,57 @@
+version: 2
+updates:
+  # 1. Frontend (npm)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    reviewers:
+      - "Phosphorus-0"
+      - "sunSkywalker"
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+
+  # 2. Backend (Maven)
+  - package-ecosystem: "maven"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    reviewers:
+      - "fredlin100"
+      - "ernestii26"
+    groups:
+      backend-deps:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+
+  # 3. GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
+  
+  # 4. Docker
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      docker-deps:
+        patterns:
+          - "*"

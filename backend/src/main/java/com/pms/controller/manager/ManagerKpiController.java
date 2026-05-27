@@ -6,14 +6,13 @@ import com.pms.dto.manager.kpi.ManagerKpiResponseDTO;
 import com.pms.security.SecurityUtils;
 import com.pms.service.manager.ManagerKpiService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users/{userId}/kpis")
@@ -25,9 +24,9 @@ public class ManagerKpiController {
 
     @PostMapping
     public ResponseEntity<Map<String, List<ManagerKpiResponseDTO>>> createKpi(
-            @PathVariable UUID userId,
-            @Valid @RequestBody ManagerKpiCreateRequestDTO req) {
-        ManagerKpiResponseDTO created = kpiService.createKpi(SecurityUtils.currentUserId(), userId, req);
+            @PathVariable UUID userId, @Valid @RequestBody ManagerKpiCreateRequestDTO req) {
+        ManagerKpiResponseDTO created =
+                kpiService.createKpi(SecurityUtils.currentUserId(), userId, req);
         return ResponseEntity.status(201).body(Map.of("data", List.of(created)));
     }
 
@@ -36,13 +35,17 @@ public class ManagerKpiController {
             @PathVariable UUID userId,
             @PathVariable UUID kpiId,
             @RequestBody ManagerKpiPatchRequestDTO req) {
-        return ResponseEntity.ok(kpiService.patchKpi(SecurityUtils.currentUserId(), userId, kpiId, req));
+        return ResponseEntity.ok(
+                kpiService.patchKpi(SecurityUtils.currentUserId(), userId, kpiId, req));
     }
 
     @GetMapping
     public ResponseEntity<Map<String, List<ManagerKpiResponseDTO>>> listKpis(
             @PathVariable UUID userId,
             @RequestParam(name = "cycle_id", required = false) String cycleId) {
-        return ResponseEntity.ok(Map.of("data", kpiService.listKpis(SecurityUtils.currentUserId(), userId, cycleId)));
+        return ResponseEntity.ok(
+                Map.of(
+                        "data",
+                        kpiService.listKpis(SecurityUtils.currentUserId(), userId, cycleId)));
     }
 }

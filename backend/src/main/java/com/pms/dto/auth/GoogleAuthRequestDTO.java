@@ -10,6 +10,5 @@ import lombok.Setter;
 @NoArgsConstructor
 public class GoogleAuthRequestDTO {
 
-    @NotBlank
-    private String idToken;
+    @NotBlank private String idToken;
 }

@@ -1,9 +1,14 @@
 package com.pms.controller.employee;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
+
 import com.pms.config.TestcontainersConfig;
 import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -18,12 +23,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.List;
-import java.util.UUID;
-
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
@@ -32,20 +31,19 @@ import static org.hamcrest.Matchers.*;
 class EmployeeKpiControllerTest {
 
     // Review IDs from test seed
-    private static final String REVIEW_ID           = "00000000-0000-0000-0000-000000020001"; // active, no confirmation
-    private static final String REVIEW_ID_CONFIRMED = "00000000-0000-0000-0000-000000020002"; // already confirmed
-    private static final String CYCLE_ID            = "00000000-0000-0000-0000-000000010001";
-    private static final String CYCLE_ID_COMPLETED  = "00000000-0000-0000-0000-000000010002";
-    private static final String USER_ID             = "00000000-0000-0000-0000-0000000000c1";
+    private static final String REVIEW_ID =
+            "00000000-0000-0000-0000-000000020001"; // active, no confirmation
+    private static final String REVIEW_ID_CONFIRMED =
+            "00000000-0000-0000-0000-000000020002"; // already confirmed
+    private static final String CYCLE_ID = "00000000-0000-0000-0000-000000010001";
+    private static final String CYCLE_ID_COMPLETED = "00000000-0000-0000-0000-000000010002";
+    private static final String USER_ID = "00000000-0000-0000-0000-0000000000c1";
 
-    @Autowired
-    JdbcTemplate jdbc;
+    @Autowired JdbcTemplate jdbc;
 
-    @Autowired
-    JwtUtil jwtUtil;
+    @Autowired JwtUtil jwtUtil;
 
-    @LocalServerPort
-    int port;
+    @LocalServerPort int port;
 
     private String token;
 
@@ -60,18 +58,18 @@ class EmployeeKpiControllerTest {
     @BeforeEach
     void setUp() {
         RestAssured.reset();
-        RestAssured.requestSpecification = new RequestSpecBuilder()
-                .setPort(port)
-                .setBasePath("/api/v1/me")
-                .addHeader("Authorization", "Bearer " + token)
-                .build();
+        RestAssured.requestSpecification =
+                new RequestSpecBuilder()
+                        .setPort(port)
+                        .setBasePath("/api/v1/me")
+                        .addHeader("Authorization", "Bearer " + token)
+                        .build();
     }
 
     @Test
     @Order(1)
     void getKpiStandards_returnsStandards() {
-        given()
-                .when()
+        given().when()
                 .get("/kpis/standards")
                 .then()
                 .statusCode(200)
@@ -79,16 +77,17 @@ class EmployeeKpiControllerTest {
                 .body("cycle.cycle_id", equalTo(CYCLE_ID))
                 .body("employee.user_id", equalTo(USER_ID))
                 .body("standards.size()", equalTo(2))
-                .body("standards.kpi_id", hasItems(
-                        "00000000-0000-0000-0000-000000060001",
-                        "00000000-0000-0000-0000-000000060002"));
+                .body(
+                        "standards.kpi_id",
+                        hasItems(
+                                "00000000-0000-0000-0000-000000060001",
+                                "00000000-0000-0000-0000-000000060002"));
     }
 
     @Test
     @Order(2)
     void getKpiResult_returnsCurrentResult() {
-        given()
-                .when()
+        given().when()
                 .get("/kpis/result")
                 .then()
                 .statusCode(200)
@@ -101,8 +100,7 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(3)
     void getHistoricalKpiResults_returnsList() {
-        given()
-                .when()
+        given().when()
                 .get("/kpis/result?status=historical")
                 .then()
                 .statusCode(200)
@@ -116,8 +114,7 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(4)
     void getHistoricalKpiResults_withCycle_returnsDetail() {
-        given()
-                .when()
+        given().when()
                 .get("/kpis/result?status=historical&cycleId=" + CYCLE_ID_COMPLETED)
                 .then()
                 .statusCode(200)
@@ -130,15 +127,16 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(5)
     void confirmKpiResult_withConfirmedFalse_returns400() {
-        String requestBody = """
+        String requestBody =
+                """
                 {
                   "result_id": "%s",
                   "confirmed": false
                 }
-                """.formatted(REVIEW_ID);
+                """
+                        .formatted(REVIEW_ID);
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(requestBody)
                 .when()
                 .post("/kpis/result-confirmations")
@@ -150,14 +148,14 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(6)
     void confirmKpiResult_withMissingResultId_returns400() {
-        String requestBody = """
+        String requestBody =
+                """
                 {
                   "confirmed": true
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(requestBody)
                 .when()
                 .post("/kpis/result-confirmations")
@@ -169,15 +167,15 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(7)
     void confirmKpiResult_whenResultNotFound_returns404() {
-        String requestBody = """
+        String requestBody =
+                """
                 {
                   "result_id": "00000000-0000-0000-0000-999999999999",
                   "confirmed": true
                 }
                 """;
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(requestBody)
                 .when()
                 .post("/kpis/result-confirmations")
@@ -189,15 +187,16 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(8)
     void confirmKpiResult_whenAlreadyConfirmed_returns409() {
-        String requestBody = """
+        String requestBody =
+                """
                 {
                   "result_id": "%s",
                   "confirmed": true
                 }
-                """.formatted(REVIEW_ID_CONFIRMED);
+                """
+                        .formatted(REVIEW_ID_CONFIRMED);
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(requestBody)
                 .when()
                 .post("/kpis/result-confirmations")
@@ -209,15 +208,16 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(9)
     void confirmKpiResult_returnsConfirmation() {
-        String requestBody = """
+        String requestBody =
+                """
                 {
                   "result_id": "%s",
                   "confirmed": true
                 }
-                """.formatted(REVIEW_ID);
+                """
+                        .formatted(REVIEW_ID);
 
-        given()
-                .contentType("application/json")
+        given().contentType("application/json")
                 .body(requestBody)
                 .when()
                 .post("/kpis/result-confirmations")
@@ -227,6 +227,8 @@ class EmployeeKpiControllerTest {
                 .body("confirmation.result_id", equalTo(REVIEW_ID))
                 .body("result.status", equalTo("confirmed"))
                 .body("result.available_actions.can_confirm", equalTo(false))
-                .body("result.available_actions.confirm_unavailable_reason", equalTo("already_confirmed"));
+                .body(
+                        "result.available_actions.confirm_unavailable_reason",
+                        equalTo("already_confirmed"));
     }
 }
