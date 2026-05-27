@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('自動化測試：首頁載入與截圖', async ({ page }) => {
   // 假設前端 Vite 伺服器跑在 3000 port (請依照實際情況調整)
-  await page.goto('http://localhost:3000/');
+  await page.goto('http://127.0.0.1:3000/');
 
   // 1. 驗證網頁是否成功載入 (這裡可以請前端同學改成驗證特定按鈕或標題)
   // await expect(page.getByRole('button', { name: '登入' })).toBeVisible();
