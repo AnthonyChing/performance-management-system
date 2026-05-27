@@ -44,8 +44,8 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
     @Override
     @Transactional
     @Auditable(action = "RESPOND_TO_APPEAL", resource = "appeal", resourceIdFrom = "appealId")
-    public ManagerAppealDetailDTO handleAppeal(UUID managerId, UUID teamId, UUID appealId,
-                                                ManagerAppealPatchRequestDTO req) {
+    public ManagerAppealDetailDTO handleAppeal(
+            UUID managerId, UUID teamId, UUID appealId, ManagerAppealPatchRequestDTO req) {
         Appeal appeal = findAppealForTeam(teamId, appealId);
         if (appeal.getResolvedAt() != null) {
             throw new ConflictException("STATE_CONFLICT", "This appeal has already been resolved");

@@ -405,7 +405,8 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     @Override
     @Transactional
     @Auditable(action = "UPDATE_GOAL_PROGRESS", resource = "goal", resourceIdFrom = "goalId")
-    public GoalProgressUpdateResponseDTO updateGoalProgress(UUID userId, String goalId, GoalProgressUpdateRequestDTO request) {
+    public GoalProgressUpdateResponseDTO updateGoalProgress(
+            UUID userId, String goalId, GoalProgressUpdateRequestDTO request) {
         UUID goalUUID = UUID.fromString(goalId);
         Goal goal =
                 goalRepository
