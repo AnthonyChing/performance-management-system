@@ -72,12 +72,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run build && npx vite preview --port 3000 --host',
     port: 3000,
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
-    env: {
-      DISABLE_HMR: 'true',
-    },
   },
 });
