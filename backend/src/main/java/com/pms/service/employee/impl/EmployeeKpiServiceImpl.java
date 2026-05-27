@@ -178,10 +178,11 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                     assignment.getTargetValue() != null
                             ? assignment.getTargetValue().doubleValue()
                             : 1.0;
-            double currentVal =
+            Double currentValBoxed =
                     assignment.getCurrentValue() != null
                             ? assignment.getCurrentValue().doubleValue()
-                            : 0.0;
+                            : null;
+            double currentVal = currentValBoxed != null ? currentValBoxed : 0.0;
             double weight =
                     assignment.getWeight() != null ? assignment.getWeight().doubleValue() : 0.0;
             double achievementPercent = targetVal > 0 ? (currentVal / targetVal * 100.0) : 0.0;
@@ -213,9 +214,12 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                             .weightPercent((int) weight)
                             .actual(
                                     KpiResultDTO.KpiActualDTO.builder()
-                                            .value(currentVal)
+                                            .value(currentValBoxed)
                                             .unit(kpi.getUnit())
-                                            .displayText(String.valueOf(currentVal))
+                                            .displayText(
+                                                    currentValBoxed != null
+                                                            ? String.valueOf(currentValBoxed)
+                                                            : null)
                                             .build())
                             .target(
                                     KpiStandardDTO.KpiTargetDTO.builder()
