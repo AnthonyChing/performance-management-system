@@ -102,15 +102,8 @@ export class ApiResponseValidationError extends Error {
 export interface EmployeeApiOptions {
   fetcher?: Fetcher;
   signal?: AbortSignal;
-  apiOrigin?: string;
   credentials?: RequestCredentials;
 }
-
-type ImportMetaWithEnv = ImportMeta & {
-  env?: {
-    VITE_API_ORIGIN?: string;
-  };
-};
 
 const cycleStatuses = new Set<PerformanceCycleStatus>([
   'not_started',
@@ -127,17 +120,9 @@ const employmentStatuses = new Set<EmploymentStatus>([
   'terminated',
 ]);
 
-function getConfiguredApiOrigin() {
-  return ((import.meta as ImportMetaWithEnv).env?.VITE_API_ORIGIN ?? '').trim();
-}
-
-function normalizeApiOrigin(apiOrigin?: string) {
-  return (apiOrigin ?? getConfiguredApiOrigin()).replace(/\/+$/, '');
-}
-
-export function resolveEmployeeApiUrl(path: string, apiOrigin?: string) {
+export function resolveEmployeeApiUrl(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${normalizeApiOrigin(apiOrigin)}${API_BASE_PATH}${normalizedPath}`;
+  return `${API_BASE_PATH}${normalizedPath}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -255,7 +240,7 @@ async function requestJson<T>(
   options: EmployeeApiOptions = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(resolveEmployeeApiUrl(path, options.apiOrigin), {
+  const response = await fetcher(resolveEmployeeApiUrl(path), {
     method: 'GET',
     credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
     signal: options.signal,
