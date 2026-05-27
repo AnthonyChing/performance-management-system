@@ -119,20 +119,7 @@ export default function Dispute() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">績效異議與申覆處理 (Resolution Center)</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Review, analyze, and finalize employee performance rating appeals.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors">
-            <Filter className="w-4 h-4" />
-            進階篩選
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors">
-            <Download className="w-4 h-4" />
-            匯出紀錄 (Export Log)
-          </button>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">績效異議與申覆處理</h1>
         </div>
       </div>
 
