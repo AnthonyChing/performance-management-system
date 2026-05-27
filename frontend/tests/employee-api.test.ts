@@ -61,12 +61,9 @@ const cyclePayload = {
 };
 
 describe('employee API client', () => {
-  it('resolves employee API URLs with /api/v1 for relative and remote backends', () => {
+  it('resolves employee API URLs with /api/v1 on the same origin', () => {
     expect(resolveEmployeeApiUrl('/me/profile')).toBe('/api/v1/me/profile');
     expect(resolveEmployeeApiUrl('me/profile')).toBe('/api/v1/me/profile');
-    expect(resolveEmployeeApiUrl('/me/profile', 'https://backend.example.com/')).toBe(
-      'https://backend.example.com/api/v1/me/profile',
-    );
   });
 
   it('GET /me/profile uses /api/v1 prefix and returns the profile payload', async () => {
@@ -88,18 +85,17 @@ describe('employee API client', () => {
     );
   });
 
-  it('GET /me/profile supports an explicit backend origin and abort signal', async () => {
+  it('GET /me/profile supports an abort signal while using the same-origin API path', async () => {
     const controller = new AbortController();
     const fetcher = vi.fn(async () => jsonResponse(profilePayload)) satisfies Fetcher;
 
     await getMyProfile({
       fetcher,
-      apiOrigin: 'https://backend.example.com/',
       signal: controller.signal,
     });
 
     expect(fetcher).toHaveBeenCalledWith(
-      'https://backend.example.com/api/v1/me/profile',
+      '/api/v1/me/profile',
       expect.objectContaining({
         signal: controller.signal,
       }),
