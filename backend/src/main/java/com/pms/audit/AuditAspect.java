@@ -58,21 +58,30 @@ public class AuditAspect {
     }
 
     private UUID resolveResourceId(ProceedingJoinPoint pjp, Auditable auditable, Object result) {
-        if ("return".equals(auditable.resourceIdFrom())) {
-            return extractIdFromResult(result);
+        String spec = auditable.resourceIdFrom();
+        if (spec.equals("return") || spec.startsWith("return.")) {
+            return extractIdFromResult(result, spec);
         }
-        return extractIdFromParameter(pjp, auditable.resourceIdFrom());
+        return extractIdFromParameter(pjp, spec);
     }
 
-    private UUID extractIdFromResult(Object result) {
+    private UUID extractIdFromResult(Object result, String spec) {
         if (result == null) return null;
+        // "return" → getId() on the result
+        // "return.field1.field2" → chain of getters (getField1, then getField2)
+        String[] parts = spec.equals("return") ? new String[]{"id"} : spec.substring("return.".length()).split("\\.");
+        Object current = result;
         try {
-            Method getId = result.getClass().getMethod("getId");
-            Object id = getId.invoke(result);
-            return id instanceof UUID u ? u : null;
+            for (String part : parts) {
+                if (current == null) return null;
+                String getter = "get" + Character.toUpperCase(part.charAt(0)) + part.substring(1);
+                Method m = current.getClass().getMethod(getter);
+                current = m.invoke(current);
+            }
         } catch (Exception e) {
             return null;
         }
+        return toUuid(current);
     }
 
     private UUID extractIdFromParameter(ProceedingJoinPoint pjp, String paramName) {
@@ -81,9 +90,17 @@ public class AuditAspect {
         Object[] args = pjp.getArgs();
         if (names == null) return null;
         for (int i = 0; i < names.length; i++) {
-            if (paramName.equals(names[i]) && args[i] instanceof UUID u) {
-                return u;
+            if (paramName.equals(names[i])) {
+                return toUuid(args[i]);
             }
+        }
+        return null;
+    }
+
+    private UUID toUuid(Object value) {
+        if (value instanceof UUID u) return u;
+        if (value instanceof String s) {
+            try { return UUID.fromString(s); } catch (IllegalArgumentException e) { return null; }
         }
         return null;
     }

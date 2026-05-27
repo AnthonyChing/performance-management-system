@@ -1,5 +1,6 @@
 package com.pms.service.manager.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.manager.kpi.ManagerKpiCreateRequestDTO;
 import com.pms.dto.manager.kpi.ManagerKpiPatchRequestDTO;
 import com.pms.dto.manager.kpi.ManagerKpiResponseDTO;
@@ -39,8 +40,8 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
 
     @Override
     @Transactional
-    public ManagerKpiResponseDTO createKpi(
-            UUID managerId, UUID subordinateId, ManagerKpiCreateRequestDTO req) {
+    @Auditable(action = "CREATE_KPI", resource = "kpi", resourceIdFrom = "return.kpiId")
+    public ManagerKpiResponseDTO createKpi(UUID managerId, UUID subordinateId, ManagerKpiCreateRequestDTO req) {
         assertDirectSubordinate(managerId, subordinateId);
         PerformanceCycle cycle = getCurrentCycle();
         assertNotLocked(cycle);
@@ -73,8 +74,8 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
 
     @Override
     @Transactional
-    public ManagerKpiResponseDTO patchKpi(
-            UUID managerId, UUID subordinateId, UUID kpiId, ManagerKpiPatchRequestDTO req) {
+    @Auditable(action = "UPDATE_KPI", resource = "kpi", resourceIdFrom = "kpiId")
+    public ManagerKpiResponseDTO patchKpi(UUID managerId, UUID subordinateId, UUID kpiId, ManagerKpiPatchRequestDTO req) {
         assertDirectSubordinate(managerId, subordinateId);
         Kpi kpi =
                 kpiRepo.findById(kpiId)

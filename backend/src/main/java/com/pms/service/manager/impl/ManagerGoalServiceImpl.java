@@ -1,5 +1,6 @@
 package com.pms.service.manager.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.manager.goal.ManagerGoalCreateRequestDTO;
 import com.pms.dto.manager.goal.ManagerGoalPatchRequestDTO;
 import com.pms.dto.manager.goal.ManagerGoalResponseDTO;
@@ -36,8 +37,8 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
 
     @Override
     @Transactional
-    public ManagerGoalResponseDTO createGoal(
-            UUID managerId, UUID subordinateId, ManagerGoalCreateRequestDTO req) {
+    @Auditable(action = "CREATE_GOAL_FOR_SUBORDINATE", resource = "goal", resourceIdFrom = "return.goalId")
+    public ManagerGoalResponseDTO createGoal(UUID managerId, UUID subordinateId, ManagerGoalCreateRequestDTO req) {
         User subordinate = assertDirectSubordinate(managerId, subordinateId);
         PerformanceCycle cycle = getCurrentCycle();
         assertNotLocked(cycle);
@@ -70,8 +71,8 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
 
     @Override
     @Transactional
-    public ManagerGoalResponseDTO patchGoal(
-            UUID managerId, UUID subordinateId, UUID goalId, ManagerGoalPatchRequestDTO req) {
+    @Auditable(action = "REVIEW_GOAL", resource = "goal", resourceIdFrom = "goalId")
+    public ManagerGoalResponseDTO patchGoal(UUID managerId, UUID subordinateId, UUID goalId, ManagerGoalPatchRequestDTO req) {
         assertDirectSubordinate(managerId, subordinateId);
         Goal goal =
                 goalRepo.findByIdAndDeletedAtIsNull(goalId)

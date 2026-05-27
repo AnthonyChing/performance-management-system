@@ -4,6 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.pms.audit.Auditable;
 import com.pms.dto.auth.AuthResponseDTO;
 import com.pms.entity.User;
 import com.pms.entity.UserIdentity;
@@ -39,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    @Auditable(action = "LOGIN_GOOGLE", resource = "auth", resourceIdFrom = "return.userId")
     public AuthResponseDTO authenticateWithGoogle(String googleIdToken) {
         GoogleIdToken.Payload payload = verifyGoogleToken(googleIdToken);
 

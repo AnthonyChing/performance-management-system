@@ -1,5 +1,6 @@
 package com.pms.service.employee.impl;
 
+import com.pms.audit.Auditable;
 import com.pms.dto.employee.AvailableActionsDTO;
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.appeal.AppealDTO;
@@ -107,6 +108,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
 
     @Override
     @Transactional
+    @Auditable(action = "SUBMIT_APPEAL", resource = "appeal", resourceIdFrom = "return.appeal.appealId")
     public AppealSubmitResponseDTO submitAppeal(UUID userId, AppealSubmitRequestDTO request) {
         UUID cycleId = UUID.fromString(request.getPeriodId());
         PerformanceCycle cycle =
