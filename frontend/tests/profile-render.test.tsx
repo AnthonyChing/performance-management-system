@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { describe, expect, it } from 'vitest';
-import { CurrentCycleCard, ProfileView } from '../src/pages/Profile';
+import { CurrentCycleCard, ProfileView } from '../src/features/profile/pages/Profile';
 import type {
   CurrentPerformanceCycleResponse,
   PerformanceCycleStatus,
