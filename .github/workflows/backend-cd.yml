@@ -81,6 +81,14 @@ jobs:
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.deploy-target.outputs.image_tag }}
           # Note: Staging and Prod environment variables are managed securely inside the GCP Console
       
+      - name: Send Grafana Deployment Annotation
+        if: success()
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.GRAFANA_API_TOKEN }}" \
+               -H "Content-Type: application/json" \
+               -d '{"text":"Deploy pms-backend to Cloud Run (${{ github.sha }})","tags":["deployment","cloud-run","backend"]}' \
+               https://${{ secrets.GRAFANA_INSTANCE_ID }}.grafana.net/api/annotations
+
       - name: Send Discord Notification (Success)
         if: success()
         run: |

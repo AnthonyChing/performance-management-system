@@ -183,6 +183,13 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Micrometer OTLP registry for Grafana Cloud Push -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-otlp</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
