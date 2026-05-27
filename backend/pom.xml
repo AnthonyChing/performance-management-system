@@ -190,6 +190,18 @@
             <artifactId>micrometer-registry-otlp</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Micrometer Tracing (OpenTelemetry Bridge) -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <!-- OpenTelemetry Exporter for Traces (OTLP) -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
