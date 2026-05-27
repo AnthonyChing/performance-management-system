@@ -34,6 +34,8 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
             # Only create 'sha-' tags for branch pushes, avoid duplicate immutable tags on releases
             type=sha,format=short,prefix=sha-,enable=${{ github.ref_type == 'branch' }}
