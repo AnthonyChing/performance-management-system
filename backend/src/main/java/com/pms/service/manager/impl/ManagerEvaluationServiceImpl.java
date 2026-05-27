@@ -45,7 +45,10 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
     @Override
     @Transactional
-    @Auditable(action = "SAVE_EVALUATION", resource = "performance_review", resourceIdFrom = "evaluationId")
+    @Auditable(
+            action = "SAVE_EVALUATION",
+            resource = "performance_review",
+            resourceIdFrom = "evaluationId")
     public ManagerEvaluationResponseDTO updateEvaluation(
             UUID managerId,
             UUID subordinateId,
@@ -112,7 +115,10 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
     @Override
     @Transactional
-    @Auditable(action = "SAVE_QUESTIONNAIRE", resource = "performance_review", resourceIdFrom = "evaluationId")
+    @Auditable(
+            action = "SAVE_QUESTIONNAIRE",
+            resource = "performance_review",
+            resourceIdFrom = "evaluationId")
     public ManagerQuestionnaireResponseDTO updateQuestionnaire(
             UUID managerId,
             UUID subordinateId,
@@ -167,7 +173,10 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
     @Override
     @Transactional
-    @Auditable(action = "SAVE_KPI_EVALUATION", resource = "performance_review", resourceIdFrom = "evaluationId")
+    @Auditable(
+            action = "SAVE_KPI_EVALUATION",
+            resource = "performance_review",
+            resourceIdFrom = "evaluationId")
     public ManagerEvaluationResponseDTO updateKpiEvaluation(
             UUID managerId,
             UUID subordinateId,

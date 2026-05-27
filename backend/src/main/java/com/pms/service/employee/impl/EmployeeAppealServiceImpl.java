@@ -108,7 +108,10 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
 
     @Override
     @Transactional
-    @Auditable(action = "SUBMIT_APPEAL", resource = "appeal", resourceIdFrom = "return.appeal.appealId")
+    @Auditable(
+            action = "SUBMIT_APPEAL",
+            resource = "appeal",
+            resourceIdFrom = "return.appeal.appealId")
     public AppealSubmitResponseDTO submitAppeal(UUID userId, AppealSubmitRequestDTO request) {
         UUID cycleId = UUID.fromString(request.getPeriodId());
         PerformanceCycle cycle =

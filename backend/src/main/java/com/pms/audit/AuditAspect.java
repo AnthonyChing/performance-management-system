@@ -69,7 +69,10 @@ public class AuditAspect {
         if (result == null) return null;
         // "return" → getId() on the result
         // "return.field1.field2" → chain of getters (getField1, then getField2)
-        String[] parts = spec.equals("return") ? new String[]{"id"} : spec.substring("return.".length()).split("\\.");
+        String[] parts =
+                spec.equals("return")
+                        ? new String[] {"id"}
+                        : spec.substring("return.".length()).split("\\.");
         Object current = result;
         try {
             for (String part : parts) {
@@ -100,7 +103,11 @@ public class AuditAspect {
     private UUID toUuid(Object value) {
         if (value instanceof UUID u) return u;
         if (value instanceof String s) {
-            try { return UUID.fromString(s); } catch (IllegalArgumentException e) { return null; }
+            try {
+                return UUID.fromString(s);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         }
         return null;
     }

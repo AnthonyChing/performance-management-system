@@ -41,7 +41,8 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
     @Override
     @Transactional
     @Auditable(action = "CREATE_KPI", resource = "kpi", resourceIdFrom = "return.kpiId")
-    public ManagerKpiResponseDTO createKpi(UUID managerId, UUID subordinateId, ManagerKpiCreateRequestDTO req) {
+    public ManagerKpiResponseDTO createKpi(
+            UUID managerId, UUID subordinateId, ManagerKpiCreateRequestDTO req) {
         assertDirectSubordinate(managerId, subordinateId);
         PerformanceCycle cycle = getCurrentCycle();
         assertNotLocked(cycle);
@@ -75,7 +76,8 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
     @Override
     @Transactional
     @Auditable(action = "UPDATE_KPI", resource = "kpi", resourceIdFrom = "kpiId")
-    public ManagerKpiResponseDTO patchKpi(UUID managerId, UUID subordinateId, UUID kpiId, ManagerKpiPatchRequestDTO req) {
+    public ManagerKpiResponseDTO patchKpi(
+            UUID managerId, UUID subordinateId, UUID kpiId, ManagerKpiPatchRequestDTO req) {
         assertDirectSubordinate(managerId, subordinateId);
         Kpi kpi =
                 kpiRepo.findById(kpiId)

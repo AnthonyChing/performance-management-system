@@ -309,7 +309,8 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
     @Override
     @Transactional
     @Auditable(action = "CONFIRM_KPI_RESULT", resource = "kpi_result_confirmation")
-    public KpiConfirmationResponseDTO confirmKpiResult(UUID userId, KpiConfirmationRequestDTO request) {
+    public KpiConfirmationResponseDTO confirmKpiResult(
+            UUID userId, KpiConfirmationRequestDTO request) {
         if (!Boolean.TRUE.equals(request.getConfirmed())) {
             throw new ConflictException("INVALID_CONFIRMATION", "Confirmed must be true");
         }
