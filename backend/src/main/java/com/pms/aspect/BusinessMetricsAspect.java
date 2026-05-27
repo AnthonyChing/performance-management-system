@@ -45,7 +45,8 @@ public class BusinessMetricsAspect {
         return recordTimerAndCounter(pjp, "pms.business.appeal.submit");
     }
 
-    private Object recordTimerAndCounter(ProceedingJoinPoint pjp, String metricPrefix) throws Throwable {
+    private Object recordTimerAndCounter(ProceedingJoinPoint pjp, String metricPrefix)
+            throws Throwable {
         Timer.Sample sample = Timer.start(meterRegistry);
         try {
             Object result = pjp.proceed();
@@ -55,9 +56,10 @@ public class BusinessMetricsAspect {
             meterRegistry.counter(metricPrefix + ".count", "status", "error").increment();
             throw e;
         } finally {
-            sample.stop(Timer.builder(metricPrefix + ".time")
-                    .description("Execution time for " + metricPrefix)
-                    .register(meterRegistry));
+            sample.stop(
+                    Timer.builder(metricPrefix + ".time")
+                            .description("Execution time for " + metricPrefix)
+                            .register(meterRegistry));
         }
     }
 }

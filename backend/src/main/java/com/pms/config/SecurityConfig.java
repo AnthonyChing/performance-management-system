@@ -2,12 +2,14 @@ package com.pms.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pms.security.JwtAuthenticationFilter;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,10 +20,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.security.config.Customizer;
-
-import java.util.Map;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -34,8 +32,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(Customizer.withDefaults())
+        http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
@@ -93,18 +90,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Configure allowed origins here, e.g., your Firebase hosting URL
-        configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:3000", 
-            "http://localhost:5173",
-            "https://sage-etching-496105-k7.web.app",
-            "https://sage-etching-496105-k7.firebaseapp.com",
-            "https://sage-etching-496105-k7-staging.web.app",
-            "https://sage-etching-496105-k7-staging.firebaseapp.com"
-        ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "x-requested-with"));
+        configuration.setAllowedOriginPatterns(
+                List.of(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "https://sage-etching-496105-k7.web.app",
+                        "https://sage-etching-496105-k7.firebaseapp.com",
+                        "https://sage-etching-496105-k7-staging.web.app",
+                        "https://sage-etching-496105-k7-staging.firebaseapp.com"));
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(
+                List.of("Authorization", "Content-Type", "x-requested-with"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
