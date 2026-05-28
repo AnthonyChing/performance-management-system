@@ -1,8 +1,21 @@
 export {
   ApiRequestError,
   confirmMyKpiResult,
+  getMyAppealResult,
+  getMyAppeals,
   getMyKpiResult,
   getMyKpiStandards,
+  submitMyAppeal,
+  type Appeal,
+  type AppealAvailableActions,
+  type AppealCycleSummary,
+  type AppealHandler,
+  type AppealPeriod,
+  type AppealResultResponse,
+  type AppealReviewResult,
+  type AppealsResponse,
+  type AppealSubmitRequest,
+  type AppealSubmitResponse,
   type EmployeeApiOptions,
   type KpiActual,
   type KpiAvailableActions,
@@ -21,4 +34,4 @@ export {
   type KpiStandardsResponse,
   type KpiTarget,
 } from '../../api/employee';
-export { EMPLOYEE_DISPUTE_MOCK, HISTORY_KPI_MOCK } from '../../shared/api/mockData';
+export { HISTORY_KPI_MOCK } from '../../shared/api/mockData';

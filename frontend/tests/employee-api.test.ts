@@ -4,10 +4,13 @@ import {
   ApiResponseValidationError,
   confirmMyKpiResult,
   getCurrentPerformanceCycle,
+  getMyAppealResult,
+  getMyAppeals,
   getMyKpiResult,
   getMyKpiStandards,
   getMyProfile,
   resolveEmployeeApiUrl,
+  submitMyAppeal,
   type Fetcher,
 } from '../src/api/employee';
 
@@ -175,6 +178,78 @@ const kpiConfirmationPayload = {
       dispute_unavailable_reason: 'already_confirmed',
     },
   },
+};
+
+const appealPayload = {
+  mode: 'compose',
+  period: {
+    cycle_id: 'cycle_2025_q3',
+    name: '2025 年度 Q3 績效考核',
+    period_label: '2025-07-01~2025-09-30',
+    start_date: '2025-07-01',
+    end_date: '2025-09-30',
+  },
+  appeal_period: {
+    status: 'open',
+    start_date: '2025-10-15',
+    end_date: '2025-10-22',
+    timezone: 'Asia/Taipei',
+  },
+  review_result: {
+    review_id: 'review_2025_q3_user_001',
+    final_rating: 'meets_expectations',
+    kpi_score: 86.5,
+    review_score: 82,
+    manager_comment: '整體表現穩定，專案推進能力良好。',
+  },
+  current_appeal: null,
+  available_actions: {
+    can_start_appeal: true,
+    start_appeal_unavailable_reason: null,
+    can_submit: true,
+    submit_unavailable_reason: null,
+  },
+};
+
+const appealSubmitPayload = {
+  appeal: {
+    appeal_id: 'appeal_20251016_004',
+    case_no: 'DP-20251016-004',
+    review_id: 'review_2025_q3_user_001',
+    period: appealPayload.period,
+    reason: '本人對本期績效結果提出異議。',
+    status: 'submitted',
+    submitted_at: '2025-10-16T09:42:00+08:00',
+    resolved_at: null,
+    handler: {
+      user_id: 'hr_001',
+      type: 'hr',
+      name: '陳美玲',
+      english_name: 'Lin Chen',
+      department: 'HR 部門',
+    },
+    processing_comment: null,
+    processing_comment_updated_at: null,
+    is_final_response: false,
+    updated_at: '2025-10-16T09:42:00+08:00',
+  },
+  available_actions: {
+    can_start_appeal: false,
+    start_appeal_unavailable_reason: 'already_submitted',
+    can_submit: false,
+    submit_unavailable_reason: 'already_submitted',
+  },
+};
+
+const appealResultPayload = {
+  appeal: {
+    ...appealSubmitPayload.appeal,
+    status: 'approved',
+    processing_comment: '經複核後，本次異議成立。',
+    processing_comment_updated_at: '2025-10-20T15:20:00+08:00',
+    is_final_response: true,
+  },
+  review_result: appealPayload.review_result,
 };
 
 describe('employee API client', () => {
@@ -515,6 +590,98 @@ describe('employee API client', () => {
           result_id: 'review_001',
           confirmed: true,
         }),
+      }),
+    );
+  });
+
+  it('GET /me/appeals uses /api/v1 prefix and returns current appeal page state', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(appealPayload)) satisfies Fetcher;
+
+    await expect(getMyAppeals({ fetcher })).resolves.toEqual(appealPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/appeals',
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+      }),
+    );
+  });
+
+  it('GET /me/appeals accepts an existing appeal result state', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        ...appealPayload,
+        mode: 'result',
+        appeal_period: {
+          ...appealPayload.appeal_period,
+          status: 'closed',
+        },
+        current_appeal: appealSubmitPayload.appeal,
+        available_actions: appealSubmitPayload.available_actions,
+      }),
+    ) satisfies Fetcher;
+
+    await expect(getMyAppeals({ fetcher })).resolves.toMatchObject({
+      mode: 'result',
+      current_appeal: {
+        case_no: 'DP-20251016-004',
+      },
+    });
+  });
+
+  it('GET /me/appeals rejects invalid appeal shapes', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        ...appealPayload,
+        current_appeal: {
+          appeal_id: 'appeal_001',
+          reason: '缺少 review_id 與 status',
+        },
+      }),
+    ) satisfies Fetcher;
+
+    await expect(getMyAppeals({ fetcher })).rejects.toBeInstanceOf(
+      ApiResponseValidationError,
+    );
+  });
+
+  it('POST /me/appeals/submit sends the period id and reason', async () => {
+    const fetcher = vi.fn(
+      async () => jsonResponse(appealSubmitPayload, { status: 201 }),
+    ) satisfies Fetcher;
+
+    await expect(
+      submitMyAppeal(
+        {
+          period_id: 'cycle_2025_q3',
+          reason: '本人對本期績效結果提出異議。',
+        },
+        { fetcher },
+      ),
+    ).resolves.toEqual(appealSubmitPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/appeals/submit',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          period_id: 'cycle_2025_q3',
+          reason: '本人對本期績效結果提出異議。',
+        }),
+      }),
+    );
+  });
+
+  it('GET /me/appeals/result returns the submitted appeal result', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(appealResultPayload)) satisfies Fetcher;
+
+    await expect(getMyAppealResult({ fetcher })).resolves.toEqual(appealResultPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/appeals/result',
+      expect.objectContaining({
+        method: 'GET',
       }),
     );
   });

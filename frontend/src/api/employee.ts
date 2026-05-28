@@ -189,6 +189,90 @@ export interface KpiConfirmationResponse {
   result: KpiResultSummary;
 }
 
+export interface AppealCycleSummary {
+  cycle_id: string;
+  name: string;
+  cycle_type?: string | null;
+  period_label?: string | null;
+  review_type?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  timezone?: string | null;
+  status?: string | null;
+  is_locked?: boolean | null;
+  is_review_locked?: boolean | null;
+  review_locked_at?: string | null;
+  results_published_at?: string | null;
+  updated_at?: string | null;
+  average_completion_percent?: number | null;
+  goal_count?: number | null;
+}
+
+export type AppealPeriod = KpiDisputePeriod;
+
+export interface AppealReviewResult {
+  review_id: string;
+  final_rating?: string | null;
+  kpi_score?: number | null;
+  review_score?: number | null;
+  manager_comment?: string | null;
+}
+
+export interface AppealHandler {
+  user_id: string;
+  type?: string | null;
+  name: string;
+  english_name?: string | null;
+  department?: string | null;
+}
+
+export interface Appeal {
+  appeal_id: string;
+  case_no?: string | null;
+  review_id: string;
+  period?: AppealCycleSummary | null;
+  reason: string;
+  status: string;
+  submitted_at?: string | null;
+  resolved_at?: string | null;
+  handler?: AppealHandler | null;
+  processing_comment?: string | null;
+  processing_comment_updated_at?: string | null;
+  is_final_response?: boolean | null;
+  updated_at?: string | null;
+}
+
+export interface AppealAvailableActions {
+  can_start_appeal?: boolean | null;
+  start_appeal_unavailable_reason?: string | null;
+  can_submit?: boolean | null;
+  submit_unavailable_reason?: string | null;
+}
+
+export interface AppealsResponse {
+  mode: string;
+  period: AppealCycleSummary;
+  appeal_period: AppealPeriod;
+  review_result?: AppealReviewResult | null;
+  current_appeal?: Appeal | null;
+  available_actions?: AppealAvailableActions | null;
+}
+
+export interface AppealSubmitRequest {
+  period_id: string;
+  reason: string;
+}
+
+export interface AppealSubmitResponse {
+  appeal: Appeal;
+  available_actions?: AppealAvailableActions | null;
+}
+
+export interface AppealResultResponse {
+  appeal: Appeal;
+  review_result?: AppealReviewResult | null;
+}
+
 export interface ApiErrorDetail {
   field?: string;
   message: string;
@@ -537,6 +621,121 @@ function isKpiConfirmationResponse(value: unknown): value is KpiConfirmationResp
   );
 }
 
+function isAppealCycleSummary(value: unknown): value is AppealCycleSummary {
+  return (
+    isRecord(value) &&
+    isString(value.cycle_id) &&
+    isString(value.name) &&
+    isOptionalNullableString(value.cycle_type) &&
+    isOptionalNullableString(value.period_label) &&
+    isOptionalNullableString(value.review_type) &&
+    isOptionalNullableString(value.start_date) &&
+    isOptionalNullableString(value.end_date) &&
+    isOptionalNullableString(value.timezone) &&
+    isOptionalNullableString(value.status) &&
+    isOptionalNullableBoolean(value.is_locked) &&
+    isOptionalNullableBoolean(value.is_review_locked) &&
+    isOptionalNullableString(value.review_locked_at) &&
+    isOptionalNullableString(value.results_published_at) &&
+    isOptionalNullableString(value.updated_at) &&
+    isOptionalNullableNumber(value.average_completion_percent) &&
+    (value.goal_count === undefined ||
+      value.goal_count === null ||
+      Number.isInteger(value.goal_count))
+  );
+}
+
+function isAppealReviewResult(value: unknown): value is AppealReviewResult {
+  return (
+    isRecord(value) &&
+    isString(value.review_id) &&
+    isOptionalNullableString(value.final_rating) &&
+    isOptionalNullableNumber(value.kpi_score) &&
+    isOptionalNullableNumber(value.review_score) &&
+    isOptionalNullableString(value.manager_comment)
+  );
+}
+
+function isAppealHandler(value: unknown): value is AppealHandler {
+  return (
+    isRecord(value) &&
+    isString(value.user_id) &&
+    isOptionalNullableString(value.type) &&
+    isString(value.name) &&
+    isOptionalNullableString(value.english_name) &&
+    isOptionalNullableString(value.department)
+  );
+}
+
+function isAppeal(value: unknown): value is Appeal {
+  return (
+    isRecord(value) &&
+    isString(value.appeal_id) &&
+    isOptionalNullableString(value.case_no) &&
+    isString(value.review_id) &&
+    (value.period === undefined ||
+      value.period === null ||
+      isAppealCycleSummary(value.period)) &&
+    isString(value.reason) &&
+    isString(value.status) &&
+    isOptionalNullableString(value.submitted_at) &&
+    isOptionalNullableString(value.resolved_at) &&
+    (value.handler === undefined || value.handler === null || isAppealHandler(value.handler)) &&
+    isOptionalNullableString(value.processing_comment) &&
+    isOptionalNullableString(value.processing_comment_updated_at) &&
+    isOptionalNullableBoolean(value.is_final_response) &&
+    isOptionalNullableString(value.updated_at)
+  );
+}
+
+function isAppealAvailableActions(value: unknown): value is AppealAvailableActions {
+  return (
+    isRecord(value) &&
+    isOptionalNullableBoolean(value.can_start_appeal) &&
+    isOptionalNullableString(value.start_appeal_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_submit) &&
+    isOptionalNullableString(value.submit_unavailable_reason)
+  );
+}
+
+function isAppealsResponse(value: unknown): value is AppealsResponse {
+  return (
+    isRecord(value) &&
+    isString(value.mode) &&
+    isAppealCycleSummary(value.period) &&
+    isKpiDisputePeriod(value.appeal_period) &&
+    (value.review_result === undefined ||
+      value.review_result === null ||
+      isAppealReviewResult(value.review_result)) &&
+    (value.current_appeal === undefined ||
+      value.current_appeal === null ||
+      isAppeal(value.current_appeal)) &&
+    (value.available_actions === undefined ||
+      value.available_actions === null ||
+      isAppealAvailableActions(value.available_actions))
+  );
+}
+
+function isAppealSubmitResponse(value: unknown): value is AppealSubmitResponse {
+  return (
+    isRecord(value) &&
+    isAppeal(value.appeal) &&
+    (value.available_actions === undefined ||
+      value.available_actions === null ||
+      isAppealAvailableActions(value.available_actions))
+  );
+}
+
+function isAppealResultResponse(value: unknown): value is AppealResultResponse {
+  return (
+    isRecord(value) &&
+    isAppeal(value.appeal) &&
+    (value.review_result === undefined ||
+      value.review_result === null ||
+      isAppealReviewResult(value.review_result))
+  );
+}
+
 function isApiErrorBody(value: unknown): value is ApiErrorBody {
   return (
     isRecord(value) &&
@@ -669,5 +868,34 @@ export function confirmMyKpiResult(
         confirmed: true,
       }),
     },
+  );
+}
+
+export function getMyAppeals(options?: EmployeeApiOptions): Promise<AppealsResponse> {
+  return requestJson<AppealsResponse>('/me/appeals', isAppealsResponse, options);
+}
+
+export function submitMyAppeal(
+  request: AppealSubmitRequest,
+  options?: EmployeeApiOptions,
+): Promise<AppealSubmitResponse> {
+  return requestJson<AppealSubmitResponse>(
+    '/me/appeals/submit',
+    isAppealSubmitResponse,
+    options,
+    {
+      method: 'POST',
+      body: JSON.stringify(request),
+    },
+  );
+}
+
+export function getMyAppealResult(
+  options?: EmployeeApiOptions,
+): Promise<AppealResultResponse> {
+  return requestJson<AppealResultResponse>(
+    '/me/appeals/result',
+    isAppealResultResponse,
+    options,
   );
 }
