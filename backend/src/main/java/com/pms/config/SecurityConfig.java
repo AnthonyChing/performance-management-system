@@ -94,10 +94,10 @@ public class SecurityConfig {
                 List.of(
                         "http://localhost:3000",
                         "http://localhost:5173",
+                        "https://ntu-pms.ddns.net",
                         "https://sage-etching-496105-k7.web.app",
                         "https://sage-etching-496105-k7.firebaseapp.com",
-                        "https://sage-etching-496105-k7-staging.web.app",
-                        "https://sage-etching-496105-k7-staging.firebaseapp.com"));
+                        "https://sage-etching-496105-k7--staging-sdhxt3or.web.app"));
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(
