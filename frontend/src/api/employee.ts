@@ -936,10 +936,14 @@ async function parseJsonBody(response: Response) {
   const text = await response.text();
 
   if (!text) {
-    return null;
+    return { body: null, text, isJson: false };
   }
 
-  return JSON.parse(text) as unknown;
+  try {
+    return { body: JSON.parse(text) as unknown, text, isJson: true };
+  } catch {
+    return { body: null, text, isJson: false };
+  }
 }
 
 function resolveAuthToken(authToken: string | null | undefined) {
@@ -978,7 +982,7 @@ async function requestJson<T>(
     },
   });
 
-  const body = await parseJsonBody(response);
+  const { body, text, isJson } = await parseJsonBody(response);
 
   if (!response.ok) {
     if (isApiErrorBody(body)) {
@@ -988,7 +992,7 @@ async function requestJson<T>(
     throw new ApiRequestError(response.status, {
       error: {
         code: 'HTTP_ERROR',
-        message: `HTTP ${response.status}`,
+        message: !isJson && text ? text : `HTTP ${response.status}`,
       },
     });
   }

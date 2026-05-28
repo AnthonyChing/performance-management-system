@@ -24,6 +24,16 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
   });
 }
 
+function textResponse(body: string, init: ResponseInit = {}) {
+  return new Response(body, {
+    status: init.status ?? 200,
+    headers: {
+      'Content-Type': 'text/plain',
+      ...init.headers,
+    },
+  });
+}
+
 const profilePayload = {
   profile: {
     user_id: 'user_001',
@@ -776,6 +786,23 @@ describe('employee API client', () => {
         note: '已完成新版客服流程試行。',
       }, { fetcher }),
     ).rejects.toBeInstanceOf(ApiResponseValidationError);
+  });
+
+  it('surfaces plain-text CORS errors without JSON parse failures', async () => {
+    const fetcher = vi.fn(
+      async () => textResponse('Invalid CORS request', { status: 403 }),
+    ) satisfies Fetcher;
+
+    await expect(
+      updateMyGoalProgress('goal_001', {
+        progress_percent: 80,
+        note: '已完成新版客服流程試行。',
+      }, { fetcher }),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: 'HTTP_ERROR',
+      message: 'Invalid CORS request',
+    });
   });
 
   it('surfaces UNAUTHORIZED for protected /me endpoints', async () => {
