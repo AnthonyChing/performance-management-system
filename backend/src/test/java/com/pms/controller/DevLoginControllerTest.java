@@ -12,7 +12,9 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.flyway.locations=classpath:db/migration,classpath:db/test-seed")
 @ActiveProfiles({"test", "dev"})
 @Import(TestcontainersConfig.class)
 class DevLoginControllerTest {
