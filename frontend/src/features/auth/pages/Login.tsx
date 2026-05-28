@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 const roleRedirectMap: Record<string, string> = {
@@ -10,10 +10,16 @@ const roleRedirectMap: Record<string, string> = {
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const redirectParam = new URLSearchParams(location.search).get('redirect');
+  const redirectTarget = redirectParam?.startsWith('/') && !redirectParam.startsWith('//')
+    ? redirectParam
+    : null;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,7 +55,7 @@ export default function Login() {
       }
       localStorage.setItem('role', role);
 
-      navigate(roleRedirectMap[role] ?? '/dashboard', { replace: true });
+      navigate(redirectTarget ?? roleRedirectMap[role] ?? '/dashboard', { replace: true });
     } catch (error) {
       setErrorMessage('登入失敗，請稍後再試。');
     } finally {

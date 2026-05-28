@@ -233,9 +233,14 @@ function handleUnauthorized(response: Response) {
     return;
   }
 
-  if (window.location.pathname !== '/login') {
-    window.location.replace('/login');
+  const { pathname, search, hash } = window.location;
+  if (pathname === '/login') {
+    return;
   }
+
+  const redirectTarget = `${pathname}${search}${hash}`;
+  const loginUrl = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+  window.location.replace(loginUrl);
 }
 
 async function parseJsonBody(response: Response) {
