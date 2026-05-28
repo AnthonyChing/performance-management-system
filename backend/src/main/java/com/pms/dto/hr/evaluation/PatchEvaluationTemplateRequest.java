@@ -21,8 +21,7 @@ public class PatchEvaluationTemplateRequest {
     private String description;
     private String employeeGroupId;
 
-    @Valid
-    private List<AssessmentTemplateComponentRequest> assessmentTemplates;
+    @Valid private List<AssessmentTemplateComponentRequest> assessmentTemplates;
 
     private String status;
 }

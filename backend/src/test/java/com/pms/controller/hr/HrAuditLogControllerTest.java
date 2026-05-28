@@ -70,7 +70,9 @@ class HrAuditLogControllerTest {
 
     @Test
     void listAuditLogs_returnsPagedAuditLogs() {
-        given().when()
+        given().queryParam("from", "2026-01-02T00:00:00Z")
+                .queryParam("to", "2026-01-03T00:00:00Z")
+                .when()
                 .get("/audit-logs")
                 .then()
                 .statusCode(200)

@@ -41,8 +41,7 @@ public class HrEvaluationTemplateController {
 
     @PatchMapping("/{templateId}")
     public ResponseEntity<EvaluationTemplateResponse> patch(
-            @PathVariable UUID templateId,
-            @Valid @RequestBody PatchEvaluationTemplateRequest req) {
+            @PathVariable UUID templateId, @Valid @RequestBody PatchEvaluationTemplateRequest req) {
         return ResponseEntity.ok(
                 evalTemplateService.patchEvaluationTemplate(
                         SecurityUtils.currentUserId(), templateId, req));

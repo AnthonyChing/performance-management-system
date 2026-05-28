@@ -26,7 +26,5 @@ public class CreateEvaluationTemplateRequest {
 
     @NotBlank private String employeeGroupId;
 
-    @NotEmpty
-    @Valid
-    private List<AssessmentTemplateComponentRequest> assessmentTemplates;
+    @NotEmpty @Valid private List<AssessmentTemplateComponentRequest> assessmentTemplates;
 }

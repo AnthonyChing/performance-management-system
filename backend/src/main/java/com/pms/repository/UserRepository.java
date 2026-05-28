@@ -25,7 +25,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<String> findRoleNamesByUserId(@Param("userId") UUID userId);
 
     @Query(
-            value = "SELECT DISTINCT job_category FROM users WHERE job_category IS NOT NULL ORDER BY job_category",
+            value =
+                    "SELECT DISTINCT job_category FROM users WHERE job_category IS NOT NULL ORDER BY job_category",
             nativeQuery = true)
     List<String> findDistinctJobCategories();
 }
