@@ -19,7 +19,7 @@ public interface AssessmentTemplateRepository extends JpaRepository<AssessmentTe
             SELECT * FROM assessment_templates
             WHERE deleted_at IS NULL
               AND (:status IS NULL OR status::text = :status)
-              AND (:jobFunction IS NULL OR job_function = :jobFunction)
+              AND (:jobCategory IS NULL OR job_category = :jobCategory)
             ORDER BY created_at DESC
             """,
             countQuery =
@@ -27,12 +27,12 @@ public interface AssessmentTemplateRepository extends JpaRepository<AssessmentTe
             SELECT count(*) FROM assessment_templates
             WHERE deleted_at IS NULL
               AND (:status IS NULL OR status::text = :status)
-              AND (:jobFunction IS NULL OR job_function = :jobFunction)
+              AND (:jobCategory IS NULL OR job_category = :jobCategory)
             """,
             nativeQuery = true)
     Page<AssessmentTemplate> findAllFiltered(
             @Param("status") String status,
-            @Param("jobFunction") String jobFunction,
+            @Param("jobCategory") String jobCategory,
             Pageable pageable);
 
     @Query(

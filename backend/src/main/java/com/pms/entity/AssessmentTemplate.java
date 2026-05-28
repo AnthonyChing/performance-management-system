@@ -28,8 +28,8 @@ public class AssessmentTemplate {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "job_function", length = 64)
-    private String jobFunction;
+    @Column(name = "job_category", length = 64)
+    private String jobCategory;
 
     @Convert(converter = TemplateStatusConverter.class)
     @Column(name = "status", nullable = false, columnDefinition = "template_status_enum")
