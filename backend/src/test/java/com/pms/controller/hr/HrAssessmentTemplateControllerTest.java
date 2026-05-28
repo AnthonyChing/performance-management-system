@@ -107,7 +107,7 @@ class HrAssessmentTemplateControllerTest {
         jdbc.update(
                 """
                 INSERT INTO assessment_templates
-                    (id, name, description, job_function, status, is_active, created_by, updated_by)
+                    (id, name, description, job_category, status, is_active, created_by, updated_by)
                 VALUES
                     (?::uuid, ?, 'Template for HR controller tests', 'engineering',
                      ?, true, ?::uuid, ?::uuid)
@@ -151,7 +151,7 @@ class HrAssessmentTemplateControllerTest {
                 {
                   "name": "2026 業務部年度考核問卷",
                   "description": "業務與銷售相關同仁適用",
-                  "job_function": "sales"
+                  "job_category": "sales"
                 }
                 """;
 
@@ -165,7 +165,7 @@ class HrAssessmentTemplateControllerTest {
                 .body("name", equalTo("2026 業務部年度考核問卷"))
                 .body("status", equalTo("draft"))
                 .body("is_active", equalTo(true))
-                .body("job_function", equalTo("sales"));
+                .body("job_category", equalTo("sales"));
     }
 
     @Test

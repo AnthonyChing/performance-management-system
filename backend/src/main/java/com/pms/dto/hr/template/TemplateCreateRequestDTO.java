@@ -15,5 +15,5 @@ public class TemplateCreateRequestDTO {
     private String name;
 
     private String description;
-    private String jobFunction;
+    private String jobCategory;
 }

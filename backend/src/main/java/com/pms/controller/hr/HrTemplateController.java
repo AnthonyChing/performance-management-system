@@ -40,11 +40,11 @@ public class HrTemplateController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> listTemplates(
             @RequestParam(required = false) String status,
-            @RequestParam(name = "job_function", required = false) String jobFunction,
+            @RequestParam(name = "job_category", required = false) String jobCategory,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(name = "page_size", defaultValue = "20") int pageSize) {
         Page<TemplateListItemDTO> result =
-                templateService.listTemplates(status, jobFunction, page, pageSize);
+                templateService.listTemplates(status, jobCategory, page, pageSize);
         return ResponseEntity.ok(
                 Map.of(
                         "data", result.getContent(),
