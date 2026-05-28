@@ -224,6 +224,20 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
+function handleUnauthorized(response: Response) {
+  if (response.status !== 401) {
+    return;
+  }
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+}
+
 async function parseJsonBody(response: Response) {
   const text = await response.text();
 
@@ -249,6 +263,8 @@ async function requestJson<T>(
       'Content-Type': 'application/json',
     },
   });
+
+  handleUnauthorized(response);
 
   const body = await parseJsonBody(response);
 
