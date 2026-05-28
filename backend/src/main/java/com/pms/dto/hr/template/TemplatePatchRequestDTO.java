@@ -13,5 +13,5 @@ public class TemplatePatchRequestDTO {
     private String name;
 
     private String description;
-    private String jobFunction;
+    private String jobCategory;
 }

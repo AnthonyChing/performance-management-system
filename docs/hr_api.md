@@ -79,17 +79,18 @@
   "id": "123e4567-e89b-12d3-a456-426614174000",
   "name": "工程部門 2026 評估模板",
   "description": "適用於所有工程團隊的半年度及年度評核。",
-  "job_function": "engineering",
+  "job_category": "engineering",
   "is_active": true,
   "status": "published",
+  "usage_count": 2,
   "created_by": "123e4567-e89b-12d3-a456-426614174010",
   "updated_by": "123e4567-e89b-12d3-a456-426614174010",
   "created_at": "2026-05-01T10:00:00+08:00",
-  "updated_at": "2026-05-15T14:30:00+08:00",
-  "deleted_at": null,
-  "usage_count": 2
+  "updated_at": "2026-05-15T14:30:00+08:00"
 }
 ```
+
+> `deleted_at` 為 null 時因 `non_null` Jackson 設定不會出現在 response。
 
 * `status` 在實務流程上分為 `draft`（草稿）與 `published`（已發布可供週期綁定）。
 * `usage_count` 代表本模板被多少個 `performance_cycles` 使用中，前端可藉此判斷是否允許刪除或大幅度修改。
@@ -179,7 +180,7 @@
 - **URL**: `/hr/assessment-templates`
 - **用途**: 新增一個全新的模板草稿。
 - **欄位說明**:
-  - Request: `name` (String, 模板名稱，必填), `description` (String, 描述), `job_function` (String, 適用的職能類別)。
+  - Request: `name` (String, 模板名稱，必填), `description` (String, 描述), `job_category` (String, 適用的職能類別)。
   - Response: 回傳新建的模板資料，預設狀態為 `draft`，且 `is_active` 為 `true`。
 - **可能錯誤 (HTTP Status)**:
   - `400 VALIDATION_ERROR`: `name` 缺失或超長。
@@ -188,7 +189,7 @@
   {
     "name": "2026 業務部年度考核問卷",
     "description": "業務與銷售相關同仁適用",
-    "job_function": "sales"
+    "job_category": "sales"
   }
   ```
 - **Response 201**:
@@ -197,14 +198,14 @@
     "id": "123e4567-e89b-12d3-a456-426614174001",
     "name": "2026 業務部年度考核問卷",
     "description": "業務與銷售相關同仁適用",
-    "job_function": "sales",
+    "job_category": "sales",
     "status": "draft",
     "is_active": true,
+    "usage_count": 0,
     "created_by": "123e4567-e89b-12d3-a456-426614174010",
     "updated_by": "123e4567-e89b-12d3-a456-426614174010",
     "created_at": "2026-05-25T10:00:00+08:00",
-    "updated_at": "2026-05-25T10:00:00+08:00",
-    "deleted_at": null
+    "updated_at": "2026-05-25T10:00:00+08:00"
   }
   ```
 
@@ -213,7 +214,7 @@
 - **URL**: `/hr/assessment-templates/{template_id}`
 - **用途**: 變更問卷的基本資訊（名稱、描述、職能分類）。
 - **欄位說明**:
-  - Request: `name` (String), `description` (String), `job_function` (String)。皆為選填。
+  - Request: `name` (String), `description` (String), `job_category` (String)。皆為選填。
   - Response: 回傳更新後的模板。
 - **可能錯誤 (HTTP Status)**:
   - `404 RESOURCE_NOT_FOUND`: 找不到特定的 `template_id`。
@@ -230,13 +231,16 @@
     "id": "123e4567-e89b-12d3-a456-426614174001",
     "name": "2026 業務部年度考核問卷",
     "description": "業務與銷售相關同仁適用 (更新版)",
-    "job_function": "sales",
+    "job_category": "sales",
     "status": "draft",
     "is_active": true,
+    "usage_count": 0,
     "updated_by": "123e4567-e89b-12d3-a456-426614174010",
     "updated_at": "2026-05-26T11:00:00+08:00"
   }
   ```
+
+> `deleted_at` 等 null 欄位因 `non_null` Jackson 設定不會出現在 response 中。
 
 ### 4.3 刪除問卷模板
 - **Method**: DELETE
@@ -258,7 +262,7 @@
     "id": "123e4567-e89b-12d3-a456-426614174001",
     "name": "2026 業務部年度考核問卷",
     "description": "業務與銷售相關同仁適用",
-    "job_function": "sales",
+    "job_category": "sales",
     "status": "published",
     "is_active": true,
     "usage_count": 1,
@@ -272,7 +276,7 @@
 - **URL**: `/hr/assessment-templates`
 - **用途**: 列出所有模板，提供分頁與條件篩選。
 - **欄位說明**:
-  - Request: Query params `page` (Integer), `status` (`draft` or `published`), `job_function` (String)。
+  - Request: Query params `page` (Integer), `status` (`draft` or `published`), `job_category` (String)。
 - **Response 200**:
   ```json
   {
@@ -280,7 +284,7 @@
       {
         "id": "123e4567-e89b-12d3-a456-426614174001",
         "name": "2026 業務部年度考核問卷",
-        "job_function": "sales",
+        "job_category": "sales",
         "status": "draft",
         "is_active": true
       }

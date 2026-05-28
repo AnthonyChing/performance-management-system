@@ -12,7 +12,7 @@ public class TemplateResponseDTO {
     private UUID id;
     private String name;
     private String description;
-    private String jobFunction;
+    private String jobCategory;
     private String status;
     private Boolean isActive;
     private Long usageCount;
@@ -27,7 +27,7 @@ public class TemplateResponseDTO {
                 .id(t.getId())
                 .name(t.getName())
                 .description(t.getDescription())
-                .jobFunction(t.getJobFunction())
+                .jobCategory(t.getJobCategory())
                 .status(t.getStatus().getDbValue())
                 .isActive(t.getIsActive())
                 .usageCount(usageCount)

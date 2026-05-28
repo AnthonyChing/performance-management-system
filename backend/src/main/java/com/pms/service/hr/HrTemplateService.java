@@ -12,7 +12,7 @@ public interface HrTemplateService {
     TemplateResponseDTO getTemplate(UUID templateId);
 
     Page<TemplateListItemDTO> listTemplates(
-            String status, String jobFunction, int page, int pageSize);
+            String status, String jobCategory, int page, int pageSize);
 
     TemplateResponseDTO patchTemplate(
             UUID actorId, UUID templateId, TemplatePatchRequestDTO request);
