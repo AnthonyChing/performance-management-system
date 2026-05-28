@@ -3,14 +3,17 @@ import {
   ApiRequestError,
   ApiResponseValidationError,
   confirmMyKpiResult,
+  createMyGoal,
   getCurrentPerformanceCycle,
   getMyAppealResult,
   getMyAppeals,
+  getMyCurrentGoals,
   getMyKpiResult,
   getMyKpiStandards,
   getMyProfile,
   resolveEmployeeApiUrl,
   submitMyAppeal,
+  updateMyGoalProgress,
   type Fetcher,
 } from '../src/api/employee';
 
@@ -19,6 +22,16 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
     status: init.status ?? 200,
     headers: {
       'Content-Type': 'application/json',
+      ...init.headers,
+    },
+  });
+}
+
+function textResponse(body: string, init: ResponseInit = {}) {
+  return new Response(body, {
+    status: init.status ?? 200,
+    headers: {
+      'Content-Type': 'text/plain',
       ...init.headers,
     },
   });
@@ -250,6 +263,112 @@ const appealResultPayload = {
     is_final_response: true,
   },
   review_result: appealPayload.review_result,
+};
+
+const currentGoalsPayload = {
+  cycle: {
+    cycle_id: 'cycle_2024_q3',
+    name: '2024 Q3 Quarterly Review',
+    period_label: '2024-07-01~2024-09-30',
+    start_date: '2024-07-01',
+    end_date: '2024-09-30',
+    status: 'in_progress',
+    is_locked: false,
+  },
+  available_actions: {
+    can_create_goal: true,
+  },
+  summary: {
+    total_count: 1,
+    pending_review_count: 0,
+    in_progress_count: 1,
+    revision_requested_count: 0,
+    completed_count: 0,
+    cancelled_count: 0,
+  },
+  goals: [
+    {
+      goal_id: 'goal_001',
+      cycle_id: 'cycle_2024_q3',
+      goal_type: 'individual',
+      title: '完成推薦系統重構',
+      description: '完成核心服務拆分與壓測。',
+      due_date: '2024-09-15',
+      status: 'in_progress',
+      progress_percent: 60,
+      owner: {
+        user_id: 'user_001',
+        name: '陳大文',
+        department: '技術研發部',
+      },
+      reviewer: {
+        user_id: 'user_manager_001',
+        name: '林美玲',
+      },
+      latest_progress_update: {
+        progress_update_id: 'progress_001',
+        progress_percent: 60,
+        note: '已完成 API 拆分。',
+        created_at: '2024-08-10T09:30:00+08:00',
+        created_by: {
+          user_id: 'user_001',
+          name: '陳大文',
+        },
+      },
+      available_actions: {
+        can_edit: false,
+        edit_unavailable_reason: 'invalid_goal_status',
+        can_update_progress: true,
+      },
+    },
+  ],
+};
+
+const goalProgressUpdatePayload = {
+  progress_update: {
+    progress_update_id: 'progress_002',
+    goal_id: 'goal_001',
+    progress_percent: 80,
+    note: '已完成新版客服流程試行。',
+    created_at: '2024-08-20T14:30:00+08:00',
+    created_by: {
+      user_id: 'user_001',
+      name: '陳大文',
+    },
+  },
+  goal: {
+    goal_id: 'goal_001',
+    status: 'in_progress',
+    progress_percent: 80,
+    latest_progress_update: {
+      progress_update_id: 'progress_002',
+      progress_percent: 80,
+      note: '已完成新版客服流程試行。',
+      created_at: '2024-08-20T14:30:00+08:00',
+    },
+    available_actions: {
+      can_update_progress: true,
+    },
+  },
+};
+
+const goalCreationPayload = {
+  goal: {
+    goal_id: 'goal_002',
+    cycle_id: 'cycle_2024_q3',
+    goal_type: 'individual',
+    title: '提升產品技術文件完整度',
+    description: '補齊核心模組 API 文件。',
+    due_date: '2024-09-30',
+    status: 'pending_review',
+    progress_percent: 0,
+    available_actions: {
+      can_edit: false,
+      can_update_progress: false,
+    },
+    created_at: '2024-08-20T14:30:00+08:00',
+    updated_at: '2024-08-20T14:30:00+08:00',
+  },
 };
 
 describe('employee API client', () => {
@@ -608,6 +727,25 @@ describe('employee API client', () => {
     );
   });
 
+  it('GET /me/goals uses /api/v1 prefix and returns current goals', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(currentGoalsPayload)) satisfies Fetcher;
+
+    await expect(getMyCurrentGoals({ fetcher })).resolves.toEqual(currentGoalsPayload);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/goals',
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      }),
+    );
+  });
+
   it('GET /me/appeals accepts an existing appeal result state', async () => {
     const fetcher = vi.fn(async () =>
       jsonResponse({
@@ -646,6 +784,47 @@ describe('employee API client', () => {
     );
   });
 
+  it('GET /me/goals accepts an empty goal list', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        cycle: {
+          cycle_id: 'cycle_2024_q3',
+          name: '2024 Q3 Quarterly Review',
+        },
+        summary: {
+          total_count: 0,
+        },
+        goals: [],
+      }),
+    ) satisfies Fetcher;
+
+    await expect(getMyCurrentGoals({ fetcher })).resolves.toMatchObject({
+      goals: [],
+    });
+  });
+
+  it('GET /me/goals rejects invalid goal rows', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        cycle: {
+          cycle_id: 'cycle_2024_q3',
+          name: '2024 Q3 Quarterly Review',
+        },
+        goals: [
+          {
+            goal_id: 'goal_001',
+            title: '完成推薦系統重構',
+            progress_percent: '60',
+          },
+        ],
+      }),
+    ) satisfies Fetcher;
+
+    await expect(getMyCurrentGoals({ fetcher })).rejects.toBeInstanceOf(
+      ApiResponseValidationError,
+    );
+  });
+
   it('POST /me/appeals/submit sends the period id and reason', async () => {
     const fetcher = vi.fn(
       async () => jsonResponse(appealSubmitPayload, { status: 201 }),
@@ -673,6 +852,32 @@ describe('employee API client', () => {
     );
   });
 
+  it('POST /me/goals sends a new current goal for review', async () => {
+    const fetcher = vi.fn(
+      async () => jsonResponse(goalCreationPayload, { status: 201 }),
+    ) satisfies Fetcher;
+
+    await expect(
+      createMyGoal({
+        title: '提升產品技術文件完整度',
+        due_date: '2024-09-30',
+        description: '補齊核心模組 API 文件。',
+      }, { fetcher }),
+    ).resolves.toEqual(goalCreationPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/goals',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          title: '提升產品技術文件完整度',
+          due_date: '2024-09-30',
+          description: '補齊核心模組 API 文件。',
+        }),
+      }),
+    );
+  });
+
   it('GET /me/appeals/result returns the submitted appeal result', async () => {
     const fetcher = vi.fn(async () => jsonResponse(appealResultPayload)) satisfies Fetcher;
 
@@ -684,6 +889,87 @@ describe('employee API client', () => {
         method: 'GET',
       }),
     );
+  });
+
+  it('POST /me/goals rejects invalid creation responses', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        goal: {
+          goal_id: 'goal_002',
+          progress_percent: 0,
+        },
+      }),
+    ) satisfies Fetcher;
+
+    await expect(
+      createMyGoal({
+        title: '提升產品技術文件完整度',
+        due_date: '2024-09-30',
+        description: '補齊核心模組 API 文件。',
+      }, { fetcher }),
+    ).rejects.toBeInstanceOf(ApiResponseValidationError);
+  });
+
+  it('POST /me/goals/{goal_id}/progress-updates sends progress update payload', async () => {
+    const fetcher = vi.fn(
+      async () => jsonResponse(goalProgressUpdatePayload, { status: 201 }),
+    ) satisfies Fetcher;
+
+    await expect(
+      updateMyGoalProgress('goal_001', {
+        progress_percent: 80,
+        note: '已完成新版客服流程試行。',
+      }, { fetcher }),
+    ).resolves.toEqual(goalProgressUpdatePayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/goals/goal_001/progress-updates',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          progress_percent: 80,
+          note: '已完成新版客服流程試行。',
+        }),
+      }),
+    );
+  });
+
+  it('POST /me/goals/{goal_id}/progress-updates rejects invalid update responses', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        progress_update: {
+          progress_update_id: 'progress_002',
+          progress_percent: '80',
+        },
+        goal: {
+          goal_id: 'goal_001',
+        },
+      }),
+    ) satisfies Fetcher;
+
+    await expect(
+      updateMyGoalProgress('goal_001', {
+        progress_percent: 80,
+        note: '已完成新版客服流程試行。',
+      }, { fetcher }),
+    ).rejects.toBeInstanceOf(ApiResponseValidationError);
+  });
+
+  it('surfaces plain-text CORS errors without JSON parse failures', async () => {
+    const fetcher = vi.fn(
+      async () => textResponse('Invalid CORS request', { status: 403 }),
+    ) satisfies Fetcher;
+
+    await expect(
+      updateMyGoalProgress('goal_001', {
+        progress_percent: 80,
+        note: '已完成新版客服流程試行。',
+      }, { fetcher }),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: 'HTTP_ERROR',
+      message: 'Invalid CORS request',
+    });
   });
 
   it('surfaces UNAUTHORIZED for protected /me endpoints', async () => {

@@ -1,1 +1,21 @@
-export { COMMON_MOCK_GOALS, HISTORY_GOALS_MOCK } from '../../shared/api/mockData';
+export {
+  ApiRequestError,
+  createMyGoal,
+  getMyCurrentGoals,
+  updateMyGoalProgress,
+  type CurrentGoalsResponse,
+  type EmployeeAvailableActions,
+  type EmployeeGoal,
+  type EmployeeGoalUpdateResult,
+  type GoalCycleSummary,
+  type GoalCreationRequest,
+  type GoalCreationResponse,
+  type GoalOwner,
+  type GoalProgressUpdate,
+  type GoalProgressUpdateRequest,
+  type GoalProgressUpdateResponse,
+  type GoalReview,
+  type GoalReviewer,
+  type GoalSummary,
+} from '../../api/employee';
+export { HISTORY_GOALS_MOCK } from '../../shared/api/mockData';

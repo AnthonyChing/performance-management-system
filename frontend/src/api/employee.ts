@@ -189,7 +189,24 @@ export interface KpiConfirmationResponse {
   result: KpiResultSummary;
 }
 
-export interface AppealCycleSummary {
+export interface EmployeeAvailableActions {
+  can_edit?: boolean | null;
+  edit_unavailable_reason?: string | null;
+  can_update_progress?: boolean | null;
+  update_progress_unavailable_reason?: string | null;
+  can_create_goal?: boolean | null;
+  create_goal_unavailable_reason?: string | null;
+  can_confirm?: boolean | null;
+  confirm_unavailable_reason?: string | null;
+  can_dispute?: boolean | null;
+  dispute_unavailable_reason?: string | null;
+  can_start_appeal?: boolean | null;
+  start_appeal_unavailable_reason?: string | null;
+  can_submit?: boolean | null;
+  submit_unavailable_reason?: string | null;
+}
+
+export interface GoalCycleSummary {
   cycle_id: string;
   name: string;
   cycle_type?: string | null;
@@ -206,6 +223,120 @@ export interface AppealCycleSummary {
   updated_at?: string | null;
   average_completion_percent?: number | null;
   goal_count?: number | null;
+}
+
+export type AppealCycleSummary = GoalCycleSummary;
+
+export interface GoalSummary {
+  total_count?: number | null;
+  pending_review_count?: number | null;
+  in_progress_count?: number | null;
+  revision_requested_count?: number | null;
+  completed_count?: number | null;
+  cancelled_count?: number | null;
+  average_completion_percent?: number | null;
+  goal_count?: number | null;
+}
+
+export interface GoalOwner {
+  user_id: string;
+  name?: string | null;
+  department?: string | null;
+}
+
+export interface GoalReviewer {
+  user_id: string;
+  name?: string | null;
+  english_name?: string | null;
+  email?: string | null;
+  title?: string | null;
+}
+
+export interface GoalProgressUpdateCreator {
+  user_id: string;
+  name?: string | null;
+}
+
+export interface GoalProgressUpdate {
+  progress_update_id: string;
+  goal_id?: string | null;
+  progress_percent?: number | null;
+  note?: string | null;
+  created_at?: string | null;
+  created_by?: GoalProgressUpdateCreator | null;
+}
+
+export interface GoalReview {
+  review_id: string;
+  decision?: string | null;
+  comment?: string | null;
+  reviewed_at?: string | null;
+  reviewer?: GoalReviewer | null;
+}
+
+export interface EmployeeGoal {
+  goal_id: string;
+  cycle_id?: string | null;
+  goal_type?: string | null;
+  title: string;
+  description?: string | null;
+  due_date?: string | null;
+  status?: string | null;
+  progress_percent?: number | null;
+  owner?: GoalOwner | null;
+  reviewer?: GoalReviewer | null;
+  latest_progress_update?: GoalProgressUpdate | null;
+  latest_review?: GoalReview | null;
+  available_actions?: EmployeeAvailableActions | null;
+  published_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface CurrentGoalsResponse {
+  cycle: GoalCycleSummary;
+  available_actions?: EmployeeAvailableActions | null;
+  summary?: GoalSummary | null;
+  goals: EmployeeGoal[];
+}
+
+export interface GoalProgressUpdateRequest {
+  progress_percent: number;
+  note: string;
+}
+
+export interface GoalCreationRequest {
+  title: string;
+  due_date: string;
+  description: string;
+}
+
+export interface GoalCreationResponse {
+  goal: EmployeeGoal;
+}
+
+export interface EmployeeGoalUpdateResult {
+  goal_id: string;
+  cycle_id?: string | null;
+  goal_type?: string | null;
+  title?: string | null;
+  description?: string | null;
+  due_date?: string | null;
+  status?: string | null;
+  progress_percent?: number | null;
+  owner?: GoalOwner | null;
+  reviewer?: GoalReviewer | null;
+  latest_progress_update?: GoalProgressUpdate | null;
+  latest_review?: GoalReview | null;
+  available_actions?: EmployeeAvailableActions | null;
+  published_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface GoalProgressUpdateResponse {
+  progress_update: GoalProgressUpdate;
+  goal: EmployeeGoalUpdateResult;
 }
 
 export type AppealPeriod = KpiDisputePeriod;
@@ -621,7 +752,27 @@ function isKpiConfirmationResponse(value: unknown): value is KpiConfirmationResp
   );
 }
 
-function isAppealCycleSummary(value: unknown): value is AppealCycleSummary {
+function isEmployeeAvailableActions(value: unknown): value is EmployeeAvailableActions {
+  return (
+    isRecord(value) &&
+    isOptionalNullableBoolean(value.can_edit) &&
+    isOptionalNullableString(value.edit_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_update_progress) &&
+    isOptionalNullableString(value.update_progress_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_create_goal) &&
+    isOptionalNullableString(value.create_goal_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_confirm) &&
+    isOptionalNullableString(value.confirm_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_dispute) &&
+    isOptionalNullableString(value.dispute_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_start_appeal) &&
+    isOptionalNullableString(value.start_appeal_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_submit) &&
+    isOptionalNullableString(value.submit_unavailable_reason)
+  );
+}
+
+function isGoalCycleSummary(value: unknown): value is GoalCycleSummary {
   return (
     isRecord(value) &&
     isString(value.cycle_id) &&
@@ -639,10 +790,196 @@ function isAppealCycleSummary(value: unknown): value is AppealCycleSummary {
     isOptionalNullableString(value.results_published_at) &&
     isOptionalNullableString(value.updated_at) &&
     isOptionalNullableNumber(value.average_completion_percent) &&
-    (value.goal_count === undefined ||
-      value.goal_count === null ||
-      Number.isInteger(value.goal_count))
+    isOptionalNullableNumber(value.goal_count)
   );
+}
+
+function isGoalSummary(value: unknown): value is GoalSummary {
+  return (
+    isRecord(value) &&
+    isOptionalNullableNumber(value.total_count) &&
+    isOptionalNullableNumber(value.pending_review_count) &&
+    isOptionalNullableNumber(value.in_progress_count) &&
+    isOptionalNullableNumber(value.revision_requested_count) &&
+    isOptionalNullableNumber(value.completed_count) &&
+    isOptionalNullableNumber(value.cancelled_count) &&
+    isOptionalNullableNumber(value.average_completion_percent) &&
+    isOptionalNullableNumber(value.goal_count)
+  );
+}
+
+function isGoalOwner(value: unknown): value is GoalOwner {
+  return (
+    isRecord(value) &&
+    isString(value.user_id) &&
+    isOptionalNullableString(value.name) &&
+    isOptionalNullableString(value.department)
+  );
+}
+
+function isGoalReviewer(value: unknown): value is GoalReviewer {
+  return (
+    isRecord(value) &&
+    isString(value.user_id) &&
+    isOptionalNullableString(value.name) &&
+    isOptionalNullableString(value.english_name) &&
+    isOptionalNullableString(value.email) &&
+    isOptionalNullableString(value.title)
+  );
+}
+
+function isGoalProgressUpdateCreator(
+  value: unknown,
+): value is GoalProgressUpdateCreator {
+  return (
+    isRecord(value) &&
+    isString(value.user_id) &&
+    isOptionalNullableString(value.name)
+  );
+}
+
+function isGoalProgressUpdate(value: unknown): value is GoalProgressUpdate {
+  return (
+    isRecord(value) &&
+    isString(value.progress_update_id) &&
+    isOptionalNullableString(value.goal_id) &&
+    isOptionalNullableNumber(value.progress_percent) &&
+    isOptionalNullableString(value.note) &&
+    isOptionalNullableString(value.created_at) &&
+    (
+      value.created_by === undefined ||
+      value.created_by === null ||
+      isGoalProgressUpdateCreator(value.created_by)
+    )
+  );
+}
+
+function isGoalReview(value: unknown): value is GoalReview {
+  return (
+    isRecord(value) &&
+    isString(value.review_id) &&
+    isOptionalNullableString(value.decision) &&
+    isOptionalNullableString(value.comment) &&
+    isOptionalNullableString(value.reviewed_at) &&
+    (
+      value.reviewer === undefined ||
+      value.reviewer === null ||
+      isGoalReviewer(value.reviewer)
+    )
+  );
+}
+
+function isEmployeeGoal(value: unknown): value is EmployeeGoal {
+  return (
+    isRecord(value) &&
+    isString(value.goal_id) &&
+    isOptionalNullableString(value.cycle_id) &&
+    isOptionalNullableString(value.goal_type) &&
+    isString(value.title) &&
+    isOptionalNullableString(value.description) &&
+    isOptionalNullableString(value.due_date) &&
+    isOptionalNullableString(value.status) &&
+    isOptionalNullableNumber(value.progress_percent) &&
+    (value.owner === undefined || value.owner === null || isGoalOwner(value.owner)) &&
+    (
+      value.reviewer === undefined ||
+      value.reviewer === null ||
+      isGoalReviewer(value.reviewer)
+    ) &&
+    (
+      value.latest_progress_update === undefined ||
+      value.latest_progress_update === null ||
+      isGoalProgressUpdate(value.latest_progress_update)
+    ) &&
+    (
+      value.latest_review === undefined ||
+      value.latest_review === null ||
+      isGoalReview(value.latest_review)
+    ) &&
+    (
+      value.available_actions === undefined ||
+      value.available_actions === null ||
+      isEmployeeAvailableActions(value.available_actions)
+    ) &&
+    isOptionalNullableString(value.published_at) &&
+    isOptionalNullableString(value.created_at) &&
+    isOptionalNullableString(value.updated_at)
+  );
+}
+
+function isEmployeeGoalUpdateResult(value: unknown): value is EmployeeGoalUpdateResult {
+  return (
+    isRecord(value) &&
+    isString(value.goal_id) &&
+    isOptionalNullableString(value.cycle_id) &&
+    isOptionalNullableString(value.goal_type) &&
+    isOptionalNullableString(value.title) &&
+    isOptionalNullableString(value.description) &&
+    isOptionalNullableString(value.due_date) &&
+    isOptionalNullableString(value.status) &&
+    isOptionalNullableNumber(value.progress_percent) &&
+    (value.owner === undefined || value.owner === null || isGoalOwner(value.owner)) &&
+    (
+      value.reviewer === undefined ||
+      value.reviewer === null ||
+      isGoalReviewer(value.reviewer)
+    ) &&
+    (
+      value.latest_progress_update === undefined ||
+      value.latest_progress_update === null ||
+      isGoalProgressUpdate(value.latest_progress_update)
+    ) &&
+    (
+      value.latest_review === undefined ||
+      value.latest_review === null ||
+      isGoalReview(value.latest_review)
+    ) &&
+    (
+      value.available_actions === undefined ||
+      value.available_actions === null ||
+      isEmployeeAvailableActions(value.available_actions)
+    ) &&
+    isOptionalNullableString(value.published_at) &&
+    isOptionalNullableString(value.created_at) &&
+    isOptionalNullableString(value.updated_at)
+  );
+}
+
+function isCurrentGoalsResponse(value: unknown): value is CurrentGoalsResponse {
+  return (
+    isRecord(value) &&
+    isGoalCycleSummary(value.cycle) &&
+    (
+      value.available_actions === undefined ||
+      value.available_actions === null ||
+      isEmployeeAvailableActions(value.available_actions)
+    ) &&
+    (
+      value.summary === undefined ||
+      value.summary === null ||
+      isGoalSummary(value.summary)
+    ) &&
+    Array.isArray(value.goals) &&
+    value.goals.every(isEmployeeGoal)
+  );
+}
+
+function isGoalProgressUpdateResponse(
+  value: unknown,
+): value is GoalProgressUpdateResponse {
+  return (
+    isRecord(value) &&
+    isGoalProgressUpdate(value.progress_update) &&
+    isEmployeeGoalUpdateResult(value.goal)
+  );
+}
+
+function isGoalCreationResponse(value: unknown): value is GoalCreationResponse {
+  return isRecord(value) && isEmployeeGoal(value.goal);
+}
+
+function isAppealCycleSummary(value: unknown): value is AppealCycleSummary {
+  return isGoalCycleSummary(value);
 }
 
 function isAppealReviewResult(value: unknown): value is AppealReviewResult {
@@ -761,10 +1098,14 @@ async function parseJsonBody(response: Response) {
   const text = await response.text();
 
   if (!text) {
-    return null;
+    return { body: null, text, isJson: false };
   }
 
-  return JSON.parse(text) as unknown;
+  try {
+    return { body: JSON.parse(text) as unknown, text, isJson: true };
+  } catch {
+    return { body: null, text, isJson: false };
+  }
 }
 
 function resolveAuthToken(authToken: string | null | undefined) {
@@ -803,7 +1144,7 @@ async function requestJson<T>(
     },
   });
 
-  const body = await parseJsonBody(response);
+  const { body, text, isJson } = await parseJsonBody(response);
 
   if (!response.ok) {
     if (isApiErrorBody(body)) {
@@ -813,7 +1154,7 @@ async function requestJson<T>(
     throw new ApiRequestError(response.status, {
       error: {
         code: 'HTTP_ERROR',
-        message: `HTTP ${response.status}`,
+        message: !isJson && text ? text : `HTTP ${response.status}`,
       },
     });
   }
@@ -897,5 +1238,42 @@ export function getMyAppealResult(
     '/me/appeals/result',
     isAppealResultResponse,
     options,
+  );
+}
+
+export function getMyCurrentGoals(
+  options?: EmployeeApiOptions,
+): Promise<CurrentGoalsResponse> {
+  return requestJson<CurrentGoalsResponse>('/me/goals', isCurrentGoalsResponse, options);
+}
+
+export function createMyGoal(
+  payload: GoalCreationRequest,
+  options?: EmployeeApiOptions,
+): Promise<GoalCreationResponse> {
+  return requestJson<GoalCreationResponse>(
+    '/me/goals',
+    isGoalCreationResponse,
+    options,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function updateMyGoalProgress(
+  goalId: string,
+  payload: GoalProgressUpdateRequest,
+  options?: EmployeeApiOptions,
+): Promise<GoalProgressUpdateResponse> {
+  return requestJson<GoalProgressUpdateResponse>(
+    `/me/goals/${encodeURIComponent(goalId)}/progress-updates`,
+    isGoalProgressUpdateResponse,
+    options,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
   );
 }
