@@ -1,4 +1,4 @@
-import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth';
+import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/tokenStorage';
 
 export const API_BASE_PATH = '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
@@ -60,6 +60,133 @@ export interface PerformanceCycleSummary {
 
 export interface CurrentPerformanceCycleResponse {
   cycle: PerformanceCycleSummary;
+}
+
+export interface KpiCycleSummary {
+  cycle_id: string;
+  name: string;
+  cycle_type?: string | null;
+  period_label?: string | null;
+  review_type?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  timezone?: string | null;
+  status?: string | null;
+  is_locked?: boolean | null;
+  results_published_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface KpiEmployeeSummary {
+  user_id: string;
+  name: string;
+  department?: string | null;
+}
+
+export interface KpiTarget {
+  operator?: string | null;
+  value?: number | null;
+  unit?: string | null;
+  display_text?: string | null;
+}
+
+export interface KpiStandard {
+  kpi_id: string;
+  name: string;
+  description?: string | null;
+  weight_percent: number;
+  target: KpiTarget;
+}
+
+export interface KpiStandardsResponse {
+  cycle: KpiCycleSummary;
+  employee?: KpiEmployeeSummary | null;
+  standards: KpiStandard[];
+}
+
+export interface KpiScoreSummary {
+  performance_score?: number | null;
+  kpi_achievement_percent?: number | null;
+  manager_review_score?: number | null;
+}
+
+export interface KpiActual {
+  value?: number | null;
+  unit?: string | null;
+  display_text?: string | null;
+}
+
+export interface KpiSnapshot {
+  snapshot_id: string;
+  value?: number | null;
+  note?: string | null;
+  recorded_at?: string | null;
+}
+
+export interface KpiResultItem {
+  kpi_id: string;
+  name: string;
+  weight_percent: number;
+  actual?: KpiActual | null;
+  target?: KpiTarget | null;
+  achievement_percent?: number | null;
+  score?: number | null;
+  latest_snapshot?: KpiSnapshot | null;
+}
+
+export interface KpiManagerEvaluation {
+  score?: number | null;
+  comment?: string | null;
+}
+
+export interface KpiAvailableActions {
+  can_confirm?: boolean | null;
+  confirm_unavailable_reason?: string | null;
+  can_dispute?: boolean | null;
+  dispute_unavailable_reason?: string | null;
+}
+
+export interface KpiConfirmation {
+  confirmation_id: string;
+  result_id?: string | null;
+  confirmed_at?: string | null;
+  confirmed_by?: KpiEmployeeSummary | null;
+}
+
+export interface KpiDisputePeriod {
+  status: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  timezone?: string | null;
+}
+
+export interface KpiResultSummary {
+  result_id?: string | null;
+  cycle?: KpiCycleSummary | null;
+  employee?: KpiEmployeeSummary | null;
+  status: string;
+  published_at?: string | null;
+  score_summary?: KpiScoreSummary | null;
+  weighted_score?: number | null;
+  review_score?: number | null;
+  final_grade?: string | null;
+  manager_evaluation?: KpiManagerEvaluation | null;
+  kpi_results?: KpiResultItem[];
+  available_actions?: KpiAvailableActions | null;
+  confirmation?: KpiConfirmation | null;
+  dispute_period?: KpiDisputePeriod | null;
+  reviewed_at?: string | null;
+  updated_at?: string | null;
+  performance_score?: number | null;
+}
+
+export interface KpiResultResponse {
+  result: KpiResultSummary;
+}
+
+export interface KpiConfirmationResponse {
+  confirmation: KpiConfirmation;
+  result: KpiResultSummary;
 }
 
 export interface ApiErrorDetail {
@@ -144,6 +271,14 @@ function isOptionalNullableString(value: unknown): value is string | null | unde
   return value === undefined || isNullableString(value);
 }
 
+function isOptionalNullableNumber(value: unknown): value is number | null | undefined {
+  return value === undefined || value === null || typeof value === 'number';
+}
+
+function isOptionalNullableBoolean(value: unknown): value is boolean | null | undefined {
+  return value === undefined || value === null || typeof value === 'boolean';
+}
+
 function isDepartment(value: unknown): value is Department {
   return (
     isRecord(value) &&
@@ -210,6 +345,198 @@ function isCurrentPerformanceCycleResponse(
   return isRecord(value) && isPerformanceCycleSummary(value.cycle);
 }
 
+function isKpiCycleSummary(value: unknown): value is KpiCycleSummary {
+  return (
+    isRecord(value) &&
+    isString(value.cycle_id) &&
+    isString(value.name) &&
+    isOptionalNullableString(value.cycle_type) &&
+    isOptionalNullableString(value.period_label) &&
+    isOptionalNullableString(value.review_type) &&
+    isOptionalNullableString(value.start_date) &&
+    isOptionalNullableString(value.end_date) &&
+    isOptionalNullableString(value.timezone) &&
+    isOptionalNullableString(value.status) &&
+    isOptionalNullableBoolean(value.is_locked) &&
+    isOptionalNullableString(value.results_published_at) &&
+    isOptionalNullableString(value.updated_at)
+  );
+}
+
+function isKpiEmployeeSummary(value: unknown): value is KpiEmployeeSummary {
+  return (
+    isRecord(value) &&
+    isString(value.user_id) &&
+    isString(value.name) &&
+    isOptionalNullableString(value.department)
+  );
+}
+
+function isKpiTarget(value: unknown): value is KpiTarget {
+  return (
+    isRecord(value) &&
+    isOptionalNullableString(value.operator) &&
+    isOptionalNullableNumber(value.value) &&
+    isOptionalNullableString(value.unit) &&
+    isOptionalNullableString(value.display_text)
+  );
+}
+
+function isKpiStandard(value: unknown): value is KpiStandard {
+  return (
+    isRecord(value) &&
+    isString(value.kpi_id) &&
+    isString(value.name) &&
+    isOptionalNullableString(value.description) &&
+    typeof value.weight_percent === 'number' &&
+    isKpiTarget(value.target)
+  );
+}
+
+function isKpiStandardsResponse(value: unknown): value is KpiStandardsResponse {
+  return (
+    isRecord(value) &&
+    isKpiCycleSummary(value.cycle) &&
+    (value.employee === undefined ||
+      value.employee === null ||
+      isKpiEmployeeSummary(value.employee)) &&
+    Array.isArray(value.standards) &&
+    value.standards.every(isKpiStandard)
+  );
+}
+
+function isKpiScoreSummary(value: unknown): value is KpiScoreSummary {
+  return (
+    isRecord(value) &&
+    isOptionalNullableNumber(value.performance_score) &&
+    isOptionalNullableNumber(value.kpi_achievement_percent) &&
+    isOptionalNullableNumber(value.manager_review_score)
+  );
+}
+
+function isKpiActual(value: unknown): value is KpiActual {
+  return (
+    isRecord(value) &&
+    isOptionalNullableNumber(value.value) &&
+    isOptionalNullableString(value.unit) &&
+    isOptionalNullableString(value.display_text)
+  );
+}
+
+function isKpiSnapshot(value: unknown): value is KpiSnapshot {
+  return (
+    isRecord(value) &&
+    isString(value.snapshot_id) &&
+    isOptionalNullableNumber(value.value) &&
+    isOptionalNullableString(value.note) &&
+    isOptionalNullableString(value.recorded_at)
+  );
+}
+
+function isKpiResultItem(value: unknown): value is KpiResultItem {
+  return (
+    isRecord(value) &&
+    isString(value.kpi_id) &&
+    isString(value.name) &&
+    typeof value.weight_percent === 'number' &&
+    (value.actual === undefined || value.actual === null || isKpiActual(value.actual)) &&
+    (value.target === undefined || value.target === null || isKpiTarget(value.target)) &&
+    isOptionalNullableNumber(value.achievement_percent) &&
+    isOptionalNullableNumber(value.score) &&
+    (value.latest_snapshot === undefined ||
+      value.latest_snapshot === null ||
+      isKpiSnapshot(value.latest_snapshot))
+  );
+}
+
+function isKpiManagerEvaluation(value: unknown): value is KpiManagerEvaluation {
+  return (
+    isRecord(value) &&
+    isOptionalNullableNumber(value.score) &&
+    isOptionalNullableString(value.comment)
+  );
+}
+
+function isKpiAvailableActions(value: unknown): value is KpiAvailableActions {
+  return (
+    isRecord(value) &&
+    isOptionalNullableBoolean(value.can_confirm) &&
+    isOptionalNullableString(value.confirm_unavailable_reason) &&
+    isOptionalNullableBoolean(value.can_dispute) &&
+    isOptionalNullableString(value.dispute_unavailable_reason)
+  );
+}
+
+function isKpiConfirmation(value: unknown): value is KpiConfirmation {
+  return (
+    isRecord(value) &&
+    isString(value.confirmation_id) &&
+    isOptionalNullableString(value.result_id) &&
+    isOptionalNullableString(value.confirmed_at) &&
+    (value.confirmed_by === undefined ||
+      value.confirmed_by === null ||
+      isKpiEmployeeSummary(value.confirmed_by))
+  );
+}
+
+function isKpiDisputePeriod(value: unknown): value is KpiDisputePeriod {
+  return (
+    isRecord(value) &&
+    isString(value.status) &&
+    isOptionalNullableString(value.start_date) &&
+    isOptionalNullableString(value.end_date) &&
+    isOptionalNullableString(value.timezone)
+  );
+}
+
+function isKpiResultSummary(value: unknown): value is KpiResultSummary {
+  return (
+    isRecord(value) &&
+    isOptionalNullableString(value.result_id) &&
+    (value.cycle === undefined || value.cycle === null || isKpiCycleSummary(value.cycle)) &&
+    (value.employee === undefined ||
+      value.employee === null ||
+      isKpiEmployeeSummary(value.employee)) &&
+    isString(value.status) &&
+    isOptionalNullableString(value.published_at) &&
+    (value.score_summary === undefined ||
+      value.score_summary === null ||
+      isKpiScoreSummary(value.score_summary)) &&
+    isOptionalNullableNumber(value.weighted_score) &&
+    isOptionalNullableNumber(value.review_score) &&
+    isOptionalNullableString(value.final_grade) &&
+    (value.manager_evaluation === undefined ||
+      value.manager_evaluation === null ||
+      isKpiManagerEvaluation(value.manager_evaluation)) &&
+    (value.kpi_results === undefined ||
+      (Array.isArray(value.kpi_results) && value.kpi_results.every(isKpiResultItem))) &&
+    (value.available_actions === undefined ||
+      value.available_actions === null ||
+      isKpiAvailableActions(value.available_actions)) &&
+    (value.confirmation === undefined ||
+      value.confirmation === null ||
+      isKpiConfirmation(value.confirmation)) &&
+    (value.dispute_period === undefined ||
+      value.dispute_period === null ||
+      isKpiDisputePeriod(value.dispute_period)) &&
+    isOptionalNullableString(value.reviewed_at) &&
+    isOptionalNullableString(value.updated_at) &&
+    isOptionalNullableNumber(value.performance_score)
+  );
+}
+
+function isKpiResultResponse(value: unknown): value is KpiResultResponse {
+  return isRecord(value) && isKpiResultSummary(value.result);
+}
+
+function isKpiConfirmationResponse(value: unknown): value is KpiConfirmationResponse {
+  return (
+    isRecord(value) &&
+    isKpiConfirmation(value.confirmation) &&
+    isKpiResultSummary(value.result)
+  );
+}
+
 function isApiErrorBody(value: unknown): value is ApiErrorBody {
   return (
     isRecord(value) &&
@@ -253,6 +580,7 @@ async function requestJson<T>(
   path: string,
   validate: (value: unknown) => value is T,
   options: EmployeeApiOptions = {},
+  init: RequestInit = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
   const authToken = resolveAuthToken(options.authToken);
@@ -266,10 +594,14 @@ async function requestJson<T>(
   }
 
   const response = await fetcher(resolveEmployeeApiUrl(path), {
-    method: 'GET',
+    ...init,
+    method: init.method ?? 'GET',
     credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
     signal: options.signal,
-    headers,
+    headers: {
+      ...headers,
+      ...init.headers,
+    },
   });
 
   const body = await parseJsonBody(response);
@@ -305,5 +637,37 @@ export function getCurrentPerformanceCycle(
     '/me/performance-cycles/current',
     isCurrentPerformanceCycleResponse,
     options,
+  );
+}
+
+export function getMyKpiStandards(
+  options?: EmployeeApiOptions,
+): Promise<KpiStandardsResponse> {
+  return requestJson<KpiStandardsResponse>(
+    '/me/kpis/standards',
+    isKpiStandardsResponse,
+    options,
+  );
+}
+
+export function getMyKpiResult(options?: EmployeeApiOptions): Promise<KpiResultResponse> {
+  return requestJson<KpiResultResponse>('/me/kpis/result', isKpiResultResponse, options);
+}
+
+export function confirmMyKpiResult(
+  resultId: string,
+  options?: EmployeeApiOptions,
+): Promise<KpiConfirmationResponse> {
+  return requestJson<KpiConfirmationResponse>(
+    '/me/kpis/result-confirmations',
+    isKpiConfirmationResponse,
+    options,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        result_id: resultId,
+        confirmed: true,
+      }),
+    },
   );
 }
