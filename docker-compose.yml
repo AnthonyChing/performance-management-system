@@ -11,6 +11,10 @@ x-backend-common: &backend-common
     DB_NAME: pms
     DB_USER: pms
     DB_PASSWORD: pms
+    SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    GRAFANA_OTLP_URL: ${GRAFANA_OTLP_URL:-http://localhost:4318}
+    JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env (see .env.example)}
+    GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   expose:
     - "8080"
   depends_on:
