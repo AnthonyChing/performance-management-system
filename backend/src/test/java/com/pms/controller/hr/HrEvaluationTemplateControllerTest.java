@@ -67,20 +67,38 @@ class HrEvaluationTemplateControllerTest {
 
     private void cleanUp() {
         // Delete components first (FK child), then templates
-        jdbc.update("""
+        jdbc.update(
+                """
                 DELETE FROM evaluation_template_components
                 WHERE evaluation_template_id IN (
                     SELECT id FROM evaluation_templates WHERE cycle_id = ?::uuid
                 )
-                """, NOT_STARTED_CYCLE_ID);
-        jdbc.update("DELETE FROM evaluation_template_components WHERE evaluation_template_id = ?::uuid", EVAL_TEMPLATE_ID);
+                """,
+                NOT_STARTED_CYCLE_ID);
+        jdbc.update(
+                "DELETE FROM evaluation_template_components WHERE evaluation_template_id = ?::uuid",
+                EVAL_TEMPLATE_ID);
         // Delete in-progress eval template used by STATE_CONFLICT test if leftover
-        jdbc.update("DELETE FROM evaluation_templates WHERE id = ?::uuid", "ee000000-0000-0000-0000-000000000200");
+        jdbc.update(
+                "DELETE FROM evaluation_templates WHERE id = ?::uuid",
+                "ee000000-0000-0000-0000-000000000200");
         jdbc.update("DELETE FROM evaluation_templates WHERE id = ?::uuid", EVAL_TEMPLATE_ID);
-        jdbc.update("DELETE FROM evaluation_templates WHERE cycle_id = ?::uuid", NOT_STARTED_CYCLE_ID);
-        jdbc.update("DELETE FROM template_versions WHERE id IN (?::uuid, ?::uuid)", VERSION_A_ID, VERSION_B_ID);
-        jdbc.update("DELETE FROM template_questions WHERE template_id IN (?::uuid, ?::uuid, ?::uuid)", PUBLISHED_A_ID, PUBLISHED_B_ID, DRAFT_TMPL_ID);
-        jdbc.update("DELETE FROM assessment_templates WHERE id IN (?::uuid, ?::uuid, ?::uuid)", PUBLISHED_A_ID, PUBLISHED_B_ID, DRAFT_TMPL_ID);
+        jdbc.update(
+                "DELETE FROM evaluation_templates WHERE cycle_id = ?::uuid", NOT_STARTED_CYCLE_ID);
+        jdbc.update(
+                "DELETE FROM template_versions WHERE id IN (?::uuid, ?::uuid)",
+                VERSION_A_ID,
+                VERSION_B_ID);
+        jdbc.update(
+                "DELETE FROM template_questions WHERE template_id IN (?::uuid, ?::uuid, ?::uuid)",
+                PUBLISHED_A_ID,
+                PUBLISHED_B_ID,
+                DRAFT_TMPL_ID);
+        jdbc.update(
+                "DELETE FROM assessment_templates WHERE id IN (?::uuid, ?::uuid, ?::uuid)",
+                PUBLISHED_A_ID,
+                PUBLISHED_B_ID,
+                DRAFT_TMPL_ID);
         jdbc.update("DELETE FROM performance_cycles WHERE id = ?::uuid", NOT_STARTED_CYCLE_ID);
     }
 
@@ -99,27 +117,35 @@ class HrEvaluationTemplateControllerTest {
                      '2027-07-15T23:59:59+08:00', 7, false, ?::uuid)
                 ON CONFLICT (id) DO NOTHING
                 """,
-                NOT_STARTED_CYCLE_ID, HR_ID);
+                NOT_STARTED_CYCLE_ID,
+                HR_ID);
     }
 
     private void insertAssessmentTemplates() {
-        for (String[] t : new String[][]{
-                {PUBLISHED_A_ID, "核心勝任力評估", "published", VERSION_A_ID},
-                {PUBLISHED_B_ID, "業務目標達成", "published", VERSION_B_ID}}) {
+        for (String[] t :
+                new String[][] {
+                    {PUBLISHED_A_ID, "核心勝任力評估", "published", VERSION_A_ID},
+                    {PUBLISHED_B_ID, "業務目標達成", "published", VERSION_B_ID}
+                }) {
             jdbc.update(
                     """
                     INSERT INTO assessment_templates (id, name, status, is_active, created_by, updated_by)
                     VALUES (?::uuid, ?, ?, true, ?::uuid, ?::uuid)
                     ON CONFLICT (id) DO NOTHING
                     """,
-                    t[0], t[1], t[2], HR_ID, HR_ID);
+                    t[0],
+                    t[1],
+                    t[2],
+                    HR_ID,
+                    HR_ID);
             jdbc.update(
                     """
                     INSERT INTO template_versions (id, template_id, version, created_at)
                     VALUES (?::uuid, ?::uuid, 1, now())
                     ON CONFLICT (id) DO NOTHING
                     """,
-                    t[3], t[0]);
+                    t[3],
+                    t[0]);
             jdbc.update(
                     """
                     INSERT INTO template_questions
@@ -127,7 +153,10 @@ class HrEvaluationTemplateControllerTest {
                     VALUES (?::uuid, ?::uuid, '評分問題', 'rating', true, 1, ?::uuid, ?::uuid)
                     ON CONFLICT (id) DO NOTHING
                     """,
-                    UUID.randomUUID().toString(), t[0], HR_ID, HR_ID);
+                    UUID.randomUUID().toString(),
+                    t[0],
+                    HR_ID,
+                    HR_ID);
         }
         jdbc.update(
                 """
@@ -135,7 +164,9 @@ class HrEvaluationTemplateControllerTest {
                 VALUES (?::uuid, 'Draft Template', 'draft', true, ?::uuid, ?::uuid)
                 ON CONFLICT (id) DO NOTHING
                 """,
-                DRAFT_TMPL_ID, HR_ID, HR_ID);
+                DRAFT_TMPL_ID,
+                HR_ID,
+                HR_ID);
     }
 
     private void insertEvaluationTemplate() {
@@ -151,7 +182,11 @@ class HrEvaluationTemplateControllerTest {
                      true, ?::uuid, ?::uuid)
                 ON CONFLICT (id) DO NOTHING
                 """,
-                EVAL_TEMPLATE_ID, NOT_STARTED_CYCLE_ID, DEPT_ID, HR_ID, HR_ID);
+                EVAL_TEMPLATE_ID,
+                NOT_STARTED_CYCLE_ID,
+                DEPT_ID,
+                HR_ID,
+                HR_ID);
         jdbc.update(
                 """
                 INSERT INTO evaluation_template_components
@@ -161,7 +196,10 @@ class HrEvaluationTemplateControllerTest {
                     (?::uuid, ?::uuid, ?::uuid, ?::uuid, 60.00, 0)
                 ON CONFLICT (evaluation_template_id, assessment_template_id) DO NOTHING
                 """,
-                UUID.randomUUID().toString(), EVAL_TEMPLATE_ID, PUBLISHED_A_ID, VERSION_A_ID);
+                UUID.randomUUID().toString(),
+                EVAL_TEMPLATE_ID,
+                PUBLISHED_A_ID,
+                VERSION_A_ID);
         jdbc.update(
                 """
                 INSERT INTO evaluation_template_components
@@ -171,7 +209,10 @@ class HrEvaluationTemplateControllerTest {
                     (?::uuid, ?::uuid, ?::uuid, ?::uuid, 40.00, 1)
                 ON CONFLICT (evaluation_template_id, assessment_template_id) DO NOTHING
                 """,
-                UUID.randomUUID().toString(), EVAL_TEMPLATE_ID, PUBLISHED_B_ID, VERSION_B_ID);
+                UUID.randomUUID().toString(),
+                EVAL_TEMPLATE_ID,
+                PUBLISHED_B_ID,
+                VERSION_B_ID);
     }
 
     // ---- GET /hr/evaluation-templates/{id} ----
@@ -219,7 +260,8 @@ class HrEvaluationTemplateControllerTest {
                     {"assessment_template_id": "%s", "weight_percent": 40}
                   ]
                 }
-                """.formatted(NOT_STARTED_CYCLE_ID, PUBLISHED_A_ID, PUBLISHED_B_ID);
+                """
+                        .formatted(NOT_STARTED_CYCLE_ID, PUBLISHED_A_ID, PUBLISHED_B_ID);
 
         given().contentType("application/json")
                 .body(body)
@@ -248,7 +290,8 @@ class HrEvaluationTemplateControllerTest {
                     {"assessment_template_id": "%s", "weight_percent": 30}
                   ]
                 }
-                """.formatted(NOT_STARTED_CYCLE_ID, PUBLISHED_A_ID, PUBLISHED_B_ID);
+                """
+                        .formatted(NOT_STARTED_CYCLE_ID, PUBLISHED_A_ID, PUBLISHED_B_ID);
 
         given().contentType("application/json")
                 .body(body)
@@ -271,7 +314,8 @@ class HrEvaluationTemplateControllerTest {
                     {"assessment_template_id": "%s", "weight_percent": 100}
                   ]
                 }
-                """.formatted(NOT_STARTED_CYCLE_ID, DRAFT_TMPL_ID);
+                """
+                        .formatted(NOT_STARTED_CYCLE_ID, DRAFT_TMPL_ID);
 
         given().contentType("application/json")
                 .body(body)
@@ -294,7 +338,8 @@ class HrEvaluationTemplateControllerTest {
                     {"assessment_template_id": "%s", "weight_percent": 100}
                   ]
                 }
-                """.formatted(IN_PROGRESS_CYCLE_ID, PUBLISHED_A_ID);
+                """
+                        .formatted(IN_PROGRESS_CYCLE_ID, PUBLISHED_A_ID);
 
         given().contentType("application/json")
                 .body(body)
@@ -317,7 +362,8 @@ class HrEvaluationTemplateControllerTest {
                     {"assessment_template_id": "%s", "weight_percent": 100}
                   ]
                 }
-                """.formatted(UUID.randomUUID(), PUBLISHED_A_ID);
+                """
+                        .formatted(UUID.randomUUID(), PUBLISHED_A_ID);
 
         given().contentType("application/json")
                 .body(body)
@@ -341,7 +387,8 @@ class HrEvaluationTemplateControllerTest {
                     {"assessment_template_id": "%s", "weight_percent": 100}
                   ]
                 }
-                """.formatted(NOT_STARTED_CYCLE_ID, DEPT_ID, PUBLISHED_A_ID);
+                """
+                        .formatted(NOT_STARTED_CYCLE_ID, DEPT_ID, PUBLISHED_A_ID);
 
         given().contentType("application/json")
                 .body(body)
@@ -356,7 +403,8 @@ class HrEvaluationTemplateControllerTest {
 
     @Test
     void patchEvaluationTemplate_name_success() {
-        String body = """
+        String body =
+                """
                 {"name": "2027 研發部門考核 (修正版)"}
                 """;
 
@@ -372,7 +420,8 @@ class HrEvaluationTemplateControllerTest {
 
     @Test
     void patchEvaluationTemplate_archive_success() {
-        String body = """
+        String body =
+                """
                 {"status": "archived"}
                 """;
 
@@ -400,11 +449,15 @@ class HrEvaluationTemplateControllerTest {
                         'all', true, ?::uuid, ?::uuid)
                 ON CONFLICT (id) DO NOTHING
                 """,
-                inProgressEvalId, IN_PROGRESS_CYCLE_ID, HR_ID, HR_ID);
+                inProgressEvalId,
+                IN_PROGRESS_CYCLE_ID,
+                HR_ID,
+                HR_ID);
 
         try {
             given().contentType("application/json")
-                    .body("""
+                    .body(
+                            """
                             {"name": "Should Fail"}
                             """)
                     .when()

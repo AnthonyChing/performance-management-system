@@ -13,8 +13,9 @@ public interface EvaluationTemplateRepository extends JpaRepository<EvaluationTe
 
     Optional<EvaluationTemplate> findByIdAndDeletedAtIsNull(UUID id);
 
-    boolean existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
-            UUID cycleId, String employeeGroupType, String employeeGroupRef);
+    boolean
+            existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
+                    UUID cycleId, String employeeGroupType, String employeeGroupRef);
 
     @Query(
             value =

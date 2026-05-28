@@ -8,7 +8,6 @@ import com.pms.entity.enums.TemplateStatus;
 import com.pms.exception.ApiException;
 import com.pms.exception.ConflictException;
 import com.pms.exception.NotFoundException;
-import org.springframework.http.HttpStatus;
 import com.pms.repository.*;
 import com.pms.service.hr.HrEvaluationTemplateService;
 import java.math.BigDecimal;
@@ -19,6 +18,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +57,8 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                     "An active evaluation template already exists for this cycle and employee group.");
         }
 
-        List<ComponentBuildInfo> componentInfos = buildAndValidateComponents(req.getAssessmentTemplates());
+        List<ComponentBuildInfo> componentInfos =
+                buildAndValidateComponents(req.getAssessmentTemplates());
         validateWeightSum(componentInfos);
 
         EvaluationTemplate saved =
@@ -75,7 +76,8 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                                 .updatedBy(actorId)
                                 .build());
 
-        List<EvaluationTemplateComponent> components = saveComponents(saved.getId(), componentInfos);
+        List<EvaluationTemplateComponent> components =
+                saveComponents(saved.getId(), componentInfos);
         return buildResponse(saved, cycle, components);
     }
 
@@ -168,28 +170,31 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
         String cycleIdStr = cycleId != null ? cycleId.toString() : null;
         return evalTemplateRepo
                 .findAllFiltered(status, cycleIdStr, q, PageRequest.of(page - 1, pageSize))
-                .map(et -> {
-                    PerformanceCycle cycle = cycleRepo.findById(et.getCycleId()).orElse(null);
-                    List<EvaluationTemplateComponent> components =
-                            componentRepo.findByEvaluationTemplateIdOrderBySortOrder(et.getId());
-                    BigDecimal totalWeight =
-                            components.stream()
-                                    .map(EvaluationTemplateComponent::getWeightPercent)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    AvailableActionsDto actions = computeActions(et, cycle);
-                    return EvaluationTemplateListItemResponse.builder()
-                            .templateId(et.getId())
-                            .cycle(toCycleDto(cycle))
-                            .name(et.getName())
-                            .description(et.getDescription())
-                            .status(et.getStatus().getDbValue())
-                            .employeeGroup(toGroupDto(et))
-                            .assessmentTemplateCount(components.size())
-                            .totalWeightPercent(totalWeight)
-                            .availableActions(actions)
-                            .updatedAt(et.getUpdatedAt())
-                            .build();
-                });
+                .map(
+                        et -> {
+                            PerformanceCycle cycle =
+                                    cycleRepo.findById(et.getCycleId()).orElse(null);
+                            List<EvaluationTemplateComponent> components =
+                                    componentRepo.findByEvaluationTemplateIdOrderBySortOrder(
+                                            et.getId());
+                            BigDecimal totalWeight =
+                                    components.stream()
+                                            .map(EvaluationTemplateComponent::getWeightPercent)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                            AvailableActionsDto actions = computeActions(et, cycle);
+                            return EvaluationTemplateListItemResponse.builder()
+                                    .templateId(et.getId())
+                                    .cycle(toCycleDto(cycle))
+                                    .name(et.getName())
+                                    .description(et.getDescription())
+                                    .status(et.getStatus().getDbValue())
+                                    .employeeGroup(toGroupDto(et))
+                                    .assessmentTemplateCount(components.size())
+                                    .totalWeightPercent(totalWeight)
+                                    .availableActions(actions)
+                                    .updatedAt(et.getUpdatedAt())
+                                    .build();
+                        });
     }
 
     @Override
@@ -217,9 +222,7 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                                                 .build()));
 
         List<String> jobCategories =
-                userRepo
-                        .findDistinctJobCategories()
-                        .stream()
+                userRepo.findDistinctJobCategories().stream()
                         .filter(Objects::nonNull)
                         .sorted()
                         .toList();
@@ -242,7 +245,9 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
         return cycleRepo
                 .findById(cycleId)
                 .orElseThrow(
-                        () -> new NotFoundException("CYCLE_NOT_FOUND", "Performance cycle not found."));
+                        () ->
+                                new NotFoundException(
+                                        "CYCLE_NOT_FOUND", "Performance cycle not found."));
     }
 
     private EvaluationTemplate findActiveOrThrow(UUID templateId) {
@@ -268,19 +273,18 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
 
     private String[] parseEmployeeGroupId(String groupId) {
         if ("all".equals(groupId)) {
-            return new String[]{"all", null};
+            return new String[] {"all", null};
         }
         if (groupId.startsWith("department:")) {
             String ref = groupId.substring("department:".length());
-            return new String[]{"department", ref};
+            return new String[] {"department", ref};
         }
         if (groupId.startsWith("job_category:")) {
             String ref = groupId.substring("job_category:".length());
-            return new String[]{"job_category", ref};
+            return new String[] {"job_category", ref};
         }
         throw new NotFoundException(
-                "EMPLOYEE_GROUP_NOT_FOUND",
-                "Invalid employee_group_id format: " + groupId);
+                "EMPLOYEE_GROUP_NOT_FOUND", "Invalid employee_group_id format: " + groupId);
     }
 
     private void validateEmployeeGroup(String groupType, String groupRef) {
@@ -363,7 +367,8 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                                         EvaluationTemplateComponent.builder()
                                                 .id(UUID.randomUUID())
                                                 .evaluationTemplateId(evalTemplateId)
-                                                .assessmentTemplateId(info.assessmentTemplate().getId())
+                                                .assessmentTemplateId(
+                                                        info.assessmentTemplate().getId())
                                                 .assessmentTemplateVersionId(info.version().getId())
                                                 .weightPercent(info.weightPercent())
                                                 .sortOrder(info.sortOrder())
@@ -387,15 +392,18 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                 components.stream()
                         .map(
                                 c -> {
-                                    AssessmentTemplate at = templateMap.get(c.getAssessmentTemplateId());
+                                    AssessmentTemplate at =
+                                            templateMap.get(c.getAssessmentTemplateId());
                                     long qCount =
                                             at != null
-                                                    ? questionRepo.countByTemplateIdAndDeletedAtIsNull(
-                                                            c.getAssessmentTemplateId())
+                                                    ? questionRepo
+                                                            .countByTemplateIdAndDeletedAtIsNull(
+                                                                    c.getAssessmentTemplateId())
                                                     : 0;
                                     return AssessmentTemplateComponentDto.builder()
                                             .assessmentTemplateId(c.getAssessmentTemplateId())
-                                            .assessmentTemplateVersionId(c.getAssessmentTemplateVersionId())
+                                            .assessmentTemplateVersionId(
+                                                    c.getAssessmentTemplateVersionId())
                                             .name(at != null ? at.getName() : null)
                                             .questionCount((int) qCount)
                                             .weightPercent(c.getWeightPercent())
@@ -464,13 +472,13 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
     private EmployeeGroupDto toGroupDto(EvaluationTemplate et) {
         String groupType = et.getEmployeeGroupType();
         String groupRef = et.getEmployeeGroupRef();
-        String groupId =
-                "all".equals(groupType) ? "all" : groupType + ":" + groupRef;
+        String groupId = "all".equals(groupType) ? "all" : groupType + ":" + groupRef;
         String name =
                 switch (groupType) {
                     case "all" -> "全體員工";
                     case "department" -> {
-                        Department d = departmentRepo.findById(UUID.fromString(groupRef)).orElse(null);
+                        Department d =
+                                departmentRepo.findById(UUID.fromString(groupRef)).orElse(null);
                         yield d != null ? d.getName() : groupRef;
                     }
                     default -> groupRef;
