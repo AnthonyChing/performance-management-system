@@ -5,6 +5,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../../shared/layout/Layout';
+import Login from '../../features/auth/pages/Login';
 import Profile from '../../features/profile/pages/Profile';
 import CurrentKPI from '../../features/performance/pages/CurrentKPI';
 import HistoryKPI from '../../features/performance/pages/HistoryKPI';
@@ -40,8 +41,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Profile />} />
+          <Route path="dashboard" element={<Profile />} />
           <Route path="performance">
             <Route path="current" element={<CurrentKPI />} />
             <Route path="history" element={<HistoryKPI />} />
