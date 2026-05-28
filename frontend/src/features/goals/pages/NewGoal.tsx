@@ -1,10 +1,74 @@
 import React, { useState } from 'react';
 import { AlignLeft, CheckCircle, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ApiRequestError, createMyGoal } from '../api';
+
+function isUnauthorizedError(error: unknown) {
+  return (
+    error instanceof ApiRequestError &&
+    error.status === 401 &&
+    error.code === 'UNAUTHORIZED'
+  );
+}
+
+function getApiErrorMessage(error: unknown) {
+  if (error instanceof ApiRequestError) {
+    if (error.status === 401 && error.code === 'UNAUTHORIZED') {
+      return '尚未登入或 token 失效。';
+    }
+
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return '目標建立失敗。';
+}
 
 export default function NewGoal() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const canSubmit = Boolean(title.trim() && dueDate && description.trim());
+
+  async function handleConfirmSubmit() {
+    if (!canSubmit) {
+      setErrorMessage('請填寫目標名稱、截止日期與目標說明。');
+      setIsModalOpen(false);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setErrorMessage(null);
+      await createMyGoal({
+        title: title.trim(),
+        due_date: dueDate,
+        description: description.trim(),
+      });
+      setIsModalOpen(false);
+      navigate('/goals/current');
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        const redirectPath = `${location.pathname}${location.search}`;
+        navigate(`/login?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
+        return;
+      }
+
+      setErrorMessage(getApiErrorMessage(error));
+      setIsModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
   
   return (
     <div className="w-full max-w-4xl relative">
@@ -20,37 +84,52 @@ export default function NewGoal() {
         </div>
         <div className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="goal-title" className="block text-sm font-medium text-slate-700 mb-2">
               目標名稱 <span className="text-red-500">*</span>
             </label>
             <input
+              id="goal-title"
               type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
               placeholder="例如：提升產品技術文件完整度"
               className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 text-sm transition-shadow"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="goal-due-date" className="block text-sm font-medium text-slate-700 mb-2">
               預計達成時間 (截止日期) <span className="text-red-500">*</span>
             </label>
             <input
+               id="goal-due-date"
                type="date"
+               value={dueDate}
+               onChange={(event) => setDueDate(event.target.value)}
                className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 text-sm transition-shadow"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="goal-description" className="block text-sm font-medium text-slate-700 mb-2">
               目標說明 <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="goal-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
               className="w-full h-40 p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 text-sm resize-none transition-shadow"
               placeholder="詳細描述此目標的背景、執行方式與預期價值..."
             />
           </div>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {errorMessage}
+        </div>
+      )}
 
       <div className="flex justify-end space-x-3 pt-4">
         <button 
@@ -60,10 +139,19 @@ export default function NewGoal() {
           取消建立
         </button>
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="px-6 py-2.5 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 text-sm shadow-sm transition-colors"
+          onClick={() => {
+            if (!canSubmit) {
+              setErrorMessage('請填寫目標名稱、截止日期與目標說明。');
+              return;
+            }
+
+            setErrorMessage(null);
+            setIsModalOpen(true);
+          }}
+          disabled={isSubmitting}
+          className="px-6 py-2.5 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 text-sm shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          提交並送審
+          {isSubmitting ? '提交中...' : '提交並送審'}
         </button>
       </div>
 
@@ -94,18 +182,17 @@ export default function NewGoal() {
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 rounded-b-xl">
               <button 
                 onClick={() => setIsModalOpen(false)}
+                disabled={isSubmitting}
                 className="px-4 py-2 border border-slate-300 bg-white rounded font-medium text-slate-700 hover:bg-slate-50 text-sm"
               >
                 取消
               </button>
               <button 
-                onClick={() => {
-                  setIsModalOpen(false);
-                  navigate('/goals/current');
-                }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 text-sm"
+                onClick={handleConfirmSubmit}
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                確認提交
+                {isSubmitting ? '提交中...' : '確認提交'}
               </button>
             </div>
           </div>
