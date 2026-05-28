@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Briefcase, MapPin, CalendarDays } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ApiRequestError,
   getCurrentPerformanceCycle,
@@ -42,6 +43,10 @@ function isAbortError(error: unknown) {
 
 function getApiErrorMessage(error: unknown) {
   if (error instanceof ApiRequestError) {
+    if (error.status === 401 && error.code === 'UNAUTHORIZED') {
+      return '尚未登入或 token 失效。';
+    }
+
     return error.message;
   }
 
@@ -52,7 +57,17 @@ function getApiErrorMessage(error: unknown) {
   return '資料載入失敗。';
 }
 
+function isUnauthorizedError(error: unknown) {
+  return (
+    error instanceof ApiRequestError &&
+    error.status === 401 &&
+    error.code === 'UNAUTHORIZED'
+  );
+}
+
 export default function Profile() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [profileData, setProfileData] = useState<ProfileResponse | null>(null);
   const [cycleData, setCycleData] = useState<CurrentPerformanceCycleResponse | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
@@ -64,6 +79,11 @@ export default function Profile() {
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
+    const redirectPath = `${location.pathname}${location.search}`;
+
+    function redirectToLogin() {
+      navigate(`/login?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
+    }
 
     async function loadProfile() {
       try {
@@ -74,6 +94,11 @@ export default function Profile() {
         setProfileErrorMessage(null);
       } catch (error) {
         if (!isMounted || isAbortError(error)) return;
+        if (isUnauthorizedError(error)) {
+          redirectToLogin();
+          return;
+        }
+
         setProfileErrorMessage(getApiErrorMessage(error));
       } finally {
         if (isMounted) {
@@ -103,6 +128,11 @@ export default function Profile() {
           setHasCurrentCycle(false);
           setCycleErrorMessage(null);
         } else {
+          if (isUnauthorizedError(error)) {
+            redirectToLogin();
+            return;
+          }
+
           setCycleErrorMessage(getApiErrorMessage(error));
         }
       } finally {
@@ -119,7 +149,7 @@ export default function Profile() {
       isMounted = false;
       controller.abort();
     };
-  }, []);
+  }, [location.pathname, location.search, navigate]);
 
   return (
     <ProfileView

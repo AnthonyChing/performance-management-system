@@ -1,3 +1,5 @@
+import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth';
+
 export const API_BASE_PATH = '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 
@@ -103,6 +105,7 @@ export interface EmployeeApiOptions {
   fetcher?: Fetcher;
   signal?: AbortSignal;
   credentials?: RequestCredentials;
+  authToken?: string | null;
 }
 
 const cycleStatuses = new Set<PerformanceCycleStatus>([
@@ -137,6 +140,10 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || isString(value);
 }
 
+function isOptionalNullableString(value: unknown): value is string | null | undefined {
+  return value === undefined || isNullableString(value);
+}
+
 function isDepartment(value: unknown): value is Department {
   return (
     isRecord(value) &&
@@ -150,7 +157,7 @@ function isProfileManager(value: unknown): value is ProfileManager {
     isRecord(value) &&
     isString(value.user_id) &&
     isString(value.name) &&
-    isNullableString(value.english_name) &&
+    isOptionalNullableString(value.english_name) &&
     isString(value.email)
   );
 }
@@ -161,17 +168,17 @@ function isEmployeeProfile(value: unknown): value is EmployeeProfile {
     isString(value.user_id) &&
     isString(value.employee_id) &&
     isString(value.name) &&
-    isNullableString(value.english_name) &&
-    isNullableString(value.avatar_url) &&
+    isOptionalNullableString(value.english_name) &&
+    isOptionalNullableString(value.avatar_url) &&
     isString(value.job_title) &&
     isString(value.job_category) &&
     isDepartment(value.department) &&
-    isNullableString(value.location) &&
+    isOptionalNullableString(value.location) &&
     isString(value.email) &&
     isString(value.employment_status) &&
     employmentStatuses.has(value.employment_status as EmploymentStatus) &&
-    isNullableString(value.terminated_at) &&
-    (value.manager === null || isProfileManager(value.manager))
+    isOptionalNullableString(value.terminated_at) &&
+    (value.manager === undefined || value.manager === null || isProfileManager(value.manager))
   );
 }
 
@@ -192,7 +199,7 @@ function isPerformanceCycleSummary(value: unknown): value is PerformanceCycleSum
     isString(value.status) &&
     cycleStatuses.has(value.status as PerformanceCycleStatus) &&
     typeof value.is_locked === 'boolean' &&
-    isNullableString(value.results_published_at) &&
+    isOptionalNullableString(value.results_published_at) &&
     isString(value.updated_at)
   );
 }
@@ -234,20 +241,35 @@ async function parseJsonBody(response: Response) {
   return JSON.parse(text) as unknown;
 }
 
+function resolveAuthToken(authToken: string | null | undefined) {
+  if (authToken !== undefined) {
+    return authToken?.trim() || null;
+  }
+
+  return getStoredAuthToken();
+}
+
 async function requestJson<T>(
   path: string,
   validate: (value: unknown) => value is T,
   options: EmployeeApiOptions = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
+  const authToken = resolveAuthToken(options.authToken);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  if (authToken) {
+    headers.Authorization = toAuthorizationHeader(authToken);
+  }
+
   const response = await fetcher(resolveEmployeeApiUrl(path), {
     method: 'GET',
     credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
     signal: options.signal,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   const body = await parseJsonBody(response);

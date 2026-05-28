@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiRequestError,
   ApiResponseValidationError,
@@ -61,6 +61,11 @@ const cyclePayload = {
 };
 
 describe('employee API client', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
   it('resolves employee API URLs with /api/v1 on the same origin', () => {
     expect(resolveEmployeeApiUrl('/me/profile')).toBe('/api/v1/me/profile');
     expect(resolveEmployeeApiUrl('me/profile')).toBe('/api/v1/me/profile');
@@ -85,6 +90,37 @@ describe('employee API client', () => {
     );
   });
 
+  it('GET /me/profile attaches a bearer token when one is available', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(profilePayload)) satisfies Fetcher;
+
+    await getMyProfile({ fetcher, authToken: 'local-jwt' });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/profile',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer local-jwt',
+        }),
+      }),
+    );
+  });
+
+  it('GET /me/profile reads JWT from browser storage by default', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(profilePayload)) satisfies Fetcher;
+    localStorage.setItem('token', 'stored-jwt');
+
+    await getMyProfile({ fetcher });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/profile',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer stored-jwt',
+        }),
+      }),
+    );
+  });
+
   it('GET /me/profile supports an abort signal while using the same-origin API path', async () => {
     const controller = new AbortController();
     const fetcher = vi.fn(async () => jsonResponse(profilePayload)) satisfies Fetcher;
@@ -100,6 +136,32 @@ describe('employee API client', () => {
         signal: controller.signal,
       }),
     );
+  });
+
+  it('GET /me/profile accepts nullable fields omitted by the backend', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        profile: {
+          user_id: 'user_001',
+          employee_id: 'PP-88293',
+          name: '陳大文',
+          job_title: '資深軟體工程師',
+          job_category: 'engineering',
+          department: {
+            department_id: 'dept_engineering',
+            name: '技術研發部',
+          },
+          email: 'david.chen@performanceplus.com',
+          employment_status: 'active',
+        },
+      }),
+    ) satisfies Fetcher;
+
+    await expect(getMyProfile({ fetcher })).resolves.toMatchObject({
+      profile: {
+        user_id: 'user_001',
+      },
+    });
   });
 
   it('GET /me/profile rejects response shapes that do not match employee_api.md', async () => {
