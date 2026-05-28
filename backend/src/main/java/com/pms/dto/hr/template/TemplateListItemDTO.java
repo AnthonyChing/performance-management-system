@@ -10,7 +10,7 @@ import lombok.Getter;
 public class TemplateListItemDTO {
     private UUID id;
     private String name;
-    private String jobFunction;
+    private String jobCategory;
     private String status;
     private Boolean isActive;
 
@@ -18,7 +18,7 @@ public class TemplateListItemDTO {
         return TemplateListItemDTO.builder()
                 .id(t.getId())
                 .name(t.getName())
-                .jobFunction(t.getJobFunction())
+                .jobCategory(t.getJobCategory())
                 .status(t.getStatus().getDbValue())
                 .isActive(t.getIsActive())
                 .build();

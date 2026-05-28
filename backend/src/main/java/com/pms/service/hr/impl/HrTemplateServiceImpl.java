@@ -41,7 +41,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
                         .id(UUID.randomUUID())
                         .name(req.getName())
                         .description(req.getDescription())
-                        .jobFunction(req.getJobFunction())
+                        .jobCategory(req.getJobCategory())
                         .status(TemplateStatus.DRAFT)
                         .isActive(true)
                         .createdBy(actorId)
@@ -60,9 +60,9 @@ public class HrTemplateServiceImpl implements HrTemplateService {
 
     @Override
     public Page<TemplateListItemDTO> listTemplates(
-            String status, String jobFunction, int page, int pageSize) {
+            String status, String jobCategory, int page, int pageSize) {
         return templateRepo
-                .findAllFiltered(status, jobFunction, PageRequest.of(page - 1, pageSize))
+                .findAllFiltered(status, jobCategory, PageRequest.of(page - 1, pageSize))
                 .map(TemplateListItemDTO::from);
     }
 
@@ -82,7 +82,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
         }
         if (req.getName() != null) t.setName(req.getName());
         if (req.getDescription() != null) t.setDescription(req.getDescription());
-        if (req.getJobFunction() != null) t.setJobFunction(req.getJobFunction());
+        if (req.getJobCategory() != null) t.setJobCategory(req.getJobCategory());
         t.setUpdatedBy(actorId);
         templateRepo.save(t);
         return TemplateResponseDTO.from(t, templateRepo.countCycleUsages(templateId));
@@ -116,7 +116,7 @@ public class HrTemplateServiceImpl implements HrTemplateService {
                         .id(UUID.randomUUID())
                         .name(source.getName() + " (複製)")
                         .description(source.getDescription())
-                        .jobFunction(source.getJobFunction())
+                        .jobCategory(source.getJobCategory())
                         .status(TemplateStatus.DRAFT)
                         .isActive(true)
                         .createdBy(actorId)
