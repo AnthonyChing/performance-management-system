@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { ApiRequestError, createSession } from '../../../api/auth';
 
 const roleRedirectMap: Record<string, string> = {
   employee: '/dashboard',
@@ -33,21 +34,8 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        setErrorMessage('帳號或密碼錯誤，請重新輸入。');
-        return;
-      }
-
-      const data = (await response.json()) as { token?: string; role?: string };
-      const token = data.token ?? '';
+      const data = await createSession({ username, password });
+      const token = data.token;
       const role = data.role ?? 'employee';
 
       if (token) {
@@ -57,7 +45,11 @@ export default function Login() {
 
       navigate(redirectTarget ?? roleRedirectMap[role] ?? '/dashboard', { replace: true });
     } catch (error) {
-      setErrorMessage('登入失敗，請稍後再試。');
+      if (error instanceof ApiRequestError && error.status === 401) {
+        setErrorMessage('帳號或密碼錯誤，請重新輸入。');
+      } else {
+        setErrorMessage('登入失敗，請稍後再試。');
+      }
     } finally {
       setIsSubmitting(false);
     }

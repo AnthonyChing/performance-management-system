@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
+import { deleteSession } from '../../api/auth';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
   return (
@@ -89,10 +90,16 @@ export default function Layout() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    navigate('/login', { replace: true });
+  const handleLogout = async () => {
+    try {
+      await deleteSession();
+    } catch (error) {
+      // Ignore logout errors; local cleanup still happens.
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      navigate('/login', { replace: true });
+    }
   };
 
   const getBreadcrumbs = () => {
