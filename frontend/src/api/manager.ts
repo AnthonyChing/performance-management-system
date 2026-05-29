@@ -1,0 +1,619 @@
+export const API_BASE_PATH = '/api/v1';
+const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
+
+type GoalStatus = 'pending_review' | 'in_progress' | 'revision_requested' | 'completed' | 'cancelled';
+type KpiType = 'individual' | 'team';
+type AppealStatus =
+  | 'submitted'
+  | 'under_review'
+  | 'need_more_info'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled';
+
+type RatingScale =
+  | 'exceeds_expectations'
+  | 'meets_expectations'
+  | 'needs_improvement'
+  | 'unsatisfactory';
+
+type ReviewStatus =
+  | 'manager_eval_in_progress'
+  | 'completed'
+  | 'pending_employee_eval'
+  | 'pending_manager_eval';
+
+export interface SubordinateGoal {
+  goal_id: string;
+  cycle_id: string;
+  owner_id: string;
+  set_by: string;
+  goal_type: string;
+  title: string;
+  description: string | null;
+  progress_percent?: number;
+  weight?: number;
+  target_value?: string | null;
+  current_value?: string | null;
+  due_date: string;
+  status: GoalStatus;
+  published_at: string | null;
+}
+
+export interface KpiAssignment {
+  target_value: number;
+  current_value: number | null;
+  last_updated_at: string | null;
+}
+
+export interface SubordinateKpi {
+  kpi_id: string;
+  cycle_id: string;
+  created_by: string;
+  kpi_type: KpiType;
+  title: string;
+  description: string | null;
+  unit: string | null;
+  assignment: KpiAssignment;
+  published_at: string | null;
+}
+
+export interface ReviewResponse {
+  id: string;
+  question_id: string;
+  respondent_type: string;
+  rating_value: number | null;
+  text_value: string | null;
+  responded_at: string;
+}
+
+export interface AppealResponse {
+  id: string;
+  responded_by: string;
+  response_text: string;
+  is_final: boolean;
+  responded_at: string;
+}
+
+export interface Appeal {
+  id: string;
+  review_id: string;
+  filed_by: string;
+  assigned_to_type: string;
+  assigned_to: string;
+  reason: string;
+  status: AppealStatus;
+  filed_at: string;
+  resolved_at: string | null;
+  responses?: AppealResponse[];
+}
+
+export interface EvaluationHistoryItem {
+  id: string;
+  cycle_id: string;
+  employee_id: string;
+  manager_id: string;
+  status: ReviewStatus;
+  final_rating: RatingScale | null;
+  manager_comment: string | null;
+  responses?: ReviewResponse[];
+  kpi_evaluations?: Array<{
+    kpi_id: string;
+    manager_score: number;
+    manager_feedback: string | null;
+  }>;
+  manager_submitted_at?: string | null;
+}
+
+export interface ApiErrorDetail {
+  field?: string;
+  message: string;
+}
+
+export interface ApiErrorBody {
+  error: {
+    code: string;
+    message: string;
+    details?: ApiErrorDetail[];
+  };
+}
+
+export type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly details: ApiErrorDetail[];
+
+  constructor(status: number, body: ApiErrorBody) {
+    super(body.error.message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.code = body.error.code;
+    this.details = body.error.details ?? [];
+  }
+}
+
+export class ApiResponseValidationError extends Error {
+  readonly path: string;
+
+  constructor(path: string) {
+    super(`API response shape does not match manager_api.md: ${path}`);
+    this.name = 'ApiResponseValidationError';
+    this.path = path;
+  }
+}
+
+export interface ManagerApiOptions {
+  fetcher?: Fetcher;
+  signal?: AbortSignal;
+  credentials?: RequestCredentials;
+}
+
+const goalStatuses = new Set<GoalStatus>([
+  'pending_review',
+  'in_progress',
+  'revision_requested',
+  'completed',
+  'cancelled',
+]);
+
+const reviewStatuses = new Set<ReviewStatus>([
+  'manager_eval_in_progress',
+  'completed',
+  'pending_employee_eval',
+  'pending_manager_eval',
+]);
+
+export function resolveManagerApiUrl(path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${API_BASE_PATH}${normalizedPath}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && !Number.isNaN(value);
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || isString(value);
+}
+
+function isKpiAssignment(value: unknown): value is KpiAssignment {
+  return (
+    isRecord(value) &&
+    isNumber(value.target_value) &&
+    (value.current_value === null || isNumber(value.current_value)) &&
+    isNullableString(value.last_updated_at)
+  );
+}
+
+function isSubordinateGoal(value: unknown): value is SubordinateGoal {
+  return (
+    isRecord(value) &&
+    isString(value.goal_id) &&
+    isString(value.cycle_id) &&
+    isString(value.owner_id) &&
+    isString(value.set_by) &&
+    isString(value.goal_type) &&
+    isString(value.title) &&
+    isNullableString(value.description) &&
+    isString(value.due_date) &&
+    isString(value.status) &&
+    goalStatuses.has(value.status as GoalStatus) &&
+    isNullableString(value.published_at)
+  );
+}
+
+function isSubordinateKpi(value: unknown): value is SubordinateKpi {
+  return (
+    isRecord(value) &&
+    isString(value.kpi_id) &&
+    isString(value.cycle_id) &&
+    isString(value.created_by) &&
+    isString(value.kpi_type) &&
+    isString(value.title) &&
+    isNullableString(value.description) &&
+    isNullableString(value.unit) &&
+    isKpiAssignment(value.assignment) &&
+    isNullableString(value.published_at)
+  );
+}
+
+function isReviewResponse(value: unknown): value is ReviewResponse {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.question_id) &&
+    isString(value.respondent_type) &&
+    (value.rating_value === null || isNumber(value.rating_value)) &&
+    isNullableString(value.text_value) &&
+    isString(value.responded_at)
+  );
+}
+
+function isAppealResponse(value: unknown): value is AppealResponse {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.responded_by) &&
+    isString(value.response_text) &&
+    typeof value.is_final === 'boolean' &&
+    isString(value.responded_at)
+  );
+}
+
+function isAppeal(value: unknown): value is Appeal {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.review_id) &&
+    isString(value.filed_by) &&
+    isString(value.assigned_to_type) &&
+    isString(value.assigned_to) &&
+    isString(value.reason) &&
+    isString(value.status) &&
+    isString(value.filed_at) &&
+    isNullableString(value.resolved_at) &&
+    (value.responses === undefined ||
+      (Array.isArray(value.responses) && value.responses.every(isAppealResponse)))
+  );
+}
+
+function isEvaluationHistoryItem(value: unknown): value is EvaluationHistoryItem {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.cycle_id) &&
+    isString(value.employee_id) &&
+    isString(value.manager_id) &&
+    isString(value.status) &&
+    reviewStatuses.has(value.status as ReviewStatus) &&
+    (value.final_rating === null || isString(value.final_rating)) &&
+    isNullableString(value.manager_comment) &&
+    (value.responses === undefined ||
+      (Array.isArray(value.responses) && value.responses.every(isReviewResponse)))
+  );
+}
+
+function isApiErrorBody(value: unknown): value is ApiErrorBody {
+  return (
+    isRecord(value) &&
+    isRecord(value.error) &&
+    isString(value.error.code) &&
+    isString(value.error.message) &&
+    (
+      value.error.details === undefined ||
+      (
+        Array.isArray(value.error.details) &&
+        value.error.details.every(
+          (detail) =>
+            isRecord(detail) &&
+            (detail.field === undefined || isString(detail.field)) &&
+            isString(detail.message),
+        )
+      )
+    )
+  );
+}
+
+function handleUnauthorized(response: Response) {
+  if (response.status !== 401) {
+    return;
+  }
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const { pathname, search, hash } = window.location;
+  if (pathname === '/login') {
+    return;
+  }
+
+  const redirectTarget = `${pathname}${search}${hash}`;
+  const loginUrl = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+  window.location.replace(loginUrl);
+}
+
+async function parseJsonBody(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  return JSON.parse(text) as unknown;
+}
+
+async function requestJson<T>(
+  path: string,
+  method: 'GET' | 'POST' | 'PATCH',
+  validate: (value: unknown) => value is T,
+  body?: unknown,
+  options: ManagerApiOptions = {},
+): Promise<T> {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(resolveManagerApiUrl(path), {
+    method,
+    credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
+    signal: options.signal,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  handleUnauthorized(response);
+
+  const parsedBody = await parseJsonBody(response);
+
+  if (!response.ok) {
+    if (isApiErrorBody(parsedBody)) {
+      throw new ApiRequestError(response.status, parsedBody);
+    }
+
+    throw new ApiRequestError(response.status, {
+      error: {
+        code: 'HTTP_ERROR',
+        message: `HTTP ${response.status}`,
+      },
+    });
+  }
+
+  if (!validate(parsedBody)) {
+    throw new ApiResponseValidationError(path);
+  }
+
+  return parsedBody as T;
+}
+
+function isDataArray<T>(value: unknown, validator: (item: unknown) => item is T): value is { data: T[] } {
+  return isRecord(value) && Array.isArray(value.data) && value.data.every(validator);
+}
+
+export function createGoal(
+  userId: string,
+  payload: {
+    title: string;
+    description?: string;
+    goal_type?: string;
+    weight?: number;
+    target_value?: string;
+    due_date: string;
+  },
+  options?: ManagerApiOptions,
+): Promise<SubordinateGoal> {
+  return requestJson(
+    `/users/${userId}/goals`,
+    'POST',
+    isSubordinateGoal,
+    payload,
+    options,
+  );
+}
+
+export function updateGoal(
+  userId: string,
+  goalId: string,
+  payload: {
+    status?: GoalStatus;
+    title?: string;
+    description?: string;
+    due_date?: string;
+    weight?: number;
+  },
+  options?: ManagerApiOptions,
+): Promise<SubordinateGoal> {
+  return requestJson(
+    `/users/${userId}/goals/${goalId}`,
+    'PATCH',
+    isSubordinateGoal,
+    payload,
+    options,
+  );
+}
+
+export function listGoals(
+  userId: string,
+  params: { cycle_id?: string; status?: GoalStatus } = {},
+  options?: ManagerApiOptions,
+): Promise<{ data: SubordinateGoal[] }> {
+  const search = new URLSearchParams();
+  if (params.cycle_id) search.set('cycle_id', params.cycle_id);
+  if (params.status) search.set('status', params.status);
+  const query = search.toString();
+  const path = query ? `/users/${userId}/goals?${query}` : `/users/${userId}/goals`;
+
+  return requestJson(path, 'GET', (value): value is { data: SubordinateGoal[] } =>
+    isDataArray(value, isSubordinateGoal),
+    undefined,
+    options,
+  );
+}
+
+export function createKpi(
+  userId: string,
+  payload: {
+    title: string;
+    description?: string;
+    kpi_type: KpiType;
+    unit?: string;
+    target_value: number;
+  },
+  options?: ManagerApiOptions,
+): Promise<{ data: SubordinateKpi[] }> {
+  return requestJson(
+    `/users/${userId}/kpis`,
+    'POST',
+    (value): value is { data: SubordinateKpi[] } => isDataArray(value, isSubordinateKpi),
+    payload,
+    options,
+  );
+}
+
+export function updateKpi(
+  userId: string,
+  kpiId: string,
+  payload: {
+    target_value?: number;
+    title?: string;
+    description?: string;
+  },
+  options?: ManagerApiOptions,
+): Promise<SubordinateKpi> {
+  return requestJson(
+    `/users/${userId}/kpis/${kpiId}`,
+    'PATCH',
+    isSubordinateKpi,
+    payload,
+    options,
+  );
+}
+
+export function listKpis(
+  userId: string,
+  params: { cycle_id?: string } = {},
+  options?: ManagerApiOptions,
+): Promise<{ data: SubordinateKpi[] }> {
+  const search = new URLSearchParams();
+  if (params.cycle_id) search.set('cycle_id', params.cycle_id);
+  const query = search.toString();
+  const path = query ? `/users/${userId}/kpis?${query}` : `/users/${userId}/kpis`;
+
+  return requestJson(path, 'GET', (value): value is { data: SubordinateKpi[] } =>
+    isDataArray(value, isSubordinateKpi),
+    undefined,
+    options,
+  );
+}
+
+export function submitQuestionnaireEvaluation(
+  userId: string,
+  evaluationId: string,
+  payload: {
+    responses: Array<{
+      question_id: string;
+      rating_value?: number;
+      text_value?: string;
+    }>;
+  },
+  options?: ManagerApiOptions,
+): Promise<{
+  review_id: string;
+  responses: ReviewResponse[];
+  updated_at: string;
+}> {
+  return requestJson(
+    `/users/${userId}/evaluations/${evaluationId}/questionnaire`,
+    'PATCH',
+    (value): value is { review_id: string; responses: ReviewResponse[]; updated_at: string } =>
+      isRecord(value) &&
+      isString(value.review_id) &&
+      Array.isArray(value.responses) &&
+      value.responses.every(isReviewResponse) &&
+      isString(value.updated_at),
+    payload,
+    options,
+  );
+}
+
+export function submitKpiEvaluation(
+  userId: string,
+  evaluationId: string,
+  payload: {
+    status: ReviewStatus;
+    final_rating: RatingScale;
+    manager_comment?: string;
+    kpi_evaluations: Array<{
+      kpi_id: string;
+      manager_score: number;
+      manager_feedback?: string;
+    }>;
+  },
+  options?: ManagerApiOptions,
+): Promise<EvaluationHistoryItem> {
+  return requestJson(
+    `/users/${userId}/evaluations/${evaluationId}/kpis`,
+    'PATCH',
+    isEvaluationHistoryItem,
+    payload,
+    options,
+  );
+}
+
+export function listEvaluations(
+  userId: string,
+  params: { cycle_id?: string } = {},
+  options?: ManagerApiOptions,
+): Promise<{ data: EvaluationHistoryItem[] }> {
+  const search = new URLSearchParams();
+  if (params.cycle_id) search.set('cycle_id', params.cycle_id);
+  const query = search.toString();
+  const path = query
+    ? `/users/${userId}/evaluations?${query}`
+    : `/users/${userId}/evaluations`;
+
+  return requestJson(path, 'GET', (value): value is { data: EvaluationHistoryItem[] } =>
+    isDataArray(value, isEvaluationHistoryItem),
+    undefined,
+    options,
+  );
+}
+
+export function listAppeals(
+  teamId: string,
+  params: { status?: AppealStatus } = {},
+  options?: ManagerApiOptions,
+): Promise<{ data: Appeal[] }> {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  const query = search.toString();
+  const path = query ? `/teams/${teamId}/appeals?${query}` : `/teams/${teamId}/appeals`;
+
+  return requestJson(path, 'GET', (value): value is { data: Appeal[] } =>
+    isDataArray(value, isAppeal),
+    undefined,
+    options,
+  );
+}
+
+export function getAppeal(
+  teamId: string,
+  appealId: string,
+  options?: ManagerApiOptions,
+): Promise<Appeal> {
+  return requestJson(
+    `/teams/${teamId}/appeals/${appealId}`,
+    'GET',
+    isAppeal,
+    undefined,
+    options,
+  );
+}
+
+export function updateAppeal(
+  teamId: string,
+  appealId: string,
+  payload: {
+    response_text: string;
+    is_final: boolean;
+  },
+  options?: ManagerApiOptions,
+): Promise<Appeal> {
+  return requestJson(
+    `/teams/${teamId}/appeals/${appealId}`,
+    'PATCH',
+    isAppeal,
+    payload,
+    options,
+  );
+}
