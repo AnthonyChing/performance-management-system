@@ -19,6 +19,19 @@ test.describe('Manager Module', () => {
       await expect(page).toHaveURL(/.*dashboard/);
     });
 
+    test('M-AUTH-01-REDIRECT: 支援登入後導回指定頁面', async ({ page }) => {
+      await page.goto('/login?redirect=/manager/overview');
+      await page.route('**/sessions', async route => {
+        await route.fulfill({ status: 200, json: { token: 'fake-jwt-token', role: 'manager' } });
+      });
+
+      await page.fill('input[name="username"]', 'manager1');
+      await page.fill('input[name="password"]', 'password123');
+      await page.click('button[type="submit"]');
+
+      await expect(page).toHaveURL(/.*manager\/overview/);
+    });
+
     test('M-AUTH-02: 輸入錯誤的帳密登入失敗', async ({ page }) => {
       await page.route('**/sessions', async route => {
         await route.fulfill({ status: 401, json: { error: 'Invalid credentials' } });
@@ -29,6 +42,15 @@ test.describe('Manager Module', () => {
       await page.click('button[type="submit"]');
 
       await expect(page.locator('.error-message')).toBeVisible();
+    });
+
+    test('M-AUTH-03: 登出清除 token', async ({ page }) => {
+      await page.evaluate(() => localStorage.setItem('token', 'fake-jwt-token'));
+      await page.goto('/');
+
+      await page.click('button:has-text("Log out")');
+      await expect(page).toHaveURL(/.*login/);
+      await expect(page.evaluate(() => localStorage.getItem('token'))).resolves.toBeNull();
     });
   });
 

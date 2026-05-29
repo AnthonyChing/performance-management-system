@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu } from 'lucide-react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
   return (
@@ -86,7 +86,14 @@ const SidebarSubItem = ({ to, label }: any) => {
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    navigate('/login', { replace: true });
+  };
 
   const getBreadcrumbs = () => {
     const path = location.pathname;
@@ -218,6 +225,12 @@ export default function Layout() {
               </button>
               <button className="flex items-center text-sm text-slate-500 hover:text-slate-800 px-2 py-1">
                 <HelpCircle className="w-4 h-4 mr-3" /> Help
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center text-sm text-slate-500 hover:text-rose-600 px-2 py-1"
+              >
+                <LogOut className="w-4 h-4 mr-3" /> Log out
               </button>
             </>
           )}
