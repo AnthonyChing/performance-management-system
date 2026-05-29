@@ -13,6 +13,10 @@ test.describe('HR Module', () => {
     await page.evaluate(() => localStorage.setItem('token', 'fake-hr-token'));
   });
 
+  test('HR-AUTH-01: HR 登入後導向考核週期', async ({ page }) => {
+    await expect(page).toHaveURL(/.*hr\/cycles/);
+  });
+
   test.describe('3.1 Assessment Templates', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto('/hr/templates');
