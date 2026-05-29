@@ -12,42 +12,44 @@ type AppealStatus =
   | 'cancelled';
 
 type RatingScale =
+  | 'outstanding'
   | 'exceeds_expectations'
   | 'meets_expectations'
   | 'needs_improvement'
-  | 'unsatisfactory';
+  | 'unacceptable';
 
 type ReviewStatus =
+  | 'pending_self_eval'
+  | 'self_eval_in_progress'
+  | 'pending_manager_eval'
   | 'manager_eval_in_progress'
+  | 'pending_hr_review'
   | 'completed'
-  | 'pending_employee_eval'
-  | 'pending_manager_eval';
+  | 'terminated';
 
 export interface SubordinateGoal {
-  goal_id: string;
+  id: string;
   cycle_id: string;
   owner_id: string;
   set_by: string;
   goal_type: string;
   title: string;
   description: string | null;
-  progress_percent?: number;
-  weight?: number;
-  target_value?: string | null;
-  current_value?: string | null;
-  due_date: string;
+  progress_percent: number;
+  due_date: string | null;
   status: GoalStatus;
   published_at: string | null;
 }
 
 export interface KpiAssignment {
+  weight: number;
   target_value: number;
   current_value: number | null;
   last_updated_at: string | null;
 }
 
 export interface SubordinateKpi {
-  kpi_id: string;
+  id: string;
   cycle_id: string;
   created_by: string;
   kpi_type: KpiType;
@@ -64,12 +66,14 @@ export interface ReviewResponse {
   respondent_type: string;
   rating_value: number | null;
   text_value: string | null;
+  boolean_value: boolean | null;
   responded_at: string;
 }
 
 export interface AppealResponse {
   id: string;
   responded_by: string;
+  visibility: string;
   response_text: string;
   is_final: boolean;
   responded_at: string;
@@ -78,6 +82,7 @@ export interface AppealResponse {
 export interface Appeal {
   id: string;
   review_id: string;
+  case_no: string;
   filed_by: string;
   assigned_to_type: string;
   assigned_to: string;
@@ -96,13 +101,15 @@ export interface EvaluationHistoryItem {
   status: ReviewStatus;
   final_rating: RatingScale | null;
   manager_comment: string | null;
+  kpi_score?: number | null;
+  review_score?: number | null;
+  score_computed_at?: string | null;
+  self_submitted_at?: string | null;
   responses?: ReviewResponse[];
-  kpi_evaluations?: Array<{
-    kpi_id: string;
-    manager_score: number;
-    manager_feedback: string | null;
-  }>;
   manager_submitted_at?: string | null;
+  hr_approved_at?: string | null;
+  is_terminated_employee?: boolean;
+  updated_at?: string;
 }
 
 export interface ApiErrorDetail {
@@ -159,10 +166,13 @@ const goalStatuses = new Set<GoalStatus>([
 ]);
 
 const reviewStatuses = new Set<ReviewStatus>([
-  'manager_eval_in_progress',
-  'completed',
-  'pending_employee_eval',
+  'pending_self_eval',
+  'self_eval_in_progress',
   'pending_manager_eval',
+  'manager_eval_in_progress',
+  'pending_hr_review',
+  'completed',
+  'terminated',
 ]);
 
 export function resolveManagerApiUrl(path: string) {
@@ -189,6 +199,7 @@ function isNullableString(value: unknown): value is string | null {
 function isKpiAssignment(value: unknown): value is KpiAssignment {
   return (
     isRecord(value) &&
+    isNumber(value.weight) &&
     isNumber(value.target_value) &&
     (value.current_value === null || isNumber(value.current_value)) &&
     isNullableString(value.last_updated_at)
@@ -198,14 +209,15 @@ function isKpiAssignment(value: unknown): value is KpiAssignment {
 function isSubordinateGoal(value: unknown): value is SubordinateGoal {
   return (
     isRecord(value) &&
-    isString(value.goal_id) &&
+    isString(value.id) &&
     isString(value.cycle_id) &&
     isString(value.owner_id) &&
     isString(value.set_by) &&
     isString(value.goal_type) &&
     isString(value.title) &&
     isNullableString(value.description) &&
-    isString(value.due_date) &&
+    typeof value.progress_percent === 'number' &&
+    isNullableString(value.due_date) &&
     isString(value.status) &&
     goalStatuses.has(value.status as GoalStatus) &&
     isNullableString(value.published_at)
@@ -215,7 +227,7 @@ function isSubordinateGoal(value: unknown): value is SubordinateGoal {
 function isSubordinateKpi(value: unknown): value is SubordinateKpi {
   return (
     isRecord(value) &&
-    isString(value.kpi_id) &&
+    isString(value.id) &&
     isString(value.cycle_id) &&
     isString(value.created_by) &&
     isString(value.kpi_type) &&
@@ -235,6 +247,7 @@ function isReviewResponse(value: unknown): value is ReviewResponse {
     isString(value.respondent_type) &&
     (value.rating_value === null || isNumber(value.rating_value)) &&
     isNullableString(value.text_value) &&
+    (value.boolean_value === null || typeof value.boolean_value === 'boolean') &&
     isString(value.responded_at)
   );
 }
@@ -244,6 +257,7 @@ function isAppealResponse(value: unknown): value is AppealResponse {
     isRecord(value) &&
     isString(value.id) &&
     isString(value.responded_by) &&
+    isString(value.visibility) &&
     isString(value.response_text) &&
     typeof value.is_final === 'boolean' &&
     isString(value.responded_at)
@@ -255,6 +269,7 @@ function isAppeal(value: unknown): value is Appeal {
     isRecord(value) &&
     isString(value.id) &&
     isString(value.review_id) &&
+    isString(value.case_no) &&
     isString(value.filed_by) &&
     isString(value.assigned_to_type) &&
     isString(value.assigned_to) &&
@@ -278,8 +293,16 @@ function isEvaluationHistoryItem(value: unknown): value is EvaluationHistoryItem
     reviewStatuses.has(value.status as ReviewStatus) &&
     (value.final_rating === null || isString(value.final_rating)) &&
     isNullableString(value.manager_comment) &&
+    (value.kpi_score === undefined || value.kpi_score === null || isNumber(value.kpi_score)) &&
+    (value.review_score === undefined || value.review_score === null || isNumber(value.review_score)) &&
+    (value.score_computed_at === undefined || isNullableString(value.score_computed_at)) &&
+    (value.self_submitted_at === undefined || isNullableString(value.self_submitted_at)) &&
     (value.responses === undefined ||
-      (Array.isArray(value.responses) && value.responses.every(isReviewResponse)))
+      (Array.isArray(value.responses) && value.responses.every(isReviewResponse))) &&
+    (value.manager_submitted_at === undefined || isNullableString(value.manager_submitted_at)) &&
+    (value.hr_approved_at === undefined || isNullableString(value.hr_approved_at)) &&
+    (value.is_terminated_employee === undefined || typeof value.is_terminated_employee === 'boolean') &&
+    (value.updated_at === undefined || isString(value.updated_at))
   );
 }
 
@@ -386,9 +409,7 @@ export function createGoal(
     title: string;
     description?: string;
     goal_type?: string;
-    weight?: number;
-    target_value?: string;
-    due_date: string;
+    due_date?: string | null;
   },
   options?: ManagerApiOptions,
 ): Promise<SubordinateGoal> {
@@ -408,8 +429,7 @@ export function updateGoal(
     status?: GoalStatus;
     title?: string;
     description?: string;
-    due_date?: string;
-    weight?: number;
+    due_date?: string | null;
   },
   options?: ManagerApiOptions,
 ): Promise<SubordinateGoal> {
@@ -447,6 +467,7 @@ export function createKpi(
     description?: string;
     kpi_type: KpiType;
     unit?: string;
+    weight: number;
     target_value: number;
   },
   options?: ManagerApiOptions,
@@ -465,6 +486,7 @@ export function updateKpi(
   kpiId: string,
   payload: {
     target_value?: number;
+    weight?: number;
     title?: string;
     description?: string;
   },
@@ -504,6 +526,7 @@ export function submitQuestionnaireEvaluation(
       question_id: string;
       rating_value?: number;
       text_value?: string;
+      boolean_value?: boolean;
     }>;
   },
   options?: ManagerApiOptions,
@@ -533,11 +556,6 @@ export function submitKpiEvaluation(
     status: ReviewStatus;
     final_rating: RatingScale;
     manager_comment?: string;
-    kpi_evaluations: Array<{
-      kpi_id: string;
-      manager_score: number;
-      manager_feedback?: string;
-    }>;
   },
   options?: ManagerApiOptions,
 ): Promise<EvaluationHistoryItem> {
