@@ -1,5 +1,17 @@
 export {
-  HR_CREATE_TEMPLATE_QUESTIONNAIRES,
-  HR_CREATE_TEMPLATE_STEPS,
-  HR_REVIEW_TEMPLATES,
-} from '../../../shared/api/mockData';
+  createEvaluationTemplate,
+  getEvaluationTemplate,
+  listAssessmentTemplates,
+  listEmployeeGroups,
+  listEvaluationTemplates,
+  listPerformanceCycles,
+  updateEvaluationTemplate,
+} from '../../../api/hr';
+
+export type {
+  AssessmentTemplateListItem,
+  EmployeeGroup,
+  EvaluationTemplate,
+  EvaluationTemplateListItem,
+  PerformanceCycle,
+} from '../../../api/hr';

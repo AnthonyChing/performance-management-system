@@ -5,7 +5,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../../shared/layout/Layout';
-import Login from '../../features/auth/pages/Login';
+import { Login } from '../../features/auth';
 import Profile from '../../features/profile/pages/Profile';
 import CurrentKPI from '../../features/performance/pages/CurrentKPI';
 import HistoryKPI from '../../features/performance/pages/HistoryKPI';
