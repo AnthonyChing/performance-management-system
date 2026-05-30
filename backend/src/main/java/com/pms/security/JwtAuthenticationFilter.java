@@ -4,9 +4,11 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,13 +28,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
+        String token = null;
+
+        // 1. Try to get token from Authorization header
         String header = request.getHeader("Authorization");
-        if (header == null || !header.startsWith("Bearer ")) {
+        if (header != null && header.startsWith("Bearer ")) {
+            token = header.substring(7);
+        }
+
+        // 2. If not in header, try to get from HttpOnly cookie
+        if (token == null && request.getCookies() != null) {
+            token =
+                    Arrays.stream(request.getCookies())
+                            .filter(c -> "jwt".equals(c.getName()))
+                            .findFirst()
+                            .map(Cookie::getValue)
+                            .orElse(null);
+        }
+
+        if (token == null) {
             chain.doFilter(request, response);
             return;
         }
 
-        String token = header.substring(7);
         try {
             Claims claims = jwtUtil.parseToken(token);
             List<String> roles = jwtUtil.getRoles(claims);
