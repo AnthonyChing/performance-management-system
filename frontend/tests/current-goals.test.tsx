@@ -44,7 +44,6 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
 describe('CurrentGoals', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it('loads current goals from the backend API path', async () => {
@@ -65,7 +64,6 @@ describe('CurrentGoals', () => {
       }),
     );
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'dev-jwt-token');
 
     render(
       <MemoryRouter initialEntries={['/goals/current']}>
@@ -85,7 +83,6 @@ describe('CurrentGoals', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-jwt-token',
         }),
       }),
     );

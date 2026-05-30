@@ -63,7 +63,6 @@ function renderGoalDetail(path = '/goals/goal_001') {
 describe('GoalDetail', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it('loads goal detail from current goals API instead of hardcoded mock content', async () => {
@@ -77,7 +76,6 @@ describe('GoalDetail', () => {
       }),
     );
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'dev-jwt-token');
 
     renderGoalDetail();
 
@@ -94,7 +92,6 @@ describe('GoalDetail', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-jwt-token',
         }),
       }),
     );

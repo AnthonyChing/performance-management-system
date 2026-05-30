@@ -27,7 +27,6 @@ function renderNewGoal() {
 describe('NewGoal', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it('posts a new goal to the backend and returns to current goals', async () => {
@@ -50,7 +49,6 @@ describe('NewGoal', () => {
       }, { status: 201 }),
     );
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'dev-jwt-token');
 
     renderNewGoal();
 
@@ -71,7 +69,6 @@ describe('NewGoal', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-jwt-token',
         }),
         body: JSON.stringify({
           title: '提升產品技術文件完整度',

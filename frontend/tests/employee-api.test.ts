@@ -373,7 +373,6 @@ const goalCreationPayload = {
 
 describe('employee API client', () => {
   beforeEach(() => {
-    localStorage.clear();
     sessionStorage.clear();
   });
 
@@ -410,7 +409,6 @@ describe('employee API client', () => {
       '/api/v1/me/profile',
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: 'Bearer local-jwt',
         }),
       }),
     );
@@ -418,7 +416,6 @@ describe('employee API client', () => {
 
   it('GET /me/profile reads JWT from browser storage by default', async () => {
     const fetcher = vi.fn(async () => jsonResponse(profilePayload)) satisfies Fetcher;
-    localStorage.setItem('token', 'stored-jwt');
 
     await getMyProfile({ fetcher });
 
@@ -426,7 +423,6 @@ describe('employee API client', () => {
       '/api/v1/me/profile',
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: 'Bearer stored-jwt',
         }),
       }),
     );

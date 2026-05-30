@@ -20,31 +20,45 @@ function renderLogin(initialEntry = '/login?redirect=/performance/current') {
   );
 }
 
-describe('JWT login feature', () => {
+import { vi } from 'vitest';
+
+describe('Email login feature', () => {
   afterEach(() => {
-    localStorage.clear();
+    vi.restoreAllMocks();
   });
 
-  it('stores the pasted JWT and navigates back to the redirect path', () => {
+  it('submits email and navigates back to the redirect path', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal('fetch', fetcher);
+
     renderLogin();
 
-    fireEvent.change(screen.getByLabelText('JWT'), {
-      target: { value: 'dev-jwt-token' },
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'mandy.ma@acme.test' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '儲存並繼續' }));
+    fireEvent.click(screen.getByRole('button', { name: '登入' }));
 
-    expect(localStorage.getItem('token')).toBe('dev-jwt-token');
-    expect(screen.getByTestId('location')).toHaveTextContent('/performance/current');
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/auth/dev-login',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'mandy.ma@acme.test' }),
+      }),
+    );
+    expect(await screen.findByTestId('location')).toHaveTextContent('/performance/current');
   });
 
-  it('falls back to profile for unsafe redirect values', () => {
+  it('falls back to profile for unsafe redirect values', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal('fetch', fetcher);
+
     renderLogin('/login?redirect=https://example.com');
 
-    fireEvent.change(screen.getByLabelText('JWT'), {
-      target: { value: 'dev-jwt-token' },
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'mandy.ma@acme.test' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '儲存並繼續' }));
+    fireEvent.click(screen.getByRole('button', { name: '登入' }));
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/');
+    expect(await screen.findByTestId('location')).toHaveTextContent('/');
   });
 });
