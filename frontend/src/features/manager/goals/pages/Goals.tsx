@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Filter, 
-  Search, 
-  Settings, 
-  Clock, 
-  AlertCircle, 
-  Plus,
-  RefreshCw,
-  Edit,
-  FileCheck
-} from 'lucide-react';
-import { loadManagerData, updateGoalStatus, addMockGoal, editGoal, evaluateGoal, saveManagerData } from '../api';
+import { Filter, Search } from 'lucide-react';
+import { loadManagerData, updateGoalStatus, addMockGoal, editGoal, evaluateGoal } from '../api';
 import type { ReviewItem } from '../types';
+import AddGoalModal from '../components/AddGoalModal';
+import EditGoalModal from '../components/EditGoalModal';
+import EvaluateGoalModal from '../components/EvaluateGoalModal';
+import GoalCard from '../components/GoalCard';
+import GoalsEmptyState from '../components/GoalsEmptyState';
+import RejectGoalModal from '../components/RejectGoalModal';
 
 export default function Goals() {
   const [searchParams] = useSearchParams();
@@ -156,144 +150,6 @@ export default function Goals() {
   const okrs = filteredGoals.filter(g => g.type === '目標');
   const kpis = filteredGoals.filter(g => g.type === 'KPI');
 
-  const renderGoalCard = (goal: ReviewItem) => {
-    const isPending = goal.status === '待審核';
-    const isActive = goal.status === '進行中';
-    const isRejected = goal.status === '已否決';
-    const isEvaluated = goal.status === '已評估';
-
-    return (
-      <div 
-        key={goal.id} 
-        className={`bg-white rounded-xl border p-6 shadow-sm transition-all hover:border-slate-300 flex flex-col justify-between gap-6 ${isPending ? 'border-amber-200 bg-amber-50/10' : ''}`}
-      >
-        {/* Top Part: Title & Employee Info */}
-        <div className="flex-1 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Goal or KPI type mini tag */}
-            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${goal.type === 'KPI' ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'}`}>
-              {goal.type}
-            </span>
-            
-            {/* Status tag */}
-            {isPending && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> 待審核
-              </span>
-            )}
-            {isActive && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> 待評分
-              </span>
-            )}
-            {isEvaluated && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 flex items-center gap-1">
-                <FileCheck className="w-3 h-3" /> 已評估
-              </span>
-            )}
-            {isRejected && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 flex items-center gap-1">
-                <XCircle className="w-3 h-3" /> 已否決
-              </span>
-            )}
-
-            <span className="text-xs text-slate-400 font-medium">•</span>
-            <span className="text-xs text-slate-500 font-semibold">{goal.dueDate} 截止</span>
-          </div>
-
-          <h3 className="text-base font-bold text-slate-800 leading-tight">{goal.title}</h3>
-          
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-700">組員：{goal.memberName}</span>
-            <span className="text-slate-300 text-xs">|</span>
-            <span className="text-xs text-slate-500 font-medium">
-              所屬：{data.teams.find(t => t.id === goal.teamId)?.name || '專案團隊'}
-            </span>
-          </div>
-
-          {goal.type === 'KPI' && (
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs text-slate-600 space-y-1.5 mt-2">
-              <div className="flex justify-between items-center bg-white p-2 border border-slate-100 rounded-md">
-                <span className="font-bold text-slate-500">KPI 權重</span>
-                <span className="font-mono text-sm font-bold text-indigo-600">{goal.weight}%</span>
-              </div>
-              {goal.target && (
-                <div className="bg-white p-2 border border-slate-100 rounded-md">
-                  <span className="block font-bold text-slate-500 mb-1">目標量化值</span>
-                  <span className="text-slate-700 font-medium">{goal.target}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isEvaluated && (
-            <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 text-xs text-slate-700 space-y-1.5 mt-2 shadow-sm">
-              <div className="font-bold text-indigo-800 flex items-center justify-between">
-                <span>考核評分</span>
-                <span className="font-mono text-base">{goal.score} 分</span>
-              </div>
-              <div className="pt-2 border-t border-indigo-100/50">
-                <span className="font-bold text-slate-500 mb-1 block">主管期末評語：</span>
-                <p className="text-slate-600 bg-white p-2 rounded border border-indigo-100/60 leading-relaxed italic">「{goal.evaluationComment}」</p>
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* Bottom Part: Quick Approval Controls */}
-        <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-          {isPending && (
-            <>
-              <button
-                onClick={() => {
-                  setRejectingGoal(goal);
-                  setRejectReason('');
-                  setRejectChanges('');
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold rounded-md shadow-sm transition-colors"
-              >
-                <XCircle className="w-4 h-4" />
-                否決退回
-              </button>
-              
-              <button
-                onClick={() => handleApprove(goal.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md shadow-sm transition-colors"
-              >
-                <CheckCircle className="w-4 h-4" />
-                同意核准
-              </button>
-            </>
-          )}
-          {isActive && (
-            <button
-              onClick={() => {
-                setEvaluatingGoal(goal);
-                setEvaluationScore(80);
-                setEvaluationComment('');
-              }}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-md shadow-sm transition-colors"
-            >
-              <FileCheck className="w-4 h-4" />
-              進行期末考核評分
-            </button>
-          )}
-          {isRejected && (
-            <button
-              onClick={() => handleReset(goal.id)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-md transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              重置為待審核
-            </button>
-          )}
-        </div>
-
-      </div>
-    );
-  };
-
   return (
     <div className="w-full space-y-8 pb-12">
       {/* Title Header */}
@@ -371,11 +227,7 @@ export default function Goals() {
 
       {/* Grid of Goals & KPIs */}
       {filteredGoals.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400">
-          <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-base font-bold">沒有符合當前過濾條件的目標項目</p>
-          <p className="text-xs mt-1">請嘗試清除搜尋字詞，或選擇其他組別分類。</p>
-        </div>
+        <GoalsEmptyState />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           
@@ -385,7 +237,25 @@ export default function Goals() {
               <span className="w-2 h-6 bg-purple-500 rounded-sm"></span> OKRs 發展目標
             </h2>
             <div className="grid grid-cols-1 gap-4">
-              {okrs.length > 0 ? okrs.map(renderGoalCard) : (
+              {okrs.length > 0 ? okrs.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  teamName={data.teams.find((team) => team.id === goal.teamId)?.name || '專案團隊'}
+                  onApprove={handleApprove}
+                  onReject={(target) => {
+                    setRejectingGoal(target);
+                    setRejectReason('');
+                    setRejectChanges('');
+                  }}
+                  onEvaluate={(target) => {
+                    setEvaluatingGoal(target);
+                    setEvaluationScore(80);
+                    setEvaluationComment('');
+                  }}
+                  onReset={handleReset}
+                />
+              )) : (
                 <div className="p-8 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">沒有發展目標</div>
               )}
             </div>
@@ -397,7 +267,25 @@ export default function Goals() {
               <span className="w-2 h-6 bg-indigo-500 rounded-sm"></span> KPI 績效指標
             </h2>
             <div className="grid grid-cols-1 gap-4">
-              {kpis.length > 0 ? kpis.map(renderGoalCard) : (
+              {kpis.length > 0 ? kpis.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  teamName={data.teams.find((team) => team.id === goal.teamId)?.name || '專案團隊'}
+                  onApprove={handleApprove}
+                  onReject={(target) => {
+                    setRejectingGoal(target);
+                    setRejectReason('');
+                    setRejectChanges('');
+                  }}
+                  onEvaluate={(target) => {
+                    setEvaluatingGoal(target);
+                    setEvaluationScore(80);
+                    setEvaluationComment('');
+                  }}
+                  onReset={handleReset}
+                />
+              )) : (
                 <div className="p-8 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">沒有績效指標</div>
               )}
             </div>
@@ -406,328 +294,57 @@ export default function Goals() {
         </div>
       )}
 
-      {/* Add Goal Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 max-h-[90vh] overflow-y-auto">
-            
-            <div className="p-6 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-lg font-bold text-slate-800">指派／制訂同仁目標 & KPI</h3>
-              <p className="text-xs text-slate-400 mt-1">您可以直接以此主管身份在團隊中加入一項指定或待審核的發展指標</p>
-            </div>
-
-            <form onSubmit={handleCreateGoal} className="p-6 space-y-4">
-              
-              {/* Assign to Employee */}
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">指派給同仁</label>
-                <select
-                  value={newMember}
-                  onChange={(e) => setNewMember(e.target.value)}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none"
-                >
-                  {data.members.map(m => (
-                    <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Type Selection */}
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">指標型態</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewType('KPI')}
-                    className={`py-2 text-xs font-bold rounded-lg border text-center transition-colors ${newType === 'KPI' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-250 hover:bg-slate-50 text-slate-600'}`}
-                  >
-                    KPI 績效指標
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewType('目標')}
-                    className={`py-2 text-xs font-bold rounded-lg border text-center transition-colors ${newType === '目標' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-250 hover:bg-slate-50 text-slate-600'}`}
-                  >
-                    OKRs 發展目標
-                  </button>
-                </div>
-              </div>
-
-              {/* Title Input */}
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">目標 / KPI 標題</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="例如: 研究引進 GraphQL 提升行動網頁載入品質"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                />
-              </div>
-
-              {/* Weights and Targets (only for KPI) */}
-              {newType === 'KPI' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">權重分比 (%)</label>
-                    <input
-                      type="number"
-                      min={5}
-                      max={100}
-                      value={newWeight}
-                      onChange={(e) => setNewWeight(Number(e.target.value))}
-                      className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">預期量化目標</label>
-                    <input
-                      type="text"
-                      placeholder="如: FCP &lt; 1.5s"
-                      value={newTarget}
-                      onChange={(e) => setNewTarget(e.target.value)}
-                      className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Due date */}
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">截止日期</label>
-                <input
-                  type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
-                >
-                  確認建立
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
+        <AddGoalModal
+          members={data.members}
+          newTitle={newTitle}
+          newType={newType}
+          newMember={newMember}
+          newWeight={newWeight}
+          newTarget={newTarget}
+          newDueDate={newDueDate}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleCreateGoal}
+          onTypeChange={setNewType}
+          onMemberChange={setNewMember}
+          onTitleChange={setNewTitle}
+          onWeightChange={setNewWeight}
+          onTargetChange={setNewTarget}
+          onDueDateChange={setNewDueDate}
+        />
       )}
 
-      {/* Edit Goal Modal */}
       {editingGoal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 max-h-[90vh] overflow-y-auto">
-            
-            <div className="p-6 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-slate-500" />
-                編輯同仁指標
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">更新指標名稱、權重配置或預期目標。</p>
-            </div>
-
-            <form onSubmit={handleEditGoal} className="p-6 space-y-4">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">目標 / KPI 標題</label>
-                <input
-                  type="text"
-                  required
-                  value={editingGoal.title}
-                  onChange={(e) => setEditingGoal({ ...editingGoal, title: e.target.value })}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                />
-              </div>
-
-              {editingGoal.type === 'KPI' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">權重分比 (%)</label>
-                    <input
-                      type="number"
-                      min={5}
-                      max={100}
-                      value={editingGoal.weight || 0}
-                      onChange={(e) => setEditingGoal({ ...editingGoal, weight: Number(e.target.value) })}
-                      className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5">預期量化目標</label>
-                    <input
-                      type="text"
-                      value={editingGoal.target || ''}
-                      onChange={(e) => setEditingGoal({ ...editingGoal, target: e.target.value })}
-                      className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">截止日期</label>
-                <input
-                  type="date"
-                  value={editingGoal.dueDate}
-                  onChange={(e) => setEditingGoal({ ...editingGoal, dueDate: e.target.value })}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingGoal(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors shadow-sm"
-                >
-                  保存變更
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
+        <EditGoalModal
+          goal={editingGoal}
+          onClose={() => setEditingGoal(null)}
+          onSubmit={handleEditGoal}
+          onChange={setEditingGoal}
+        />
       )}
 
-      {/* Evaluate Goal Modal */}
       {evaluatingGoal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 max-h-[90vh] overflow-y-auto">
-            
-            <div className="p-6 border-b border-indigo-100 bg-indigo-50">
-              <h3 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-indigo-600" />
-                期末績效評估 (問卷與評分)
-              </h3>
-              <p className="text-xs text-indigo-700 mt-1">針對同仁 <b>{evaluatingGoal.memberName}</b> 的 【{evaluatingGoal.title}】 進行評分與評語撰寫。</p>
-            </div>
-
-            <form onSubmit={handleEvaluateGoal} className="p-6 space-y-4">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">評核分數 (0-100)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={evaluationScore}
-                    onChange={(e) => setEvaluationScore(Number(e.target.value))}
-                    className="w-full accent-indigo-600"
-                  />
-                  <span className="font-mono text-lg font-bold text-indigo-600 w-12 text-right">{evaluationScore}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">主管評估問卷 / 總結評語</label>
-                <textarea
-                  required
-                  placeholder="請填寫同仁在此指標/項目中的具體表現，以及後續建議..."
-                  value={evaluationComment}
-                  onChange={(e) => setEvaluationComment(e.target.value)}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg p-3 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 h-32 shadow-inner"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEvaluatingGoal(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  提交考核結果
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
+        <EvaluateGoalModal
+          goal={evaluatingGoal}
+          evaluationScore={evaluationScore}
+          evaluationComment={evaluationComment}
+          onScoreChange={setEvaluationScore}
+          onCommentChange={setEvaluationComment}
+          onClose={() => setEvaluatingGoal(null)}
+          onSubmit={handleEvaluateGoal}
+        />
       )}
 
-      {/* Reject Goal Modal */}
       {rejectingGoal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 max-h-[90vh] overflow-y-auto">
-            
-            <div className="p-6 border-b border-rose-100 bg-rose-50">
-              <h3 className="text-lg font-bold text-rose-900 flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-rose-600" />
-                退回與否決
-              </h3>
-              <p className="text-xs text-rose-700 mt-1">針對 <b>{rejectingGoal.memberName}</b> 提出的【{rejectingGoal.title}】說明否決理由及修改建議。</p>
-            </div>
-
-            <form onSubmit={handleRejectSubmit} className="p-6 space-y-4">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">否決原因 <span className="text-rose-500">*</span></label>
-                <textarea
-                  required
-                  placeholder="例如：此目標範疇過大，需切分至下個季度..."
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg p-3 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-rose-100 h-24 shadow-inner"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">需要更改的部分 <span className="text-rose-500">*</span></label>
-                <textarea
-                  required
-                  placeholder="請列出明確需要調整的三項內容，以便同仁修改後重新提交..."
-                  value={rejectChanges}
-                  onChange={(e) => setRejectChanges(e.target.value)}
-                  className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg p-3 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-rose-100 h-24 shadow-inner"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setRejectingGoal(null)}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
-                >
-                  <XCircle className="w-4 h-4" />
-                  確認退回
-                </button>
-              </div>
-
-            </form>
-          </div>
-        </div>
+        <RejectGoalModal
+          goal={rejectingGoal}
+          rejectReason={rejectReason}
+          rejectChanges={rejectChanges}
+          onReasonChange={setRejectReason}
+          onChangesChange={setRejectChanges}
+          onClose={() => setRejectingGoal(null)}
+          onSubmit={handleRejectSubmit}
+        />
       )}
 
     </div>
