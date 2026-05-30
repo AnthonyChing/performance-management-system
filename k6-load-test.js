@@ -1,22 +1,46 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
+/**
+ * Enterprise-Grade Load Testing Script for Performance Management System
+ * 
+ * Target Profile: Global enterprise with ~100,000 employees.
+ * Scenario: "The Deadline Spike" - Simulating a global email blast reminding 
+ *           employees that the performance review deadline is in 24 hours. 
+ *           We expect a massive spike of up to 5,000 concurrent virtual users (VUs) 
+ *           accessing the system simultaneously across multiple regions.
+ */
+
 export const options = {
+  discardResponseBodies: true,
+  
   stages: [
-    { duration: '10s', target: 50 }, // Ramp up to 50 users
-    { duration: '30s', target: 50 }, // Stay at 50 users for 30s
-    { duration: '10s', target: 0 },  // Ramp down to 0 users
+    { duration: '30s', target: __ENV.MAX_VUS ? parseInt(__ENV.MAX_VUS) : 1000 }, 
+    { duration: '1m', target: __ENV.MAX_VUS ? parseInt(__ENV.MAX_VUS) : 5000 }, 
+    { duration: '2m', target: __ENV.MAX_VUS ? parseInt(__ENV.MAX_VUS) : 5000 }, 
+    { duration: '30s', target: 0 },    
   ],
+  
   thresholds: {
-    http_req_duration: ['p(95)<500'], // 95% of requests must complete below 500ms
+    'http_req_duration': ['p(95)<500', 'p(99)<1200'], 
+    'http_req_failed': ['rate<0.001'],                
   },
 };
 
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+
 export default function () {
-  // 對不需授權的 Health 端點進行壓測
-  const res = http.get('http://localhost:8080/actuator/health');
+  // --- CACHE BUSTING STRATEGY ---
+  // Generate a random ID between 1 and 100 to simulate different users 
+  // fetching different evaluation templates, forcing the DB to work instead of caching.
+  const randomTemplateId = Math.floor(Math.random() * 100) + 1;
+  const cacheBuster = `?cb=${new Date().getTime()}-${Math.random()}`;
+  
+  const res = http.get(`${BASE_URL}/api/v1/hr/evaluation-templates/${randomTemplateId}${cacheBuster}`);
+  
   check(res, {
-    'status is 200': (r) => r.status === 200,
+    'status is 200 or 404 (random ID might not exist)': (r) => r.status === 200 || r.status === 404,
   });
-  sleep(1);
+  
+  sleep(Math.random() * 4 + 3); 
 }
