@@ -13,9 +13,7 @@ import DisputeResponseForm from '../components/DisputeResponseForm';
 import DisputeEmptyState from '../components/DisputeEmptyState';
 import ApiErrorBanner from '../../../../shared/components/ApiErrorBanner';
 import { useApiError } from '../../../../shared/hooks/useApiError';
-
-/** Hardcoded team ID until auth context is available */
-const DEFAULT_TEAM_ID = 'team_default';
+import { getMyProfile } from '../../../../api/employee';
 
 const STATUS_TABS: Array<{ id: DisputeStatusFilter; label: string }> = [
   { id: 'all', label: '全部' },
@@ -29,7 +27,8 @@ const STATUS_TABS: Array<{ id: DisputeStatusFilter; label: string }> = [
 
 export default function Dispute() {
   const [searchParams] = useSearchParams();
-  const teamId = searchParams.get('team') || DEFAULT_TEAM_ID;
+  const [teamId, setTeamId] = useState<string | null>(searchParams.get('team'));
+  const [teamName, setTeamName] = useState<string>('載入中...');
 
   // Data state
   const [appeals, setAppeals] = useState<Appeal[]>([]);
@@ -47,8 +46,22 @@ export default function Dispute() {
   // API error handling
   const { error: apiError, setFromCatch: setApiError, clear: clearApiError } = useApiError();
 
+  useEffect(() => {
+    if (!teamId) {
+      getMyProfile()
+        .then((res) => {
+          setTeamId(res.profile.user_id);
+          setTeamName(res.profile.department.name);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch profile for teamId', err);
+        });
+    }
+  }, [teamId]);
+
   // Load appeals list
   const loadAppeals = useCallback(async () => {
+    if (!teamId) return;
     setIsLoading(true);
     setError(null);
     clearApiError();
@@ -73,6 +86,7 @@ export default function Dispute() {
   // Load selected appeal detail
   const loadDetail = useCallback(
     async (appealId: string) => {
+      if (!teamId) return;
       setIsDetailLoading(true);
       clearApiError();
       try {
@@ -128,7 +142,7 @@ export default function Dispute() {
 
   // Handle response submission
   const handleRespond = async (responseText: string, isFinal: boolean) => {
-    if (!selectedId || !selectedAppeal) return;
+    if (!selectedId || !selectedAppeal || !teamId) return;
 
     setIsSubmitting(true);
     clearApiError();
@@ -223,8 +237,8 @@ export default function Dispute() {
             <Filter className="w-4 h-4 text-indigo-500" />
             團隊：
           </div>
-          <div className="text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 font-mono">
-            {teamId}
+          <div className="text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
+            {teamName}
           </div>
         </div>
         <div className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
