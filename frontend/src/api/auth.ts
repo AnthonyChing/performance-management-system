@@ -6,6 +6,14 @@ export interface SessionResponse {
   role: string;
 }
 
+export interface GoogleSessionResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  userId: string;
+  roles: string[];
+}
+
 export interface ApiErrorDetail {
   field?: string;
   message: string;
@@ -43,7 +51,9 @@ export interface AuthApiOptions {
 
 export function resolveAuthApiUrl(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_BASE_PATH}${normalizedPath}`;
+  const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  const apiOrigin = env?.VITE_API_ORIGIN?.replace(/\/$/, '') ?? '';
+  return `${apiOrigin}${API_BASE_PATH}${normalizedPath}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -126,6 +136,63 @@ export async function createSession(
   }
 
   return { token: body.token, role: body.role };
+}
+
+export async function createGoogleSession(
+  idToken: string,
+  options: AuthApiOptions = {},
+): Promise<GoogleSessionResponse> {
+  const fetcher = options.fetcher ?? fetch;
+  const response = await fetcher(resolveAuthApiUrl('/auth/google'), {
+    method: 'POST',
+    credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
+    signal: options.signal,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ idToken }),
+  });
+
+  const body = await parseJsonBody(response);
+
+  if (!response.ok) {
+    if (isApiErrorBody(body)) {
+      throw new ApiRequestError(response.status, body);
+    }
+
+    throw new ApiRequestError(response.status, {
+      error: {
+        code: 'HTTP_ERROR',
+        message: `HTTP ${response.status}`,
+      },
+    });
+  }
+
+  if (
+    !isRecord(body) ||
+    !isString(body.accessToken) ||
+    !isString(body.tokenType) ||
+    typeof body.expiresIn !== 'number' ||
+    !isString(body.userId) ||
+    !Array.isArray(body.roles) ||
+    !body.roles.every(isString)
+  ) {
+    throw new ApiRequestError(response.status, {
+      error: {
+        code: 'INVALID_RESPONSE',
+        message: 'Google login response is invalid.',
+      },
+    });
+  }
+
+  return {
+    accessToken: body.accessToken,
+    tokenType: body.tokenType,
+    expiresIn: body.expiresIn,
+    userId: body.userId,
+    roles: body.roles,
+  };
 }
 
 export async function deleteSession(options: AuthApiOptions = {}) {

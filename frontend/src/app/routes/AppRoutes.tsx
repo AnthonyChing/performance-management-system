@@ -44,7 +44,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Layout />}>
-          <Route index element={<Profile />} />
+          <Route index element={<Navigate to="/login" replace />} />
           <Route path="dashboard" element={<Profile />} />
           <Route path="performance">
             <Route path="current" element={<CurrentKPI />} />
