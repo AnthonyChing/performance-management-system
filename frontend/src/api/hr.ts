@@ -1,4 +1,4 @@
-import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/tokenStorage';
+
 
 export const API_BASE_PATH = '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
@@ -502,14 +502,6 @@ function handleUnauthorized(response: Response) {
   window.location.replace(loginUrl);
 }
 
-function resolveAuthToken(authToken: string | null | undefined) {
-  if (authToken !== undefined) {
-    return authToken?.trim() || null;
-  }
-
-  return getStoredAuthToken();
-}
-
 async function parseJsonBody(response: Response) {
   const text = await response.text();
 
@@ -528,15 +520,10 @@ async function requestJson<T>(
   options: HrApiOptions = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
-  const authToken = resolveAuthToken(options.authToken);
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   };
-
-  if (authToken) {
-    headers.Authorization = toAuthorizationHeader(authToken);
-  }
 
   const response = await fetcher(resolveHrApiUrl(path), {
     method,
@@ -577,15 +564,10 @@ async function requestNoContent(
   options: HrApiOptions = {},
 ): Promise<void> {
   const fetcher = options.fetcher ?? fetch;
-  const authToken = resolveAuthToken(options.authToken);
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   };
-
-  if (authToken) {
-    headers.Authorization = toAuthorizationHeader(authToken);
-  }
 
   const response = await fetcher(resolveHrApiUrl(path), {
     method,

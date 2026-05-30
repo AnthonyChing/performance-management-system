@@ -1,4 +1,4 @@
-import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/tokenStorage';
+
 
 export const API_BASE_PATH = '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
@@ -1127,14 +1127,6 @@ async function parseJsonBody(response: Response) {
   }
 }
 
-function resolveAuthToken(authToken: string | null | undefined) {
-  if (authToken !== undefined) {
-    return authToken?.trim() || null;
-  }
-
-  return getStoredAuthToken();
-}
-
 async function requestJson<T>(
   path: string,
   validate: (value: unknown) => value is T,
@@ -1142,15 +1134,10 @@ async function requestJson<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
-  const authToken = resolveAuthToken(options.authToken);
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   };
-
-  if (authToken) {
-    headers.Authorization = toAuthorizationHeader(authToken);
-  }
 
   const response = await fetcher(resolveEmployeeApiUrl(path), {
     ...init,

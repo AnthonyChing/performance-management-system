@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
 import { deleteSession } from '../../api/auth';
-import { getStoredAuthToken } from '../../features/auth/tokenStorage';
 import { getMyProfile, type EmployeeProfile } from '../../api/employee';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
@@ -99,19 +98,11 @@ export default function Layout() {
         const res = await getMyProfile();
         setProfile(res.profile);
       } catch (e) {
-        // Handle error gracefully if needed
+        // Handle error gracefully if needed, handleUnauthorized in API catches 401
       }
     };
-    if (getStoredAuthToken()) {
-      fetchProfile();
-    }
+    fetchProfile();
   }, []);
-
-  const token = getStoredAuthToken();
-  if (!token) {
-    const redirectParams = location.pathname !== '/' ? `?redirect=${encodeURIComponent(location.pathname + location.search)}` : '';
-    return <Navigate to={`/login${redirectParams}`} replace />;
-  }
 
   const handleLogout = async () => {
     try {
@@ -119,8 +110,8 @@ export default function Layout() {
     } catch (error) {
       // Ignore logout errors; local cleanup still happens.
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
+      // The backend should clear the HttpOnly cookie.
+      // Redirect to login
       navigate('/login', { replace: true });
     }
   };
