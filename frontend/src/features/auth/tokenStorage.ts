@@ -1,5 +1,11 @@
-export const AUTH_TOKEN_STORAGE_KEYS = ['accessToken', 'access_token', 'token', 'jwt'];
 export const PRIMARY_AUTH_TOKEN_STORAGE_KEY = 'token';
+export const AUTH_TOKEN_STORAGE_KEYS = [
+  PRIMARY_AUTH_TOKEN_STORAGE_KEY,
+  'accessToken',
+  'access_token',
+  'jwt',
+  'pms_jwt',
+];
 
 function getStorageItem(storage: Storage | undefined, key: string) {
   try {
@@ -29,7 +35,16 @@ export function getStoredAuthToken() {
 }
 
 export function saveAuthToken(token: string) {
-  globalThis.localStorage?.setItem(PRIMARY_AUTH_TOKEN_STORAGE_KEY, token.trim());
+  const trimmedToken = token.trim();
+
+  for (const key of AUTH_TOKEN_STORAGE_KEYS) {
+    if (key !== PRIMARY_AUTH_TOKEN_STORAGE_KEY) {
+      globalThis.localStorage?.removeItem(key);
+      globalThis.sessionStorage?.removeItem(key);
+    }
+  }
+
+  globalThis.localStorage?.setItem(PRIMARY_AUTH_TOKEN_STORAGE_KEY, trimmedToken);
 }
 
 export function toAuthorizationHeader(token: string) {
