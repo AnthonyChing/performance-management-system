@@ -1,0 +1,31 @@
+name: Load Test (k6)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment URL (e.g., Staging URL)'
+        required: true
+        default: 'https://backend-staging-1078971769535.asia-east1.run.app'
+      vus:
+        description: 'Max Virtual Users'
+        required: true
+        default: '500'
+
+jobs:
+  k6-load-test:
+    name: Run k6 Load Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 local test
+        run: k6 run k6-load-test.js
+        env:
+          BASE_URL: ${{ github.event.inputs.target_env }}
+          MAX_VUS: ${{ github.event.inputs.vus }}
