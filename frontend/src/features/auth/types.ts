@@ -36,9 +36,5 @@ declare global {
 }
 
 export function getGoogleClientId() {
-  const meta = import.meta as ImportMeta & {
-    env?: Record<string, string | undefined>;
-  };
-
-  return meta.env?.VITE_GOOGLE_CLIENT_ID?.trim() ?? '';
+  return import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? '';
 }
