@@ -1,3 +1,5 @@
+import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/tokenStorage';
+
 export const API_BASE_PATH = '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 
@@ -66,7 +68,7 @@ export interface EmployeeGroup {
   group_id: string;
   group_type: EmployeeGroupType;
   name: string;
-  description: string | null;
+  description?: string | null;
 }
 
 export interface EmployeeGroupListResponse {
@@ -81,7 +83,7 @@ export interface CycleSummary {
 }
 
 export interface PerformanceCycle {
-  cycle_id: string;
+  id: string;
   name: string;
   cycle_type?: string;
   status: CycleStatus;
@@ -117,14 +119,14 @@ export interface AssessmentTemplateComponent {
 export interface AvailableActions {
   can_edit: boolean;
   can_archive: boolean;
-  edit_blocked_reason: EditBlockedReason;
+  edit_blocked_reason?: EditBlockedReason;
 }
 
 export interface EvaluationTemplate {
   template_id: string;
   cycle: CycleSummary;
   name: string;
-  description: string | null;
+  description?: string | null;
   status: EvaluationTemplateStatus;
   employee_group: EmployeeGroup;
   assessment_templates: AssessmentTemplateComponent[];
@@ -140,7 +142,7 @@ export interface EvaluationTemplateListItem {
   template_id: string;
   cycle: CycleSummary;
   name: string;
-  description: string | null;
+  description?: string | null;
   status: EvaluationTemplateStatus;
   employee_group: EmployeeGroup;
   assessment_template_count: number;
@@ -216,6 +218,7 @@ export interface HrApiOptions {
   fetcher?: Fetcher;
   signal?: AbortSignal;
   credentials?: RequestCredentials;
+  authToken?: string | null;
 }
 
 const templateStatuses = new Set<TemplateStatus>(['draft', 'published']);
@@ -339,7 +342,7 @@ function isEmployeeGroup(value: unknown): value is EmployeeGroup {
     isString(value.group_type) &&
     employeeGroupTypes.has(value.group_type as EmployeeGroupType) &&
     isString(value.name) &&
-    isNullableString(value.description)
+    (value.description === undefined || isNullableString(value.description))
   );
 }
 
@@ -360,7 +363,7 @@ function isCycleSummary(value: unknown): value is CycleSummary {
 function isPerformanceCycle(value: unknown): value is PerformanceCycle {
   return (
     isRecord(value) &&
-    isString(value.cycle_id) &&
+    isString(value.id) &&
     isString(value.name) &&
     isString(value.status) &&
     cycleStatuses.has(value.status as CycleStatus)
@@ -392,7 +395,11 @@ function isAvailableActions(value: unknown): value is AvailableActions {
     isRecord(value) &&
     isBoolean(value.can_edit) &&
     isBoolean(value.can_archive) &&
-    (value.edit_blocked_reason === null || isString(value.edit_blocked_reason))
+    (
+      value.edit_blocked_reason === undefined ||
+      value.edit_blocked_reason === null ||
+      isString(value.edit_blocked_reason)
+    )
   );
 }
 
@@ -402,7 +409,7 @@ function isEvaluationTemplate(value: unknown): value is EvaluationTemplate {
     isString(value.template_id) &&
     isCycleSummary(value.cycle) &&
     isString(value.name) &&
-    isNullableString(value.description) &&
+    (value.description === undefined || isNullableString(value.description)) &&
     isString(value.status) &&
     evaluationTemplateStatuses.has(value.status as EvaluationTemplateStatus) &&
     isEmployeeGroup(value.employee_group) &&
@@ -419,7 +426,7 @@ function isEvaluationTemplateListItem(value: unknown): value is EvaluationTempla
     isString(value.template_id) &&
     isCycleSummary(value.cycle) &&
     isString(value.name) &&
-    isNullableString(value.description) &&
+    (value.description === undefined || isNullableString(value.description)) &&
     isString(value.status) &&
     evaluationTemplateStatuses.has(value.status as EvaluationTemplateStatus) &&
     isEmployeeGroup(value.employee_group) &&
@@ -495,6 +502,14 @@ function handleUnauthorized(response: Response) {
   window.location.replace(loginUrl);
 }
 
+function resolveAuthToken(authToken: string | null | undefined) {
+  if (authToken !== undefined) {
+    return authToken?.trim() || null;
+  }
+
+  return getStoredAuthToken();
+}
+
 async function parseJsonBody(response: Response) {
   const text = await response.text();
 
@@ -513,14 +528,21 @@ async function requestJson<T>(
   options: HrApiOptions = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
+  const authToken = resolveAuthToken(options.authToken);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  if (authToken) {
+    headers.Authorization = toAuthorizationHeader(authToken);
+  }
+
   const response = await fetcher(resolveHrApiUrl(path), {
     method,
     credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
     signal: options.signal,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -555,14 +577,21 @@ async function requestNoContent(
   options: HrApiOptions = {},
 ): Promise<void> {
   const fetcher = options.fetcher ?? fetch;
+  const authToken = resolveAuthToken(options.authToken);
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+
+  if (authToken) {
+    headers.Authorization = toAuthorizationHeader(authToken);
+  }
+
   const response = await fetcher(resolveHrApiUrl(path), {
     method,
     credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
     signal: options.signal,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 

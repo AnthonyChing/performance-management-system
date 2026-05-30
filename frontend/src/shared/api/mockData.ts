@@ -296,19 +296,6 @@ export const HR_REVIEW_CYCLES = [
   }
 ];
 
-export const HR_CREATE_TEMPLATE_QUESTIONNAIRES = [
-  '2024 年度員工滿意度調查',
-  '管理層領導力 360 度回饋',
-  '新進員工試用期回饋',
-  'Q3 季度開發技能評估表'
-];
-
-export const HR_CREATE_TEMPLATE_STEPS = [
-  { title: '基本資料' },
-  { title: '指派問卷' },
-  { title: '確認發布' }
-];
-
 export const HR_QUESTIONNAIRE_TEMPLATES = [
   {
     id: 1,
@@ -337,51 +324,6 @@ export const HR_QUESTIONNAIRE_TEMPLATES = [
     category: '專業技能',
     questionCount: 12,
     lastUpdated: '2024-07-01'
-  }
-];
-
-import { FileText, TrendingUp, ShieldCheck, UserCog } from 'lucide-react';
-
-export const HR_REVIEW_TEMPLATES = [
-  {
-    id: 1,
-    title: '2023年度績效考核範本',
-    target: '全體員工',
-    cycle: '2023 年度考核',
-    lastUpdated: '2023-10-15',
-    icon: FileText,
-    iconColor: 'text-indigo-600',
-    iconBg: 'bg-indigo-50'
-  },
-  {
-    id: 2,
-    title: '業務部季度目標設定 (OKR)',
-    target: '業務部門',
-    cycle: '2023 第四季度考核',
-    lastUpdated: '2023-11-02',
-    icon: TrendingUp,
-    iconColor: 'text-blue-600',
-    iconBg: 'bg-blue-50'
-  },
-  {
-    id: 3,
-    title: '新進員工試用期評估範本',
-    target: '新進人員',
-    cycle: '2023 十月新進人員試用',
-    lastUpdated: '2023-11-10',
-    icon: ShieldCheck,
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-50'
-  },
-  {
-    id: 4,
-    title: '管理層領導力 360 度反饋',
-    target: 'Manager 以上級別',
-    cycle: '2023 高階管理階層評鑑',
-    lastUpdated: '2023-12-01',
-    icon: UserCog,
-    iconColor: 'text-slate-600',
-    iconBg: 'bg-slate-100'
   }
 ];
 
