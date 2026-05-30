@@ -34,6 +34,7 @@ import AuditLogs from '../../features/hr/audit-logs/pages/AuditLogs';
 
 import ManagerOverview from '../../features/manager/overview/pages/Overview';
 import ManagerGoals from '../../features/manager/goals/pages/Goals';
+import ManagerEvaluations from '../../features/manager/evaluations/pages/Evaluations';
 import ManagerHistory from '../../features/manager/history/pages/History';
 import ManagerDispute from '../../features/manager/disputes/pages/Dispute';
 
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="manager">
             <Route path="overview" element={<ManagerOverview />} />
             <Route path="goals" element={<ManagerGoals />} />
+            <Route path="evaluations" element={<ManagerEvaluations />} />
             <Route path="history" element={<ManagerHistory />} />
             <Route path="dispute" element={<ManagerDispute />} />
           </Route>

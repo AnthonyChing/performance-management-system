@@ -130,8 +130,34 @@ export default function Dispute() {
 
   const pendingCount = appeals.filter((a) => isAppealOpen(a.status)).length;
 
+  // 403 permission check — if the API returned FORBIDDEN, show full-page error
+  if (apiError && apiError.status === 403) {
+    return (
+      <ApiErrorBanner
+        status={403}
+        code={apiError.code}
+        message={apiError.message}
+        details={apiError.details}
+        fullPage
+        onRetry={() => { clearApiError(); reloadData(); }}
+      />
+    );
+  }
+
   return (
     <div className="w-full space-y-6 pb-12">
+      
+      {/* API Error Banner (inline for 400/404/409) */}
+      {apiError && apiError.status !== 403 && (
+        <ApiErrorBanner
+          status={apiError.status}
+          code={apiError.code}
+          message={apiError.message}
+          details={apiError.details}
+          onRetry={() => { clearApiError(); reloadData(); }}
+        />
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

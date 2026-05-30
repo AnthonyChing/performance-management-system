@@ -11,14 +11,14 @@ type AppealStatus =
   | 'rejected'
   | 'cancelled';
 
-type RatingScale =
+export type RatingScale =
   | 'outstanding'
   | 'exceeds_expectations'
   | 'meets_expectations'
   | 'needs_improvement'
   | 'unacceptable';
 
-type ReviewStatus =
+export type ReviewStatus =
   | 'pending_self_eval'
   | 'self_eval_in_progress'
   | 'pending_manager_eval'
@@ -26,6 +26,23 @@ type ReviewStatus =
   | 'pending_hr_review'
   | 'completed'
   | 'terminated';
+
+export type QuestionType = 'rating' | 'text' | 'boolean';
+
+export interface EvaluationQuestion {
+  id: string;
+  question_text: string;
+  question_type: QuestionType;
+  rating_scale_max: number | null;
+  is_required: boolean;
+  sort_order: number;
+}
+
+export interface KpiEvaluationItem {
+  kpi_id: string;
+  manager_score: number | null;
+  manager_feedback: string | null;
+}
 
 export interface SubordinateGoal {
   id: string;
@@ -106,6 +123,8 @@ export interface EvaluationHistoryItem {
   score_computed_at?: string | null;
   self_submitted_at?: string | null;
   responses?: ReviewResponse[];
+  kpi_evaluations?: KpiEvaluationItem[];
+  questions?: EvaluationQuestion[];
   manager_submitted_at?: string | null;
   hr_approved_at?: string | null;
   is_terminated_employee?: boolean;
@@ -282,6 +301,27 @@ function isAppeal(value: unknown): value is Appeal {
   );
 }
 
+function isKpiEvaluationItem(value: unknown): value is KpiEvaluationItem {
+  return (
+    isRecord(value) &&
+    isString(value.kpi_id) &&
+    (value.manager_score === null || isNumber(value.manager_score)) &&
+    isNullableString(value.manager_feedback)
+  );
+}
+
+function isEvaluationQuestion(value: unknown): value is EvaluationQuestion {
+  return (
+    isRecord(value) &&
+    isString(value.id) &&
+    isString(value.question_text) &&
+    isString(value.question_type) &&
+    (value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
+    typeof value.is_required === 'boolean' &&
+    isNumber(value.sort_order)
+  );
+}
+
 function isEvaluationHistoryItem(value: unknown): value is EvaluationHistoryItem {
   return (
     isRecord(value) &&
@@ -299,6 +339,10 @@ function isEvaluationHistoryItem(value: unknown): value is EvaluationHistoryItem
     (value.self_submitted_at === undefined || isNullableString(value.self_submitted_at)) &&
     (value.responses === undefined ||
       (Array.isArray(value.responses) && value.responses.every(isReviewResponse))) &&
+    (value.kpi_evaluations === undefined ||
+      (Array.isArray(value.kpi_evaluations) && value.kpi_evaluations.every(isKpiEvaluationItem))) &&
+    (value.questions === undefined ||
+      (Array.isArray(value.questions) && value.questions.every(isEvaluationQuestion))) &&
     (value.manager_submitted_at === undefined || isNullableString(value.manager_submitted_at)) &&
     (value.hr_approved_at === undefined || isNullableString(value.hr_approved_at)) &&
     (value.is_terminated_employee === undefined || typeof value.is_terminated_employee === 'boolean') &&
@@ -554,8 +598,13 @@ export function submitKpiEvaluation(
   evaluationId: string,
   payload: {
     status: ReviewStatus;
-    final_rating: RatingScale;
+    final_rating?: RatingScale;
     manager_comment?: string;
+    kpi_evaluations?: Array<{
+      kpi_id: string;
+      manager_score?: number;
+      manager_feedback?: string;
+    }>;
   },
   options?: ManagerApiOptions,
 ): Promise<EvaluationHistoryItem> {
