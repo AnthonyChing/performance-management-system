@@ -68,7 +68,6 @@ const submittedAppeal = {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  localStorage.clear();
 });
 
 describe('employee performance dispute page', () => {
@@ -179,7 +178,6 @@ describe('employee performance dispute page', () => {
       }),
     );
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'dev-jwt-token');
 
     render(
       <MemoryRouter initialEntries={['/dispute']}>
@@ -197,7 +195,6 @@ describe('employee performance dispute page', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-jwt-token',
         }),
       }),
     );

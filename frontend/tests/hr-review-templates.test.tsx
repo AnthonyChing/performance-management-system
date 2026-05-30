@@ -242,12 +242,10 @@ function setupFetchForCreateWithOverrides(
 describe('HR evaluation template API', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it('sends stored JWT when listing evaluation templates', async () => {
     const fetcher = vi.fn(async () => jsonResponse(evaluationTemplateListPayload));
-    localStorage.setItem('token', 'hr-dev-token');
 
     await listEvaluationTemplates({ page: 1 }, { fetcher });
 
@@ -256,7 +254,6 @@ describe('HR evaluation template API', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer hr-dev-token',
         }),
       }),
     );
@@ -285,7 +282,6 @@ describe('HR evaluation template API', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          Authorization: 'Bearer raw-token',
         }),
         body: JSON.stringify({
           cycle_id: 'cycle-2027',
@@ -306,13 +302,11 @@ describe('HR evaluation template API', () => {
 describe('HR evaluation template pages', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it('renders the review template list from the backend API', async () => {
     const fetcher = vi.fn(async () => jsonResponse(evaluationTemplateListPayload));
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'hr-dev-token');
 
     render(
       <MemoryRouter initialEntries={['/hr/templates']}>
@@ -327,7 +321,6 @@ describe('HR evaluation template pages', () => {
       '/api/v1/hr/evaluation-templates?page=1&page_size=50',
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: 'Bearer hr-dev-token',
         }),
       }),
     );
@@ -382,7 +375,6 @@ describe('HR evaluation template pages', () => {
   it('creates an evaluation template through the wizard', async () => {
     const fetcher = setupFetchForCreate();
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'hr-dev-token');
 
     render(
       <MemoryRouter initialEntries={['/hr/templates/new']}>

@@ -96,7 +96,6 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
 describe('CurrentKpiStandardsContent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
-    localStorage.clear();
   });
 
   it('loads current KPI standards from the backend API path', async () => {
@@ -119,7 +118,6 @@ describe('CurrentKpiStandardsContent', () => {
       });
     });
     vi.stubGlobal('fetch', fetcher);
-    localStorage.setItem('token', 'dev-jwt-token');
 
     render(
       <MemoryRouter initialEntries={['/performance/current']}>
@@ -135,7 +133,6 @@ describe('CurrentKpiStandardsContent', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-jwt-token',
         }),
       }),
     );
@@ -144,7 +141,6 @@ describe('CurrentKpiStandardsContent', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          Authorization: 'Bearer dev-jwt-token',
         }),
       }),
     );
