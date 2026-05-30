@@ -257,45 +257,6 @@ export const HR_REVIEW_CYCLES_MOCK = [
   },
 ];
 
-export const HR_REVIEW_CYCLES = [
-  {
-    id: 1,
-    title: '2024 年度績效考核',
-    status: '進行中',
-    type: '年度考核',
-    duration: '執行期間: 2024.01.01 - 2024.12.31',
-    statusColor: 'bg-emerald-100 text-emerald-700',
-    action1: '查看詳情',
-  },
-  {
-    id: 2,
-    title: '2023 第四季度考核',
-    status: '已結束',
-    type: '季度考核',
-    duration: '執行期間: 2023.10.01 - 2023.12.31',
-    statusColor: 'bg-slate-100 text-slate-700',
-    action1: '查看詳情',
-  },
-  {
-    id: 3,
-    title: '2024 研發部專案考核',
-    status: '草稿',
-    type: '專案考核',
-    duration: '預計期間: 2024.06.01 - 2024.06.30',
-    statusColor: 'bg-indigo-100 text-indigo-700',
-    action1: '查看詳情',
-  },
-  {
-    id: 4,
-    title: '2024 新進員工試用期考核',
-    status: '即將開始',
-    type: '試用期考核',
-    duration: '執行期間: 2024.03.15 - 2024.04.15',
-    statusColor: 'bg-orange-100 text-orange-700',
-    action1: '查看詳情',
-  }
-];
-
 export const HR_QUESTIONNAIRE_TEMPLATES = [
   {
     id: 1,
@@ -340,21 +301,6 @@ export const EMPLOYEE_PROFILE_MOCK = {
     status: '進行中',
     name: '2024 Q3 年度績效考核',
     period: '2024-1~2024-12'
-  }
-};
-
-export const HR_REVIEW_CYCLE_DETAIL_MOCK = {
-  name: '2024 年度年度績效考核',
-  type: '年度考核',
-  status: '進行中',
-  periodRange: '2024/01/01 - 2024/12/31',
-  managerEvalPeriod: '2025/01/01 - 2025/01/15',
-  objectionPeriod: '2025/01/16 - 2025/01/20',
-  announcementDate: '2025/01/31',
-  stats: {
-    totalEmployees: 1250,
-    completedReviews: 850,
-    pendingReviews: 400
   }
 };
 

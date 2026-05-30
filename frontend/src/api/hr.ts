@@ -6,7 +6,8 @@ const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 type TemplateStatus = 'draft' | 'published';
 type QuestionType = 'rating' | 'text' | 'boolean';
 type EvaluationTemplateStatus = 'published' | 'archived';
-type CycleStatus = 'draft' | 'not_started' | 'in_progress' | 'locked' | 'results_published' | 'completed' | 'closed';
+export type CycleStatus = 'draft' | 'not_started' | 'in_progress' | 'locked' | 'results_published' | 'completed' | 'closed';
+export type CycleType = 'annual' | 'quarterly' | 'probation';
 
 type EmployeeGroupType = 'all' | 'department' | 'job_category';
 
@@ -85,11 +86,9 @@ export interface CycleSummary {
 export interface PerformanceCycle {
   id: string;
   name: string;
-  cycle_type?: string;
+  cycle_type?: CycleType | string;
   status: CycleStatus;
   timezone?: string;
-  start_date?: string;
-  end_date?: string;
   self_eval_start?: string;
   self_eval_end?: string;
   manager_eval_start?: string;
@@ -106,6 +105,25 @@ export interface PerformanceCycle {
 export interface PerformanceCycleListResponse {
   data: PerformanceCycle[];
   meta: PaginationMeta;
+}
+
+export interface PerformanceCycleCreatePayload {
+  name: string;
+  cycle_type: CycleType | string;
+  timezone?: string;
+  manager_eval_start: string;
+  manager_eval_end: string;
+  hr_review_end: string;
+  appeal_deadline_days?: number;
+}
+
+export interface PerformanceCycleUpdatePayload {
+  name?: string;
+  timezone?: string;
+  manager_eval_start?: string;
+  manager_eval_end?: string;
+  hr_review_end?: string;
+  appeal_deadline_days?: number;
 }
 
 export interface AssessmentTemplateComponent {
@@ -366,7 +384,20 @@ function isPerformanceCycle(value: unknown): value is PerformanceCycle {
     isString(value.id) &&
     isString(value.name) &&
     isString(value.status) &&
-    cycleStatuses.has(value.status as CycleStatus)
+    cycleStatuses.has(value.status as CycleStatus) &&
+    (value.cycle_type === undefined || isString(value.cycle_type)) &&
+    (value.timezone === undefined || isString(value.timezone)) &&
+    (value.self_eval_start === undefined || isString(value.self_eval_start)) &&
+    (value.self_eval_end === undefined || isString(value.self_eval_end)) &&
+    (value.manager_eval_start === undefined || isString(value.manager_eval_start)) &&
+    (value.manager_eval_end === undefined || isString(value.manager_eval_end)) &&
+    (value.hr_review_end === undefined || isString(value.hr_review_end)) &&
+    (value.results_published_at === undefined || value.results_published_at === null || isString(value.results_published_at)) &&
+    (value.appeal_deadline_days === undefined || isNumber(value.appeal_deadline_days)) &&
+    (value.is_locked === undefined || isBoolean(value.is_locked)) &&
+    (value.created_by === undefined || isString(value.created_by)) &&
+    (value.created_at === undefined || isString(value.created_at)) &&
+    (value.updated_at === undefined || isString(value.updated_at))
   );
 }
 
@@ -849,24 +880,19 @@ export function listEvaluationTemplates(
 }
 
 export function createPerformanceCycle(
-  body: {
-    name: string;
-    start_date: string;
-    end_date: string;
-    timezone?: string;
-    target_groups?: string[];
-  },
+  body: PerformanceCycleCreatePayload,
   options?: HrApiOptions,
 ): Promise<PerformanceCycle> {
   return requestJson('/hr/performance-cycles', 'POST', isPerformanceCycle, body, options);
 }
 
 export function listPerformanceCycles(
-  query: { page?: number; status?: CycleStatus } = {},
+  query: { page?: number; page_size?: number; status?: CycleStatus } = {},
   options?: HrApiOptions,
 ): Promise<PerformanceCycleListResponse> {
   const params = new URLSearchParams();
   if (query.page) params.set('page', String(query.page));
+  if (query.page_size) params.set('page_size', String(query.page_size));
   if (query.status) params.set('status', query.status);
   const path = params.toString()
     ? `/hr/performance-cycles?${params.toString()}`
@@ -883,7 +909,7 @@ export function getPerformanceCycle(
 
 export function updatePerformanceCycle(
   cycleId: string,
-  body: { name?: string; start_date?: string; end_date?: string; timezone?: string },
+  body: PerformanceCycleUpdatePayload,
   options?: HrApiOptions,
 ): Promise<PerformanceCycle> {
   return requestJson(`/hr/performance-cycles/${cycleId}`, 'PATCH', isPerformanceCycle, body, options);
