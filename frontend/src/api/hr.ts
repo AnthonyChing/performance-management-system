@@ -1,6 +1,6 @@
 import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/tokenStorage';
 
-export const API_BASE_PATH = '/api/v1';
+export const API_BASE_PATH = (import.meta.env.VITE_API_ORIGIN || '') + '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 
 type TemplateStatus = 'draft' | 'published';
