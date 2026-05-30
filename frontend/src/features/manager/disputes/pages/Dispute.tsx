@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import { loadManagerData, updateDisputeStatus } from '../api';
 import type { DisputeItem } from '../types';
+import { ApiRequestError } from '../../../../api/manager';
+import ApiErrorBanner from '../../../../shared/components/ApiErrorBanner';
+import { useApiError } from '../../../../shared/hooks/useApiError';
 
 export default function Dispute() {
   const [searchParams] = useSearchParams();
@@ -38,6 +41,9 @@ export default function Dispute() {
   const [responseText, setResponseText] = useState('');
   const [adjustedScore, setAdjustedScore] = useState<number | ''>('');
   const [showApproved, setShowApproved] = useState(false);
+
+  // API error handling
+  const { error: apiError, setFromCatch: setApiError, clear: clearApiError } = useApiError();
 
   useEffect(() => {
     const queryTeam = searchParams.get('team');
@@ -96,12 +102,17 @@ export default function Dispute() {
       return;
     }
     
-    const finalScore = adjustedScore === '' ? activeDispute.requestedScore : adjustedScore;
-    const success = updateDisputeStatus(activeDispute.id, '已同意', responseText, finalScore);
-    
-    if (success) {
-      reloadData();
-      alert('已成功裁決並更新分數！將通知該同仁。');
+    clearApiError();
+    try {
+      const finalScore = adjustedScore === '' ? activeDispute.requestedScore : adjustedScore;
+      const success = updateDisputeStatus(activeDispute.id, '已同意', responseText, finalScore);
+      
+      if (success) {
+        reloadData();
+        alert('已成功裁決並更新分數！將通知該同仁。');
+      }
+    } catch (err) {
+      setApiError(err);
     }
   };
 
@@ -113,9 +124,34 @@ export default function Dispute() {
     return name.substring(0, 2);
   };
 
+  // 403 permission check — if the API returned FORBIDDEN, show full-page error
+  if (apiError && apiError.status === 403) {
+    return (
+      <ApiErrorBanner
+        status={403}
+        code={apiError.code}
+        message={apiError.message}
+        details={apiError.details}
+        fullPage
+        onRetry={() => { clearApiError(); reloadData(); }}
+      />
+    );
+  }
+
   return (
     <div className="w-full space-y-6 pb-12">
       
+      {/* API Error Banner (inline for 400/404/409) */}
+      {apiError && apiError.status !== 403 && (
+        <ApiErrorBanner
+          status={apiError.status}
+          code={apiError.code}
+          message={apiError.message}
+          details={apiError.details}
+          onRetry={() => { clearApiError(); reloadData(); }}
+        />
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -156,10 +192,10 @@ export default function Dispute() {
             {/* List Header */}
             <div className="p-4 border-b border-slate-100 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-slate-800">申覆案件清單 (Cases)</h2>
-                <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                <h2 className="text-sm font-bold text-slate-800">申覆案件清單</h2>
+                {/* <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                   {filteredDisputes.length}
-                </span>
+                </span> */}
               </div>
               
               <div className="relative">
@@ -300,12 +336,6 @@ export default function Dispute() {
               
               {/* Profile Card */}
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative">
-                <div className="absolute top-6 right-6">
-                  <a href="#" className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    查看完整檔案 (Profile)
-                  </a>
-                </div>
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 shrink-0">
                     {getInitials(activeDispute.memberName)}
@@ -330,7 +360,7 @@ export default function Dispute() {
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-5">
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100">
                     <AlertCircle className="w-4 h-4 text-indigo-500" />
-                    申覆詳情 (Appeal Details)
+                    申覆詳情
                   </h3>
                   
                   <div className="grid grid-cols-2 justify-between border-b border-slate-100 pb-4 relative">
@@ -357,7 +387,7 @@ export default function Dispute() {
 
                   <div>
                     <h4 className="text-[10px] font-bold text-slate-500 mb-2 font-mono uppercase tracking-wider">
-                      同仁陳述理由 (Employee Statement)
+                      員工陳述理由
                     </h4>
                     <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-xs tracking-wide leading-relaxed text-slate-600 shadow-inner h-40 overflow-y-auto">
                       {activeDispute.reason}
@@ -370,14 +400,14 @@ export default function Dispute() {
               <div className="bg-white border-2 border-indigo-50 rounded-xl p-6 shadow-sm space-y-4">
                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 pb-2">
                   <Save className="w-4 h-4 text-indigo-500" />
-                  最終裁決紀錄 (Final Resolution)
+                  最終裁決紀錄
                 </h3>
 
                 <div className="flex flex-col md:flex-row gap-6">
                   
                   <div className="w-full md:w-1/3">
                     <label className="block text-[10px] font-bold text-slate-600 mb-2 font-mono uppercase">
-                      調整後最終分數 (Adjusted Score)
+                      調整後最終分數
                     </label>
                     <input 
                       type="number"
@@ -395,7 +425,7 @@ export default function Dispute() {
 
                   <div className="w-full md:w-2/3">
                     <label className="block text-[10px] font-bold text-slate-600 mb-2 font-mono uppercase">
-                      裁決理由與最終意見 (Rationale & Comments) <span className="text-rose-500">*</span>
+                      裁決理由與最終意見 <span className="text-rose-500">*</span>
                     </label>
                     <textarea 
                       placeholder="Enter detailed justification for the final score adjustment..."
@@ -416,7 +446,7 @@ export default function Dispute() {
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold flex justify-center items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm w-full sm:w-auto"
                       >
                         <Check className="w-4 h-4" />
-                        同意並核准變更 (Resolve & Notify Employee)
+                        同意並核准變更
                       </button>
                     </>
                   ) : (

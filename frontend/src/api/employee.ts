@@ -1094,6 +1094,25 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
+function handleUnauthorized(response: Response) {
+  if (response.status !== 401) {
+    return;
+  }
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const { pathname, search, hash } = window.location;
+  if (pathname === '/login') {
+    return;
+  }
+
+  const redirectTarget = `${pathname}${search}${hash}`;
+  const loginUrl = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+  window.location.replace(loginUrl);
+}
+
 async function parseJsonBody(response: Response) {
   const text = await response.text();
 
@@ -1143,6 +1162,8 @@ async function requestJson<T>(
       ...init.headers,
     },
   });
+
+  handleUnauthorized(response);
 
   const { body, text, isJson } = await parseJsonBody(response);
 
