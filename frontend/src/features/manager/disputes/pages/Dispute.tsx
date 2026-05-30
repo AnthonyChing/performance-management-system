@@ -11,6 +11,8 @@ import DisputeDetailInfo from '../components/DisputeDetailInfo';
 import DisputeResponseThread from '../components/DisputeResponseThread';
 import DisputeResponseForm from '../components/DisputeResponseForm';
 import DisputeEmptyState from '../components/DisputeEmptyState';
+import ApiErrorBanner from '../../../../shared/components/ApiErrorBanner';
+import { useApiError } from '../../../../shared/hooks/useApiError';
 
 /** Hardcoded team ID until auth context is available */
 const DEFAULT_TEAM_ID = 'team_default';
@@ -42,22 +44,27 @@ export default function Dispute() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // API error handling
+  const { error: apiError, setFromCatch: setApiError, clear: clearApiError } = useApiError();
+
   // Load appeals list
   const loadAppeals = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    clearApiError();
     try {
       const statusParam = statusFilter === 'all' ? undefined : statusFilter;
       const data = await fetchAppeals(teamId, statusParam);
       setAppeals(data);
     } catch (err) {
+      setApiError(err);
       const message = err instanceof Error ? err.message : '載入申覆列表失敗';
       setError(message);
       setAppeals([]);
     } finally {
       setIsLoading(false);
     }
-  }, [teamId, statusFilter]);
+  }, [teamId, statusFilter, clearApiError, setApiError]);
 
   useEffect(() => {
     loadAppeals();
@@ -67,18 +74,27 @@ export default function Dispute() {
   const loadDetail = useCallback(
     async (appealId: string) => {
       setIsDetailLoading(true);
+      clearApiError();
       try {
         const detail = await fetchAppealDetail(teamId, appealId);
         setSelectedAppeal(detail);
       } catch (err) {
+        setApiError(err);
         console.error('Failed to load appeal detail:', err);
         setSelectedAppeal(null);
       } finally {
         setIsDetailLoading(false);
       }
     },
-    [teamId],
+    [teamId, clearApiError, setApiError],
   );
+
+  const reloadData = useCallback(() => {
+    loadAppeals();
+    if (selectedId) {
+      loadDetail(selectedId);
+    }
+  }, [loadAppeals, loadDetail, selectedId]);
 
   useEffect(() => {
     if (selectedId) {
@@ -115,14 +131,14 @@ export default function Dispute() {
     if (!selectedId || !selectedAppeal) return;
 
     setIsSubmitting(true);
+    clearApiError();
     try {
       const updated = await respondToAppeal(teamId, selectedId, responseText, isFinal);
       setSelectedAppeal(updated);
       // Refresh the list to reflect status changes
       await loadAppeals();
     } catch (err) {
-      const message = err instanceof Error ? err.message : '提交回覆失敗';
-      alert(message);
+      setApiError(err);
     } finally {
       setIsSubmitting(false);
     }
