@@ -1,3 +1,5 @@
+import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/tokenStorage';
+
 export const API_BASE_PATH = '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 
@@ -174,6 +176,7 @@ export interface ManagerApiOptions {
   fetcher?: Fetcher;
   signal?: AbortSignal;
   credentials?: RequestCredentials;
+  authToken?: string | null;
 }
 
 const goalStatuses = new Set<GoalStatus>([
@@ -400,6 +403,13 @@ async function parseJsonBody(response: Response) {
   return JSON.parse(text) as unknown;
 }
 
+function resolveAuthToken(authToken: string | null | undefined) {
+  if (authToken !== undefined) {
+    return authToken?.trim() || null;
+  }
+  return getStoredAuthToken();
+}
+
 async function requestJson<T>(
   path: string,
   method: 'GET' | 'POST' | 'PATCH',
@@ -408,14 +418,22 @@ async function requestJson<T>(
   options: ManagerApiOptions = {},
 ): Promise<T> {
   const fetcher = options.fetcher ?? fetch;
+  const authToken = resolveAuthToken(options.authToken);
+  
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+  
+  if (authToken) {
+    headers.Authorization = toAuthorizationHeader(authToken);
+  }
+
   const response = await fetcher(resolveManagerApiUrl(path), {
     method,
     credentials: options.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
     signal: options.signal,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
