@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -36,5 +38,8 @@ jobs:
       - name: Find Bugs (SpotBugs)
         run: mvn spotbugs:check
 
-      - name: Run Unit Tests
-        run: mvn clean test
+      - name: Run Unit Tests and SonarCloud Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=anthonyching_performance-management-system -Dsonar.organization=anthonyching -Dsonar.host.url=https://sonarcloud.io
