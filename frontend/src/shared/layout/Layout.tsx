@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
 import { deleteSession } from '../../api/auth';
+import { getStoredAuthToken } from '../../features/auth/tokenStorage';
+import { getMyProfile, type EmployeeProfile } from '../../api/employee';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
   return (
@@ -89,6 +91,27 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [profile, setProfile] = useState<EmployeeProfile | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getMyProfile();
+        setProfile(res.profile);
+      } catch (e) {
+        // Handle error gracefully if needed
+      }
+    };
+    if (getStoredAuthToken()) {
+      fetchProfile();
+    }
+  }, []);
+
+  const token = getStoredAuthToken();
+  if (!token) {
+    const redirectParams = location.pathname !== '/' ? `?redirect=${encodeURIComponent(location.pathname + location.search)}` : '';
+    return <Navigate to={`/login${redirectParams}`} replace />;
+  }
 
   const handleLogout = async () => {
     try {
@@ -219,11 +242,15 @@ export default function Layout() {
 
         <div className="p-4 mt-auto border-t border-slate-100 flex flex-col space-y-2 shrink-0">
           <div className={`flex items-center ${isSidebarOpen ? 'gap-3 mb-2' : 'justify-center mb-4'}`}>
-            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-slate-500 shrink-0">CW</div>
+            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-slate-500 shrink-0">
+              {profile?.name ? profile.name.slice(0, 2).toUpperCase() : '👤'}
+            </div>
             {isSidebarOpen && (
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-slate-800 truncate">林佳龍 Chia Long</p>
-                <p className="text-[10px] text-slate-400 truncate">專案經理</p>
+                <p className="text-xs font-bold text-slate-800 truncate">
+                  {profile ? (profile.english_name ? `${profile.name} ${profile.english_name}` : profile.name) : '載入中...'}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate">{profile?.job_title || '載入中...'}</p>
               </div>
             )}
           </div>
