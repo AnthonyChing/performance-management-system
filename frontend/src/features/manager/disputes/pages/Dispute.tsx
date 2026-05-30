@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import { loadManagerData, updateDisputeStatus } from '../api';
 import type { DisputeItem } from '../types';
+import { ApiRequestError } from '../../../../api/manager';
+import ApiErrorBanner from '../../../../shared/components/ApiErrorBanner';
+import { useApiError } from '../../../../shared/hooks/useApiError';
 
 export default function Dispute() {
   const [searchParams] = useSearchParams();
@@ -38,6 +41,9 @@ export default function Dispute() {
   const [responseText, setResponseText] = useState('');
   const [adjustedScore, setAdjustedScore] = useState<number | ''>('');
   const [showApproved, setShowApproved] = useState(false);
+
+  // API error handling
+  const { error: apiError, setFromCatch: setApiError, clear: clearApiError } = useApiError();
 
   useEffect(() => {
     const queryTeam = searchParams.get('team');
@@ -96,12 +102,17 @@ export default function Dispute() {
       return;
     }
     
-    const finalScore = adjustedScore === '' ? activeDispute.requestedScore : adjustedScore;
-    const success = updateDisputeStatus(activeDispute.id, '已同意', responseText, finalScore);
-    
-    if (success) {
-      reloadData();
-      alert('已成功裁決並更新分數！將通知該同仁。');
+    clearApiError();
+    try {
+      const finalScore = adjustedScore === '' ? activeDispute.requestedScore : adjustedScore;
+      const success = updateDisputeStatus(activeDispute.id, '已同意', responseText, finalScore);
+      
+      if (success) {
+        reloadData();
+        alert('已成功裁決並更新分數！將通知該同仁。');
+      }
+    } catch (err) {
+      setApiError(err);
     }
   };
 
@@ -113,9 +124,34 @@ export default function Dispute() {
     return name.substring(0, 2);
   };
 
+  // 403 permission check — if the API returned FORBIDDEN, show full-page error
+  if (apiError && apiError.status === 403) {
+    return (
+      <ApiErrorBanner
+        status={403}
+        code={apiError.code}
+        message={apiError.message}
+        details={apiError.details}
+        fullPage
+        onRetry={() => { clearApiError(); reloadData(); }}
+      />
+    );
+  }
+
   return (
     <div className="w-full space-y-6 pb-12">
       
+      {/* API Error Banner (inline for 400/404/409) */}
+      {apiError && apiError.status !== 403 && (
+        <ApiErrorBanner
+          status={apiError.status}
+          code={apiError.code}
+          message={apiError.message}
+          details={apiError.details}
+          onRetry={() => { clearApiError(); reloadData(); }}
+        />
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
