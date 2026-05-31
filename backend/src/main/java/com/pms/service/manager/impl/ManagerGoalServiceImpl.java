@@ -131,7 +131,7 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
             UUID managerId, String cycleId, String status) {
         List<User> subordinates = userRepo.findByManagerId(managerId);
         List<UUID> subordinateIds = subordinates.stream().map(User::getId).toList();
-        
+
         if (subordinateIds.isEmpty()) {
             return List.of();
         }
@@ -142,9 +142,11 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
             goals = goalRepo.findByCycleIdAndOwnerIdInAndDeletedAtIsNull(cid, subordinateIds);
         } else {
             PerformanceCycle cycle = getCurrentCycle();
-            goals = goalRepo.findByCycleIdAndOwnerIdInAndDeletedAtIsNull(cycle.getId(), subordinateIds);
+            goals =
+                    goalRepo.findByCycleIdAndOwnerIdInAndDeletedAtIsNull(
+                            cycle.getId(), subordinateIds);
         }
-        
+
         if (status != null) {
             GoalStatus s = parseGoalStatus(status);
             goals = goals.stream().filter(g -> g.getStatus() == s).toList();

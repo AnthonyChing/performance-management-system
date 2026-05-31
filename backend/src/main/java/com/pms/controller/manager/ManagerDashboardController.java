@@ -7,7 +7,6 @@ import com.pms.security.SecurityUtils;
 import com.pms.service.manager.ManagerGoalService;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,13 +38,23 @@ public class ManagerDashboardController {
     @GetMapping("/subordinates")
     public ResponseEntity<Map<String, List<Map<String, Object>>>> listSubordinates() {
         List<User> subordinates = userRepository.findByManagerId(SecurityUtils.currentUserId());
-        List<Map<String, Object>> result = subordinates.stream().map(u -> Map.of(
-                "id", u.getId().toString(),
-                "name", u.getFullName(),
-                "email", u.getEmail() != null ? u.getEmail() : "",
-                "department", u.getDepartmentId() != null ? u.getDepartmentId().toString() : "",
-                "job_title", u.getJobTitle() != null ? u.getJobTitle() : ""
-        )).toList();
+        List<Map<String, Object>> result =
+                subordinates.stream()
+                        .map(
+                                u ->
+                                        Map.of(
+                                                "id", u.getId().toString(),
+                                                "name", u.getFullName(),
+                                                "email", u.getEmail() != null ? u.getEmail() : "",
+                                                "department",
+                                                        u.getDepartmentId() != null
+                                                                ? u.getDepartmentId().toString()
+                                                                : "",
+                                                "job_title",
+                                                        u.getJobTitle() != null
+                                                                ? u.getJobTitle()
+                                                                : ""))
+                        .toList();
         return ResponseEntity.ok(Map.of("data", result));
     }
 }
