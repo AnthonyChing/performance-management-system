@@ -5,6 +5,8 @@ import com.pms.dto.auth.GoogleAuthRequestDTO;
 import com.pms.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +23,19 @@ public class AuthController {
     @PostMapping("/google")
     public ResponseEntity<AuthResponseDTO> googleLogin(
             @Valid @RequestBody GoogleAuthRequestDTO request) {
-        return ResponseEntity.ok(authService.authenticateWithGoogle(request.getIdToken()));
+        AuthResponseDTO authResponse = authService.authenticateWithGoogle(request.getIdToken());
+
+        ResponseCookie cookie =
+                ResponseCookie.from("jwt", authResponse.getAccessToken())
+                        .httpOnly(true)
+                        .secure(true) // Should be true in production (HTTPS)
+                        .path("/")
+                        .maxAge(authResponse.getExpiresIn() / 1000)
+                        .sameSite("Strict")
+                        .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(authResponse);
     }
 }
