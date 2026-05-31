@@ -11,6 +11,10 @@ on:
         description: 'Max Virtual Users'
         required: true
         default: '500'
+      api_key:
+        description: 'A valid X-API-KEY to bypass Spring Security'
+        required: true
+        default: 'default-dev-key-do-not-use-in-prod'
 
 jobs:
   k6-load-test:
@@ -29,3 +33,4 @@ jobs:
         env:
           BASE_URL: ${{ github.event.inputs.target_env }}
           MAX_VUS: ${{ github.event.inputs.vus }}
+          API_KEY: ${{ github.event.inputs.api_key }}
