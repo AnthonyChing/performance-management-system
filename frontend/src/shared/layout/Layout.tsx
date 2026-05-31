@@ -268,8 +268,8 @@ export default function Layout() {
 
           <SidebarGroup icon={Users} label="HR 專區" basePath="/hr" isSidebarOpen={isSidebarOpen}>
             <SidebarSubItem to="/hr/cycles" label="考核週期" />
-            <SidebarSubItem to="/hr/templates" label="考核模板" />
             <SidebarSubItem to="/hr/questionnaires" label="問卷模板" />
+            <SidebarSubItem to="/hr/templates" label="考核模板" />
             <SidebarSubItem to="/hr/publish" label="發佈考核結果" />
             <SidebarSubItem to="/hr/audit" label="查詢稽核紀錄" />
           </SidebarGroup>
