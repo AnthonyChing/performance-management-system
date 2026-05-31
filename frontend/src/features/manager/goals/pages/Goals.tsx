@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, Search } from 'lucide-react';
-import { loadManagerData, updateGoalStatus, addMockGoal, editGoal, evaluateGoal } from '../api';
+import { loadManagerDataAsync, updateGoalStatusAsync, addMockGoalAsync, editGoalAsync, evaluateGoalAsync } from '../api';
 import type { ReviewItem } from '../types';
 import AddGoalModal from '../components/AddGoalModal';
 import EditGoalModal from '../components/EditGoalModal';
@@ -14,7 +14,8 @@ export default function Goals() {
   const [searchParams] = useSearchParams();
   const initialTeam = searchParams.get('team') || 'all';
 
-  const [data, setData] = useState(() => loadManagerData());
+  const [data, setData] = useState<{teams: any[], members: any[], goals: any[]}>({ teams: [], members: [], goals: [] });
+  const [isLoading, setIsLoading] = useState(true);
   const [teamFilter, setTeamFilter] = useState<string>(initialTeam);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('待審核');
@@ -49,49 +50,61 @@ export default function Goals() {
     }
   }, [searchParams]);
 
-  const reloadData = () => {
-    setData(loadManagerData());
+  const reloadData = async () => {
+    setIsLoading(true);
+    const result = await loadManagerDataAsync();
+    setData(result);
+    setIsLoading(false);
   };
 
-  const handleApprove = (id: string) => {
-    const success = updateGoalStatus(id, '進行中');
+  useEffect(() => {
+    reloadData();
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    const goal = data.goals.find(g => g.id === id);
+    if (!goal) return;
+    const success = await updateGoalStatusAsync(id, goal.memberId, '進行中');
     if (success) {
       reloadData();
     }
   };
 
-  const handleReject = (id: string) => {
-    const success = updateGoalStatus(id, '已否決');
+  const handleReject = async (id: string) => {
+    const goal = data.goals.find(g => g.id === id);
+    if (!goal) return;
+    const success = await updateGoalStatusAsync(id, goal.memberId, '已否決');
     if (success) {
       reloadData();
     }
   };
 
-  const handleRejectSubmit = (e: React.FormEvent) => {
+  const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectingGoal) return;
     
-    // In a real app we'd save the reason & changes. Here we just update status to test.
-    handleReject(rejectingGoal.id);
+    await handleReject(rejectingGoal.id);
 
     setRejectingGoal(null);
     setRejectReason('');
     setRejectChanges('');
   };
 
-  const handleReset = (id: string) => {
-    const success = updateGoalStatus(id, '待審核');
+  const handleReset = async (id: string) => {
+    const goal = data.goals.find(g => g.id === id);
+    if (!goal) return;
+    const success = await updateGoalStatusAsync(id, goal.memberId, '待審核');
     if (success) {
       reloadData();
     }
   };
 
-  const handleCreateGoal = (e: React.FormEvent) => {
+  const handleCreateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
     const memberSelected = data.members.find(m => m.id === newMember);
-    addMockGoal({
+    await addMockGoalAsync({
       title: newTitle,
       type: newType,
       memberId: newMember,
@@ -109,11 +122,11 @@ export default function Goals() {
     reloadData();
   };
 
-  const handleEditGoal = (e: React.FormEvent) => {
+  const handleEditGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingGoal || !editingGoal.title.trim()) return;
 
-    editGoal(editingGoal.id, {
+    await editGoalAsync(editingGoal.id, editingGoal.memberId, {
       title: editingGoal.title,
       type: editingGoal.type,
       weight: editingGoal.type === 'KPI' ? editingGoal.weight : undefined,
@@ -125,11 +138,11 @@ export default function Goals() {
     reloadData();
   };
 
-  const handleEvaluateGoal = (e: React.FormEvent) => {
+  const handleEvaluateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evaluatingGoal) return;
 
-    evaluateGoal(evaluatingGoal.id, evaluationScore, evaluationComment);
+    await evaluateGoalAsync(evaluatingGoal.id, evaluatingGoal.memberId, evaluationScore, evaluationComment);
 
     setEvaluatingGoal(null);
     setEvaluationScore(80);
@@ -149,6 +162,10 @@ export default function Goals() {
 
   const okrs = filteredGoals.filter(g => g.type === '目標');
   const kpis = filteredGoals.filter(g => g.type === 'KPI');
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-slate-500">載入中...</div>;
+  }
 
   return (
     <div className="w-full space-y-8 pb-12">

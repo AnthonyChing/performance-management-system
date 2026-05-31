@@ -16,4 +16,7 @@ public interface ManagerGoalService {
 
     List<ManagerGoalResponseDTO> listGoals(
             UUID managerId, UUID subordinateId, String cycleId, String status);
+
+    List<ManagerGoalResponseDTO> listAllSubordinateGoals(
+            UUID managerId, String cycleId, String status);
 }

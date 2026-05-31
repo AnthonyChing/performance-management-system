@@ -14,6 +14,8 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
 
     List<Goal> findByCycleIdAndOwnerIdAndDeletedAtIsNull(UUID cycleId, UUID ownerId);
 
+    List<Goal> findByCycleIdAndOwnerIdInAndDeletedAtIsNull(UUID cycleId, List<UUID> ownerIds);
+
     Page<Goal> findByCycleIdAndOwnerIdAndDeletedAtIsNull(
             UUID cycleId, UUID ownerId, Pageable pageable);
 
