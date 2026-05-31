@@ -240,7 +240,7 @@ export default function Layout() {
           <div className="w-8 h-8 bg-[#0B2544] rounded-lg flex items-center justify-center shrink-0">
             <div className="w-4 h-4 border-2 border-white rounded-sm"></div>
           </div>
-          {isSidebarOpen && <span className="font-bold text-slate-800 tracking-tight text-lg truncate">PerformancePlus</span>}
+          {isSidebarOpen && <span className="font-bold text-slate-800 tracking-tight text-lg truncate">績效管理系統</span>}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
