@@ -1,7 +1,5 @@
-name: Backend CD
-
+name: Backend Pipeline
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
@@ -9,26 +7,62 @@ on:
       - 'v*'
     paths:
       - 'backend/**'
-      - '.github/workflows/backend-cd.yml'
+      - '.github/workflows/backend-pipeline.yml'
       - '!**.md'
-
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-pipeline.yml'
+      - '!**.md'
+  workflow_dispatch:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: asia-east1 
   REPO_NAME: pms-repo
   IMAGE_NAME: pms-backend # Name of the image in Artifact Registry
-
 jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Check Code Formatting (Spotless)
+        run: mvn spotless:check
+      - name: Check Code Quality (Checkstyle)
+        run: mvn checkstyle:check
+      - name: Find Bugs (SpotBugs)
+        run: mvn spotbugs:check
+      - name: Run Unit Tests and SonarCloud Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=AnthonyChing_performance-management-system -Dsonar.organization=anthonyching -Dsonar.host.url=https://sonarcloud.io
   backend-build-and-deploy:
+    needs: backend-test
+    # Run on: manual dispatch, tag push, or push to main
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write # Required for GCP Workload Identity Federation
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
       - name: Extract Docker metadata and tags
         id: meta
         uses: docker/metadata-action@v6
@@ -40,16 +74,13 @@ jobs:
             # Only create 'sha-' tags for branch pushes, avoid duplicate immutable tags on releases
             type=sha,format=short,prefix=sha-,enable=${{ github.ref_type == 'branch' }}
             type=semver,pattern={{version}}
-
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v3
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}' # Uses a service account key for simplicity. Replace with Workload Identity Federation in production.
-
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
-
       - name: Configure Docker to use Google Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
           
@@ -60,7 +91,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
       # Automatically determines target service and label based on git event
       - name: Determine Deploy Target
         id: deploy-target
@@ -73,7 +103,6 @@ jobs:
             echo "image_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
             echo "cloud_run_service=backend-staging" >> "$GITHUB_OUTPUT"
           fi
-
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v3
@@ -90,12 +119,10 @@ jobs:
                -H "Content-Type: application/json" \
                -d '{"text":"Deploy pms-backend to Cloud Run (${{ github.sha }})","tags":["deployment","cloud-run","backend"]}' \
                https://${{ secrets.GRAFANA_INSTANCE_ID }}.grafana.net/api/annotations
-
       - name: Send Discord Notification (Success)
         if: success()
         run: |
           curl -H "Content-Type: application/json" -d "{\"content\": \"✅ **Deploy Success!**\\nRevision deployed to Cloud Run.\\nURL: ${{ steps.deploy.outputs.url }}\"}" ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
-
       - name: Send Discord Notification (Failure)
         if: failure()
         run: |
