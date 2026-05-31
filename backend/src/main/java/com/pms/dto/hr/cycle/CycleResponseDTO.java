@@ -14,8 +14,8 @@ public class CycleResponseDTO {
     private String cycleType;
     private String status;
     private String timezone;
-    private OffsetDateTime selfEvalStart;
-    private OffsetDateTime selfEvalEnd;
+    private OffsetDateTime cycleStart;
+    private OffsetDateTime cycleEnd;
     private OffsetDateTime managerEvalStart;
     private OffsetDateTime managerEvalEnd;
     private OffsetDateTime hrReviewEnd;
@@ -33,8 +33,8 @@ public class CycleResponseDTO {
                 .cycleType(c.getCycleType().getDbValue())
                 .status(c.getStatus().getDbValue())
                 .timezone(c.getTimezone())
-                .selfEvalStart(c.getSelfEvalStart())
-                .selfEvalEnd(c.getSelfEvalEnd())
+                .cycleStart(c.getCycleStart())
+                .cycleEnd(c.getCycleEnd())
                 .managerEvalStart(c.getManagerEvalStart())
                 .managerEvalEnd(c.getManagerEvalEnd())
                 .hrReviewEnd(c.getHrReviewEnd())

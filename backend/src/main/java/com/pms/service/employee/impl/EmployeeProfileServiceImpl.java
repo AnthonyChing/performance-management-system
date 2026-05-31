@@ -170,7 +170,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
 
     private CycleSummaryDTO buildCycleSummaryDTO(PerformanceCycle cycle) {
         LocalDate startDate =
-                cycle.getSelfEvalStart() != null ? cycle.getSelfEvalStart().toLocalDate() : null;
+                cycle.getCycleStart() != null ? cycle.getCycleStart().toLocalDate() : null;
         LocalDate endDate =
                 cycle.getHrReviewEnd() != null ? cycle.getHrReviewEnd().toLocalDate() : null;
         String periodLabel =

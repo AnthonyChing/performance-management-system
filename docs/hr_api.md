@@ -1050,13 +1050,17 @@ API 必須回傳 `available_actions` 讓前端判斷按鈕狀態。正式考核�
   ```json
   {
     "name": "2026 總部員工績效考核",
-    "start_date": "2026-07-01",
-    "end_date": "2026-09-30",
+    "cycle_type": "quarterly",
     "timezone": "Asia/Taipei",
-    "target_groups": []
+    "cycle_start": "2026-07-01T00:00:00+08:00",
+    "cycle_end": "2026-09-30T23:59:59+08:00",
+    "manager_eval_start": "2026-08-01T00:00:00+08:00",
+    "manager_eval_end": "2026-08-31T23:59:59+08:00",
+    "hr_review_end": "2026-09-15T23:59:59+08:00",
+    "appeal_deadline_days": 7
   }
   ```
-- **Response 201**: 回傳新建週期，初始狀態通常為 `draft` 或 `not_started`。
+- **Response 201**: 回傳新建週期，初始狀態為 `not_started`。
 
 ### 8.2 查看所有週期清單
 - **Method**: GET

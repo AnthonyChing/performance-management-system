@@ -153,7 +153,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                         .orElse(0.0);
 
                 LocalDate startDate =
-                        c.getSelfEvalStart() != null ? c.getSelfEvalStart().toLocalDate() : null;
+                        c.getCycleStart() != null ? c.getCycleStart().toLocalDate() : null;
                 LocalDate endDate =
                         c.getHrReviewEnd() != null ? c.getHrReviewEnd().toLocalDate() : null;
                 String periodLabel =
@@ -784,7 +784,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                     "INVALID_DESCRIPTION", "Description must be between 1 and 2000 characters");
         }
         if (request.getDueDate() != null) {
-            LocalDate cycleStart = cycle.getSelfEvalStart().toLocalDate();
+            LocalDate cycleStart = cycle.getCycleStart().toLocalDate();
             LocalDate cycleEnd = cycle.getHrReviewEnd().toLocalDate();
             if (request.getDueDate().isBefore(cycleStart)
                     || request.getDueDate().isAfter(cycleEnd)) {
@@ -825,7 +825,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
     private CycleSummaryDTO buildCycleSummaryDTO(PerformanceCycle cycle) {
         LocalDate startDate =
-                cycle.getSelfEvalStart() != null ? cycle.getSelfEvalStart().toLocalDate() : null;
+                cycle.getCycleStart() != null ? cycle.getCycleStart().toLocalDate() : null;
         LocalDate endDate =
                 cycle.getHrReviewEnd() != null ? cycle.getHrReviewEnd().toLocalDate() : null;
         String periodLabel =

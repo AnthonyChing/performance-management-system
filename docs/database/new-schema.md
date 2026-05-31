@@ -264,8 +264,8 @@ Tree-structured organizational units. **Read-only reference table**: rows are pr
 | `cycle_type` | `cycle_type_enum` | `NOT NULL` | |
 | `status` | `cycle_status_enum` | `NOT NULL, DEFAULT 'not_started'` | |
 | `timezone` | `VARCHAR(64)` | `NOT NULL, DEFAULT 'Asia/Taipei'` | IANA TZ. All deadlines below are interpreted in this zone |
-| `self_eval_start` | `TIMESTAMPTZ` | `NOT NULL` | |
-| `self_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | |
+| `cycle_start` | `TIMESTAMPTZ` | `NOT NULL` | 考核週期開始日 |
+| `cycle_end` | `TIMESTAMPTZ` | `NOT NULL` | 考核週期結束日 |
 | `manager_eval_start` | `TIMESTAMPTZ` | `NOT NULL` | |
 | `manager_eval_end` | `TIMESTAMPTZ` | `NOT NULL` | |
 | `hr_review_end` | `TIMESTAMPTZ` | `NOT NULL` | |

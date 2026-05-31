@@ -42,8 +42,8 @@ public class HrCycleServiceImpl implements HrCycleService {
                         .cycleType(type)
                         .status(CycleStatus.NOT_STARTED)
                         .timezone(req.getTimezone() != null ? req.getTimezone() : "Asia/Taipei")
-                        .selfEvalStart(req.getSelfEvalStart())
-                        .selfEvalEnd(req.getSelfEvalEnd())
+                        .cycleStart(req.getCycleStart())
+                        .cycleEnd(req.getCycleEnd())
                         .managerEvalStart(req.getManagerEvalStart())
                         .managerEvalEnd(req.getManagerEvalEnd())
                         .hrReviewEnd(req.getHrReviewEnd())
@@ -82,8 +82,8 @@ public class HrCycleServiceImpl implements HrCycleService {
         }
         if (req.getName() != null) cycle.setName(req.getName());
         if (req.getTimezone() != null) cycle.setTimezone(req.getTimezone());
-        if (req.getSelfEvalStart() != null) cycle.setSelfEvalStart(req.getSelfEvalStart());
-        if (req.getSelfEvalEnd() != null) cycle.setSelfEvalEnd(req.getSelfEvalEnd());
+        if (req.getCycleStart() != null) cycle.setCycleStart(req.getCycleStart());
+        if (req.getCycleEnd() != null) cycle.setCycleEnd(req.getCycleEnd());
         if (req.getManagerEvalStart() != null) cycle.setManagerEvalStart(req.getManagerEvalStart());
         if (req.getManagerEvalEnd() != null) cycle.setManagerEvalEnd(req.getManagerEvalEnd());
         if (req.getHrReviewEnd() != null) cycle.setHrReviewEnd(req.getHrReviewEnd());

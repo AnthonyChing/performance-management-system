@@ -11,8 +11,8 @@ import lombok.Setter;
 public class CyclePatchRequestDTO {
     private String name;
     private String timezone;
-    private OffsetDateTime selfEvalStart;
-    private OffsetDateTime selfEvalEnd;
+    private OffsetDateTime cycleStart;
+    private OffsetDateTime cycleEnd;
     private OffsetDateTime managerEvalStart;
     private OffsetDateTime managerEvalEnd;
     private OffsetDateTime hrReviewEnd;

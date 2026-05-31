@@ -45,7 +45,7 @@ class HrPerformanceCycleControllerTest {
                 """
                 INSERT INTO performance_cycles (
                   id, name, cycle_type, status, timezone,
-                  self_eval_start, self_eval_end,
+                  cycle_start, cycle_end,
                   manager_eval_start, manager_eval_end,
                   hr_review_end, appeal_deadline_days, is_locked, created_by
                 ) VALUES (
@@ -79,8 +79,8 @@ class HrPerformanceCycleControllerTest {
                   "name": "2026 總部員工績效考核",
                   "cycle_type": "quarterly",
                   "timezone": "Asia/Taipei",
-                  "self_eval_start": "2026-07-01T00:00:00+08:00",
-                  "self_eval_end": "2026-07-31T23:59:59+08:00",
+                  "cycle_start": "2026-07-01T00:00:00+08:00",
+                  "cycle_end": "2026-07-31T23:59:59+08:00",
                   "manager_eval_start": "2026-08-01T00:00:00+08:00",
                   "manager_eval_end": "2026-08-31T23:59:59+08:00",
                   "hr_review_end": "2026-09-15T23:59:59+08:00",
