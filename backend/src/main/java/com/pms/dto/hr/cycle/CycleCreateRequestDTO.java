@@ -15,9 +15,8 @@ public class CycleCreateRequestDTO {
     @NotNull private String cycleType;
     private String timezone = "Asia/Taipei";
 
-    // Self-eval dates are optional; if omitted, reviews skip self-eval phase
-    private OffsetDateTime selfEvalStart;
-    private OffsetDateTime selfEvalEnd;
+    @NotNull private OffsetDateTime cycleStart;
+    @NotNull private OffsetDateTime cycleEnd;
 
     @NotNull private OffsetDateTime managerEvalStart;
     @NotNull private OffsetDateTime managerEvalEnd;

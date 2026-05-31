@@ -55,7 +55,7 @@ WHERE u.id IN (
 -- ---- performance_cycles ----------------------------------------
 INSERT INTO performance_cycles (
   id, name, cycle_type, status, timezone,
-  self_eval_start, self_eval_end,
+  cycle_start, cycle_end,
   manager_eval_start, manager_eval_end,
   hr_review_end, appeal_deadline_days, is_locked, created_by
 ) VALUES (

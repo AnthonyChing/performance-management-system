@@ -49,7 +49,7 @@ WHERE u.id IN (
 -- =====================================================================
 INSERT INTO performance_cycles (
   id, name, cycle_type, status, timezone,
-  self_eval_start, self_eval_end,
+  cycle_start, cycle_end,
   manager_eval_start, manager_eval_end,
   hr_review_end, results_published_at, appeal_deadline_days, is_locked, created_by
 ) VALUES (
@@ -164,7 +164,7 @@ ON CONFLICT (kpi_id, user_id) DO NOTHING;
 -- =====================================================================
 INSERT INTO performance_cycles (
   id, name, cycle_type, status, timezone,
-  self_eval_start, self_eval_end,
+  cycle_start, cycle_end,
   manager_eval_start, manager_eval_end,
   hr_review_end, results_published_at, appeal_deadline_days, is_locked, created_by
 ) VALUES (
@@ -241,7 +241,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 -- =====================================================================
 INSERT INTO performance_cycles (
   id, name, cycle_type, status, timezone,
-  self_eval_start, self_eval_end,
+  cycle_start, cycle_end,
   manager_eval_start, manager_eval_end,
   hr_review_end, appeal_deadline_days, is_locked, created_by, created_at, updated_at
 ) VALUES (
@@ -256,7 +256,7 @@ INSERT INTO performance_cycles (
 
 INSERT INTO performance_cycles (
   id, name, cycle_type, status, timezone,
-  self_eval_start, self_eval_end,
+  cycle_start, cycle_end,
   manager_eval_start, manager_eval_end,
   hr_review_end, appeal_deadline_days, is_locked, created_by, created_at, updated_at
 ) VALUES (
@@ -393,7 +393,7 @@ VALUES (
 -- =====================================================================
 INSERT INTO performance_cycles (
   id, name, cycle_type, status, timezone,
-  self_eval_start, self_eval_end,
+  cycle_start, cycle_end,
   manager_eval_start, manager_eval_end,
   hr_review_end, results_published_at, appeal_deadline_days, is_locked, created_by
 ) VALUES (
