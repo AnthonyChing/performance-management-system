@@ -49,8 +49,9 @@ class JwtAuthenticationFilterTest {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(auth);
         assertEquals("00000000-0000-0000-0000-000000000001", auth.getPrincipal());
-        assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE")));
+        assertTrue(
+                auth.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE")));
         verify(filterChain).doFilter(request, response);
     }
 
@@ -68,8 +69,8 @@ class JwtAuthenticationFilterTest {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(auth);
-        assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_HR")));
+        assertTrue(
+                auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR")));
         verify(filterChain).doFilter(request, response);
     }
 
@@ -157,9 +158,11 @@ class JwtAuthenticationFilterTest {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(auth);
         assertEquals(2, auth.getAuthorities().size());
-        assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE")));
-        assertTrue(auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")));
+        assertTrue(
+                auth.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE")));
+        assertTrue(
+                auth.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")));
     }
 }
