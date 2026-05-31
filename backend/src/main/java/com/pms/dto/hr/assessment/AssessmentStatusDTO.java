@@ -14,4 +14,5 @@ public class AssessmentStatusDTO {
     private String employeeName;
     private String department;
     private String reviewStatus;
+    private String finalRating;
 }

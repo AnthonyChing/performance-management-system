@@ -930,11 +930,21 @@ export function updatePerformanceCycleStatus(
 }
 
 export function listAssessmentStatuses(
-  query: { page?: number } = {},
+  query: {
+    page?: number;
+    page_size?: number;
+    cycle_id?: string;
+    employee_id?: string;
+    review_status?: string;
+  } = {},
   options?: HrApiOptions,
 ): Promise<AssessmentStatusListResponse> {
   const params = new URLSearchParams();
   if (query.page) params.set('page', String(query.page));
+  if (query.page_size) params.set('page_size', String(query.page_size));
+  if (query.cycle_id) params.set('cycle_id', query.cycle_id);
+  if (query.employee_id) params.set('employee_id', query.employee_id);
+  if (query.review_status) params.set('review_status', query.review_status);
   const path = params.toString()
     ? `/hr/assessment-statuses?${params.toString()}`
     : '/hr/assessment-statuses';
