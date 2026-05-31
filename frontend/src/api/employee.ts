@@ -189,6 +189,21 @@ export interface KpiConfirmationResponse {
   result: KpiResultSummary;
 }
 
+export interface HistoricalKpiResultsResponse {
+  mode: 'historical_results' | 'historical_result_detail';
+  pagination?: EmployeePagination;
+  results?: KpiResultSummary[];
+  standards?: KpiStandard[];
+  result?: KpiResultSummary;
+}
+
+export interface HistoricalKpiResultsRequest {
+  page: number;
+  page_size?: number;
+  q?: string;
+  cycle_id?: string;
+}
+
 export interface EmployeeAvailableActions {
   can_edit?: boolean | null;
   edit_unavailable_reason?: string | null;
@@ -777,6 +792,30 @@ function isKpiConfirmationResponse(value: unknown): value is KpiConfirmationResp
   );
 }
 
+function isHistoricalKpiResultsResponse(value: unknown): value is HistoricalKpiResultsResponse {
+  if (!isRecord(value) || !isString(value.mode)) {
+    return false;
+  }
+
+  if (value.mode === 'historical_results') {
+    return (
+      isEmployeePagination(value.pagination) &&
+      Array.isArray(value.results) &&
+      value.results.every(isKpiResultSummary)
+    );
+  }
+
+  if (value.mode === 'historical_result_detail') {
+    return (
+      Array.isArray(value.standards) &&
+      value.standards.every(isKpiStandard) &&
+      isKpiResultSummary(value.result)
+    );
+  }
+
+  return false;
+}
+
 function isEmployeeAvailableActions(value: unknown): value is EmployeeAvailableActions {
   return (
     isRecord(value) &&
@@ -1278,6 +1317,34 @@ export function getMyKpiStandards(
 
 export function getMyKpiResult(options?: EmployeeApiOptions): Promise<KpiResultResponse> {
   return requestJson<KpiResultResponse>('/me/kpis/result', isKpiResultResponse, options);
+}
+
+export function getMyHistoricalKpiResults(
+  params: HistoricalKpiResultsRequest,
+  options?: EmployeeApiOptions,
+): Promise<HistoricalKpiResultsResponse> {
+  const search = new URLSearchParams({
+    status: 'historical',
+    page: String(params.page),
+  });
+
+  if (params.page_size !== undefined) {
+    search.set('pageSize', String(params.page_size));
+  }
+
+  if (params.q) {
+    search.set('q', params.q);
+  }
+
+  if (params.cycle_id) {
+    search.set('cycleId', params.cycle_id);
+  }
+
+  return requestJson<HistoricalKpiResultsResponse>(
+    `/me/kpis/result?${search.toString()}`,
+    isHistoricalKpiResultsResponse,
+    options,
+  );
 }
 
 export function confirmMyKpiResult(

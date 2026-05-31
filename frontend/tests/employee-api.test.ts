@@ -8,6 +8,7 @@ import {
   getMyAppealResult,
   getMyAppeals,
   getMyCurrentGoals,
+  getMyHistoricalKpiResults,
   getMyHistoricalGoals,
   getMyKpiResult,
   getMyKpiStandards,
@@ -191,6 +192,50 @@ const kpiConfirmationPayload = {
       can_dispute: false,
       dispute_unavailable_reason: 'already_confirmed',
     },
+  },
+};
+
+const historicalKpiResultsPayload = {
+  mode: 'historical_results',
+  pagination: {
+    page: 1,
+    page_size: 10,
+    total_pages: 1,
+    total_count: 1,
+    has_previous: false,
+    has_next: false,
+  },
+  results: [
+    {
+      result_id: 'review_2024_q4_user_001',
+      cycle: {
+        cycle_id: 'cycle_2024_q4',
+        name: '2024 Q4 年度終考',
+        period_label: '2024-10-01~2024-12-31',
+        start_date: '2024-10-01',
+        end_date: '2024-12-31',
+      },
+      status: 'finalized',
+      performance_score: 94.5,
+      weighted_score: 103.6,
+      final_grade: 'A',
+    },
+  ],
+};
+
+const historicalKpiDetailPayload = {
+  mode: 'historical_result_detail',
+  standards: kpiStandardsPayload.standards,
+  result: {
+    ...kpiResultPayload.result,
+    cycle: {
+      cycle_id: 'cycle_2024_q4',
+      name: '2024 Q4 年度終考',
+      period_label: '2024-10-01~2024-12-31',
+      start_date: '2024-10-01',
+      end_date: '2024-12-31',
+    },
+    status: 'finalized',
   },
 };
 
@@ -792,6 +837,63 @@ describe('employee API client', () => {
         }),
       }),
     );
+  });
+
+  it('GET /me/kpis/result?status=historical returns historical KPI results', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(historicalKpiResultsPayload)) satisfies Fetcher;
+
+    await expect(
+      getMyHistoricalKpiResults({ page: 1, page_size: 10 }, { fetcher }),
+    ).resolves.toEqual(historicalKpiResultsPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/kpis/result?status=historical&page=1&pageSize=10',
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+      }),
+    );
+  });
+
+  it('GET historical KPI result detail uses the backend cycleId query parameter', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(historicalKpiDetailPayload)) satisfies Fetcher;
+
+    await expect(
+      getMyHistoricalKpiResults(
+        {
+          page: 1,
+          page_size: 100,
+          cycle_id: 'cycle_2024_q4',
+        },
+        { fetcher },
+      ),
+    ).resolves.toEqual(historicalKpiDetailPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/kpis/result?status=historical&page=1&pageSize=100&cycleId=cycle_2024_q4',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('GET historical KPI results rejects invalid historical rows', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        ...historicalKpiResultsPayload,
+        results: [
+          {
+            result_id: 'review_2024_q4_user_001',
+            status: 'finalized',
+            performance_score: '94.5',
+          },
+        ],
+      }),
+    ) satisfies Fetcher;
+
+    await expect(
+      getMyHistoricalKpiResults({ page: 1 }, { fetcher }),
+    ).rejects.toBeInstanceOf(ApiResponseValidationError);
   });
 
   it('GET /me/appeals uses /api/v1 prefix and returns current appeal page state', async () => {

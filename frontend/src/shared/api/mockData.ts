@@ -189,13 +189,6 @@ export function addMockGoal(goal: Partial<ReviewItem>) {
   return newGoal;
 }
 
-export const HISTORY_KPI_MOCK = [
-  { id: 1, period: '2023 第四季度 (Q4) 年度終考', dates: '2023-10-01 至 2023-12-31', totalScore: 94.5, grade: 'A', gradeColor: 'bg-green-100 text-green-700' },
-  { id: 2, period: '2023 第三季度 (Q3) 績效考核', dates: '2023-07-01 至 2023-09-30', totalScore: 88.2, grade: 'B+', gradeColor: 'bg-indigo-100 text-indigo-700' },
-  { id: 3, period: '2023 上半年 (H1) 策略考核', dates: '2023-01-01 至 2023-06-30', totalScore: 91.0, grade: 'A-', gradeColor: 'bg-green-100 text-green-700' },
-  { id: 4, period: '2022 第四季度 (Q4) 年度終考', dates: '2022-10-01 至 2022-12-31', totalScore: 85.4, grade: 'B', gradeColor: 'bg-indigo-100 text-indigo-700' },
-];
-
 export interface HistoricalRecord {
   id: string;
   memberName: string;

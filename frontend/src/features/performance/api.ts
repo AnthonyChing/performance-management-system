@@ -3,6 +3,7 @@ export {
   confirmMyKpiResult,
   getMyAppealResult,
   getMyAppeals,
+  getMyHistoricalKpiResults,
   getMyKpiResult,
   getMyKpiStandards,
   submitMyAppeal,
@@ -16,7 +17,10 @@ export {
   type AppealsResponse,
   type AppealSubmitRequest,
   type AppealSubmitResponse,
+  type EmployeePagination,
   type EmployeeApiOptions,
+  type HistoricalKpiResultsRequest,
+  type HistoricalKpiResultsResponse,
   type KpiActual,
   type KpiAvailableActions,
   type KpiConfirmation,
@@ -34,4 +38,3 @@ export {
   type KpiStandardsResponse,
   type KpiTarget,
 } from '../../api/employee';
-export { HISTORY_KPI_MOCK } from '../../shared/api/mockData';
