@@ -36,9 +36,9 @@ public class ManagerDashboardController {
     }
 
     @GetMapping("/subordinates")
-    public ResponseEntity<Map<String, List<Map<String, Object>>>> listSubordinates() {
+    public ResponseEntity<Map<String, List<Map<String, String>>>> listSubordinates() {
         List<User> subordinates = userRepository.findByManagerId(SecurityUtils.currentUserId());
-        List<Map<String, Object>> result =
+        List<Map<String, String>> result =
                 subordinates.stream()
                         .map(
                                 u ->
