@@ -1,6 +1,7 @@
 package com.pms.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pms.security.ApiKeyFilter;
 import com.pms.security.JwtAuthenticationFilter;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final ApiKeyFilter apiKeyFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ObjectMapper objectMapper;
 
@@ -80,8 +82,8 @@ public class SecurityConfig {
                                                                             "message",
                                                                             "Access denied")));
                                                 }))
-                .addFilterBefore(
-                        jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, ApiKeyFilter.class);
 
         return http.build();
     }

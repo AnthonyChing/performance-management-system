@@ -28,18 +28,25 @@ export const options = {
 };
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+// In industry, secrets are passed via CI environment variables, not hardcoded!
+const API_KEY = __ENV.API_KEY || 'default-dev-key-do-not-use-in-prod';
 
 export default function () {
   // --- CACHE BUSTING STRATEGY ---
-  // Generate a random ID between 1 and 100 to simulate different users 
-  // fetching different evaluation templates, forcing the DB to work instead of caching.
   const randomTemplateId = Math.floor(Math.random() * 100) + 1;
   const cacheBuster = `?cb=${new Date().getTime()}-${Math.random()}`;
   
-  const res = http.get(`${BASE_URL}/api/v1/hr/evaluation-templates/${randomTemplateId}${cacheBuster}`);
+  const params = {
+    headers: {
+      'X-API-KEY': API_KEY,
+      'Content-Type': 'application/json',
+    },
+  };
+  
+  const res = http.get(`${BASE_URL}/api/v1/hr/evaluation-templates/${randomTemplateId}${cacheBuster}`, params);
   
   check(res, {
-    'status is 200 or 404 (random ID might not exist)': (r) => r.status === 200 || r.status === 404,
+    'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
   });
   
   sleep(Math.random() * 4 + 3); 
