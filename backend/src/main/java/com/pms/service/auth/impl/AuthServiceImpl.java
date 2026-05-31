@@ -49,7 +49,8 @@ public class AuthServiceImpl implements AuthService {
 
         UserIdentity identity =
                 userIdentityRepository
-                        .findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject)
+                        .findByProviderAndProviderSubject(
+                                IdentityProvider.GOOGLE.getDbValue(), subject)
                         .orElseGet(() -> autoLink(subject, email));
 
         UUID userId = identity.getUserId();
