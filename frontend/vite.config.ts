@@ -10,9 +10,15 @@ export default defineConfig(({mode}) => {
   };
   const apiProxyTarget =
     env.VITE_API_PROXY_TARGET ?? env.API_PROXY_TARGET ?? 'http://localhost:8080';
+  const clientEnv = Object.fromEntries(
+    Object.entries(env)
+      .filter(([key]) => key.startsWith('VITE_'))
+      .map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)]),
+  );
 
   return {
     plugins: [react(), tailwindcss()],
+    define: clientEnv,
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

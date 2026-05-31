@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import JwtLoginForm from '../components/JwtLoginForm';
+import { AuthApiError, authenticateWithGoogle } from '../api';
+import GoogleLoginForm from '../components/GoogleLoginForm';
 import { saveAuthToken } from '../tokenStorage';
+import { getGoogleClientId } from '../types';
 
 function normalizeRedirectPath(redirect: string | null) {
   if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) {
@@ -14,19 +16,44 @@ function normalizeRedirectPath(redirect: string | null) {
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const redirectPath = useMemo(
     () => normalizeRedirectPath(searchParams.get('redirect')),
     [searchParams],
   );
+  const googleClientId = getGoogleClientId();
 
-  function handleTokenSubmit(token: string) {
-    saveAuthToken(token);
-    navigate(redirectPath, { replace: true });
-  }
+  const handleGoogleCredential = useCallback(
+    async (idToken: string) => {
+      setIsSubmitting(true);
+      setErrorMessage(null);
+
+      try {
+        const session = await authenticateWithGoogle(idToken);
+        saveAuthToken(session.accessToken);
+        navigate(redirectPath, { replace: true });
+      } catch (error) {
+        setErrorMessage(
+          error instanceof AuthApiError || error instanceof Error
+            ? error.message
+            : 'Google 登入失敗，請稍後再試。',
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [navigate, redirectPath],
+  );
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-800">
-      <JwtLoginForm onSubmit={handleTokenSubmit} />
+      <GoogleLoginForm
+        clientId={googleClientId}
+        disabled={isSubmitting}
+        errorMessage={errorMessage}
+        onCredential={handleGoogleCredential}
+      />
     </div>
   );
 }

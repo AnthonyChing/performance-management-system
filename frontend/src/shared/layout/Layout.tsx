@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
 import { deleteSession } from '../../api/auth';
-import { getStoredAuthToken } from '../../features/auth/tokenStorage';
 import { getMyProfile, type EmployeeProfile } from '../../api/employee';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
@@ -87,31 +86,67 @@ const SidebarSubItem = ({ to, label }: any) => {
   );
 };
 
+function getDisplayName(profile: EmployeeProfile | null) {
+  if (!profile) {
+    return '登入者';
+  }
+
+  return profile.english_name ? `${profile.name} ${profile.english_name}` : profile.name;
+}
+
+function getAvatarInitials(profile: EmployeeProfile | null) {
+  if (!profile) {
+    return <User className="w-5 h-5" />;
+  }
+
+  if (profile.english_name) {
+    const initials = profile.english_name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+
+    if (initials) {
+      return initials;
+    }
+  }
+
+  return profile.name.slice(0, 2);
+}
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [profile, setProfile] = useState<EmployeeProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<EmployeeProfile | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await getMyProfile();
-        setProfile(res.profile);
-      } catch (e) {
-        // Handle error gracefully if needed
-      }
+    let isMounted = true;
+    const controller = new AbortController();
+
+    getMyProfile({ signal: controller.signal })
+      .then((response) => {
+        if (!isMounted) return;
+        setCurrentUser(response.profile);
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+      });
+
+    return () => {
+      isMounted = false;
+      controller.abort();
     };
-    if (getStoredAuthToken()) {
-      fetchProfile();
-    }
   }, []);
 
-  const token = getStoredAuthToken();
-  if (!token) {
-    const redirectParams = location.pathname !== '/' ? `?redirect=${encodeURIComponent(location.pathname + location.search)}` : '';
-    return <Navigate to={`/login${redirectParams}`} replace />;
-  }
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [currentUser?.avatar_url]);
 
   const handleLogout = async () => {
     try {
@@ -242,15 +277,24 @@ export default function Layout() {
 
         <div className="p-4 mt-auto border-t border-slate-100 flex flex-col space-y-2 shrink-0">
           <div className={`flex items-center ${isSidebarOpen ? 'gap-3 mb-2' : 'justify-center mb-4'}`}>
-            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center font-bold text-slate-500 shrink-0">
-              {profile?.name ? profile.name.slice(0, 2).toUpperCase() : '👤'}
+            <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center overflow-hidden font-bold text-slate-600 shrink-0">
+              {currentUser?.avatar_url && !avatarFailed ? (
+                <img
+                  src={currentUser.avatar_url}
+                  alt={getDisplayName(currentUser)}
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarFailed(true)}
+                />
+              ) : (
+                getAvatarInitials(currentUser)
+              )}
             </div>
             {isSidebarOpen && (
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-slate-800 truncate">
-                  {profile ? (profile.english_name ? `${profile.name} ${profile.english_name}` : profile.name) : '載入中...'}
+                <p className="text-xs font-bold text-slate-800 truncate">{getDisplayName(currentUser)}</p>
+                <p className="text-[10px] text-slate-400 truncate">
+                  {currentUser?.job_title ?? '載入中...'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">{profile?.job_title || '載入中...'}</p>
               </div>
             )}
           </div>
