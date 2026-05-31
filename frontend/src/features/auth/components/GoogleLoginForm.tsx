@@ -125,16 +125,21 @@ export default function GoogleLoginForm({
     (!clientId ? '尚未設定 VITE_GOOGLE_CLIENT_ID，請先設定 Google OAuth Client ID。' : null);
 
   return (
-    <section className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 className="mb-2 text-xl font-bold text-slate-900">登入</h1>
+    <section className="w-fit mx-auto rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 bg-[#0B2544] rounded-lg flex items-center justify-center shrink-0">
+          <div className="w-4 h-4 border-2 border-white rounded-sm"></div>
+        </div>
+        <h1 className="text-xl font-bold text-slate-900">歡迎使用績效管理系統</h1>
+      </div>
       <p className="mb-5 text-sm text-slate-500">
-        請使用 Google 帳號登入，系統會向後端交換可存取 PMS API 的授權 token。
+        請使用公司的 Google 帳號登入
       </p>
 
       <div
         ref={buttonContainerRef}
         aria-busy={disabled}
-        className={disabled ? 'pointer-events-none opacity-60' : undefined}
+        className={disabled ? 'w-[320px] pointer-events-none opacity-60' : 'w-[320px]'}
       />
 
       {disabled && <p className="mt-3 text-sm font-medium text-slate-600">登入中...</p>}
