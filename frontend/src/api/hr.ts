@@ -952,11 +952,25 @@ export function listAssessmentStatuses(
 }
 
 export function listAuditLogs(
-  query: { page?: number } = {},
+  query: {
+    page?: number;
+    page_size?: number;
+    action?: string;
+    resource?: string;
+    actor_id?: string;
+    from?: string;
+    to?: string;
+  } = {},
   options?: HrApiOptions,
 ): Promise<AuditLogListResponse> {
   const params = new URLSearchParams();
   if (query.page) params.set('page', String(query.page));
+  if (query.page_size) params.set('page_size', String(query.page_size));
+  if (query.action) params.set('action', query.action);
+  if (query.resource) params.set('resource', query.resource);
+  if (query.actor_id) params.set('actor_id', query.actor_id);
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
   const path = params.toString()
     ? `/hr/audit-logs?${params.toString()}`
     : '/hr/audit-logs';
