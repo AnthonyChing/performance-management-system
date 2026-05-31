@@ -2,11 +2,13 @@ export {
   ApiRequestError,
   createMyGoal,
   getMyCurrentGoals,
+  getMyHistoricalGoals,
   updateMyGoalProgress,
   type CurrentGoalsResponse,
   type EmployeeAvailableActions,
   type EmployeeGoal,
   type EmployeeGoalUpdateResult,
+  type EmployeePagination,
   type GoalCycleSummary,
   type GoalCreationRequest,
   type GoalCreationResponse,
@@ -17,5 +19,6 @@ export {
   type GoalReview,
   type GoalReviewer,
   type GoalSummary,
+  type HistoricalGoalsRequest,
+  type HistoricalGoalsResponse,
 } from '../../api/employee';
-export { HISTORY_GOALS_MOCK } from '../../shared/api/mockData';

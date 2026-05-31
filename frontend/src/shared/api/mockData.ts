@@ -189,23 +189,6 @@ export function addMockGoal(goal: Partial<ReviewItem>) {
   return newGoal;
 }
 
-import { Goal } from '../types';
-
-export const COMMON_MOCK_GOALS: Goal[] = [
-  { id: '1', title: '雲端架構遷移專案', status: '進行中', progress: 75, dueDate: '2025-10-14' },
-  { id: '2', title: 'Q3 內部技術培訓講師', status: '待審核', progress: 30, dueDate: '2025-10-14' },
-  { id: '3', title: '跨部門協作流程優化', status: '待處理', progress: 10, dueDate: '2025-10-14' },
-  { id: '4', title: '核心模組單元測試覆蓋率', status: '進行中', progress: 92, dueDate: '2025-10-14' },
-  { id: '5', title: '電商結帳頁面 UI/UX 改版', status: '進行中', progress: 50, dueDate: '2025-10-14' },
-];
-
-export const HISTORY_GOALS_MOCK = [
-  { id: 1, period: '2023 第四季度 (Q4) 年度終考', dates: '2023-10-01 至 2023-12-31', avgCompletion: 94.5, count: 10 },
-  { id: 2, period: '2023 第三季度 (Q3) 績效考核', dates: '2023-07-01 至 2023-09-30', avgCompletion: 88.2, count: 10 },
-  { id: 3, period: '2023 上半年 (H1) 策略考核', dates: '2023-01-01 至 2023-06-30', avgCompletion: 91.0, count: 8 },
-  { id: 4, period: '2022 第四季度 (Q4) 年度終考', dates: '2022-10-01 至 2022-12-31', avgCompletion: 85.4, count: 9 },
-];
-
 export const HISTORY_KPI_MOCK = [
   { id: 1, period: '2023 第四季度 (Q4) 年度終考', dates: '2023-10-01 至 2023-12-31', totalScore: 94.5, grade: 'A', gradeColor: 'bg-green-100 text-green-700' },
   { id: 2, period: '2023 第三季度 (Q3) 績效考核', dates: '2023-07-01 至 2023-09-30', totalScore: 88.2, grade: 'B+', gradeColor: 'bg-indigo-100 text-indigo-700' },

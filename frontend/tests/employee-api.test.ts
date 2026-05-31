@@ -8,6 +8,7 @@ import {
   getMyAppealResult,
   getMyAppeals,
   getMyCurrentGoals,
+  getMyHistoricalGoals,
   getMyKpiResult,
   getMyKpiStandards,
   getMyProfile,
@@ -319,6 +320,86 @@ const currentGoalsPayload = {
         can_edit: false,
         edit_unavailable_reason: 'invalid_goal_status',
         can_update_progress: true,
+      },
+    },
+  ],
+};
+
+const historicalCyclesPayload = {
+  mode: 'historical_cycles',
+  pagination: {
+    page: 1,
+    page_size: 10,
+    total_pages: 1,
+    total_count: 1,
+    has_previous: false,
+    has_next: false,
+  },
+  historical_cycles: [
+    {
+      cycle_id: 'cycle_2023_q4',
+      name: '2023 第四季度 (Q4) 年度終考',
+      period_label: '2023 第四季度 (Q4)',
+      review_type: '年度終考',
+      start_date: '2023-10-01',
+      end_date: '2023-12-31',
+      timezone: 'Asia/Taipei',
+      average_completion_percent: 94.5,
+      goal_count: 10,
+    },
+  ],
+};
+
+const historicalGoalsPayload = {
+  mode: 'historical_goals',
+  cycle: {
+    cycle_id: 'cycle_2025_annual',
+    name: '2025年度考核',
+    start_date: '2025-01-01',
+    end_date: '2025-12-31',
+    timezone: 'Asia/Taipei',
+    status: 'completed',
+  },
+  pagination: {
+    page: 1,
+    page_size: 10,
+    total_pages: 1,
+    total_count: 1,
+    has_previous: false,
+    has_next: false,
+  },
+  summary: {
+    average_completion_percent: 75,
+    goal_count: 1,
+    completed_count: 1,
+    cancelled_count: 0,
+  },
+  goals: [
+    {
+      goal_id: 'goal_h_001',
+      cycle_id: 'cycle_2025_annual',
+      goal_type: 'individual',
+      title: '雲端架構遷移專案',
+      description: '完成核心服務雲端遷移與部署流程優化。',
+      due_date: '2025-10-14',
+      status: 'completed',
+      progress_percent: 75,
+      latest_progress_update: {
+        progress_update_id: 'progress_h_001',
+        progress_percent: 75,
+        note: '核心服務已完成遷移。',
+        created_at: '2025-10-14T16:20:00+08:00',
+      },
+      latest_review: {
+        review_id: 'goal_review_h_001',
+        decision: 'approved',
+        comment: '完成主要遷移工作。',
+        reviewed_at: '2025-10-20T11:00:00+08:00',
+        reviewer: {
+          user_id: 'user_100',
+          name: '李曉芳',
+          title: 'Director',
+        },
       },
     },
   ],
@@ -744,6 +825,69 @@ describe('employee API client', () => {
         },
       }),
     );
+  });
+
+  it('GET /me/goals?status=historical returns historical goal cycles', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(historicalCyclesPayload)) satisfies Fetcher;
+
+    await expect(
+      getMyHistoricalGoals({ page: 1, page_size: 10 }, { fetcher }),
+    ).resolves.toEqual(historicalCyclesPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/goals?status=historical&page=1&page_size=10',
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+      }),
+    );
+  });
+
+  it('GET /me/goals?status=historical&cycle_id returns one cycle goals', async () => {
+    const fetcher = vi.fn(async () => jsonResponse(historicalGoalsPayload)) satisfies Fetcher;
+
+    await expect(
+      getMyHistoricalGoals(
+        {
+          page: 1,
+          page_size: 10,
+          cycle_id: 'cycle_2025_annual',
+        },
+        { fetcher },
+      ),
+    ).resolves.toEqual(historicalGoalsPayload);
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/v1/me/goals?status=historical&page=1&page_size=10&cycle_id=cycle_2025_annual',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('GET historical goals rejects invalid historical rows', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        ...historicalGoalsPayload,
+        goals: [
+          {
+            goal_id: 'goal_h_001',
+            title: '雲端架構遷移專案',
+            progress_percent: '75',
+          },
+        ],
+      }),
+    ) satisfies Fetcher;
+
+    await expect(
+      getMyHistoricalGoals(
+        {
+          page: 1,
+          cycle_id: 'cycle_2025_annual',
+        },
+        { fetcher },
+      ),
+    ).rejects.toBeInstanceOf(ApiResponseValidationError);
   });
 
   it('GET /me/appeals accepts an existing appeal result state', async () => {
