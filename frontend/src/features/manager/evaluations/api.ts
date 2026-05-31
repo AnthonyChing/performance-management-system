@@ -25,7 +25,7 @@ export {
   submitQuestionnaireEvaluation,
 };
 
-export async function loadManagerDataAsync(): Promise<{ teams: Team[]; members: TeamMember[] }> {
+export async function loadManagerEvaluationsDataAsync(): Promise<{ teams: Team[]; members: TeamMember[] }> {
   try {
     const res = await listMySubordinates();
     

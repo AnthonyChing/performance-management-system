@@ -5,7 +5,7 @@ import {
   ApiRequestError,
   createInitialKpiDrafts,
   createInitialQuestionnaireDraft,
-  loadManagerDataAsync,
+  loadManagerEvaluationsDataAsync,
   loadMemberEvaluationWorkspace,
   loadTeamEvaluationStatuses,
   submitKpiEvaluation,
@@ -41,7 +41,7 @@ export default function Evaluations() {
 
   useEffect(() => {
     let mounted = true;
-    loadManagerDataAsync().then(data => {
+    loadManagerEvaluationsDataAsync().then(data => {
       if (mounted) {
         setManagerData(data);
         setManagerDataLoaded(true);
