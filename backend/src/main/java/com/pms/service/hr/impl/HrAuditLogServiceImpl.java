@@ -33,12 +33,7 @@ public class HrAuditLogServiceImpl implements HrAuditLogService {
         String actorIdStr = actorId != null ? actorId.toString() : null;
         Page<AuditLog> logs =
                 auditLogRepo.findFiltered(
-                        action,
-                        resource,
-                        actorIdStr,
-                        from,
-                        to,
-                        PageRequest.of(page - 1, pageSize));
+                        action, resource, actorIdStr, from, to, PageRequest.of(page - 1, pageSize));
 
         java.util.List<UUID> actorIds =
                 logs.stream()
