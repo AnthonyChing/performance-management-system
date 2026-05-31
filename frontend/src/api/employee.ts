@@ -300,6 +300,31 @@ export interface CurrentGoalsResponse {
   goals: EmployeeGoal[];
 }
 
+export interface EmployeePagination {
+  page: number;
+  page_size: number;
+  total_pages: number;
+  total_count: number;
+  has_previous: boolean;
+  has_next: boolean;
+}
+
+export interface HistoricalGoalsResponse {
+  mode: 'historical_cycles' | 'historical_goals';
+  pagination: EmployeePagination;
+  historical_cycles?: GoalCycleSummary[];
+  cycle?: GoalCycleSummary;
+  summary?: GoalSummary | null;
+  goals?: EmployeeGoal[];
+}
+
+export interface HistoricalGoalsRequest {
+  page: number;
+  page_size?: number;
+  q?: string;
+  cycle_id?: string;
+}
+
 export interface GoalProgressUpdateRequest {
   progress_percent: number;
   note: string;
@@ -964,6 +989,46 @@ function isCurrentGoalsResponse(value: unknown): value is CurrentGoalsResponse {
   );
 }
 
+function isEmployeePagination(value: unknown): value is EmployeePagination {
+  return (
+    isRecord(value) &&
+    typeof value.page === 'number' &&
+    typeof value.page_size === 'number' &&
+    typeof value.total_pages === 'number' &&
+    typeof value.total_count === 'number' &&
+    typeof value.has_previous === 'boolean' &&
+    typeof value.has_next === 'boolean'
+  );
+}
+
+function isHistoricalGoalsResponse(value: unknown): value is HistoricalGoalsResponse {
+  if (!isRecord(value) || !isString(value.mode) || !isEmployeePagination(value.pagination)) {
+    return false;
+  }
+
+  if (value.mode === 'historical_cycles') {
+    return (
+      Array.isArray(value.historical_cycles) &&
+      value.historical_cycles.every(isGoalCycleSummary)
+    );
+  }
+
+  if (value.mode === 'historical_goals') {
+    return (
+      isGoalCycleSummary(value.cycle) &&
+      (
+        value.summary === undefined ||
+        value.summary === null ||
+        isGoalSummary(value.summary)
+      ) &&
+      Array.isArray(value.goals) &&
+      value.goals.every(isEmployeeGoal)
+    );
+  }
+
+  return false;
+}
+
 function isGoalProgressUpdateResponse(
   value: unknown,
 ): value is GoalProgressUpdateResponse {
@@ -1266,6 +1331,34 @@ export function getMyCurrentGoals(
   options?: EmployeeApiOptions,
 ): Promise<CurrentGoalsResponse> {
   return requestJson<CurrentGoalsResponse>('/me/goals', isCurrentGoalsResponse, options);
+}
+
+export function getMyHistoricalGoals(
+  params: HistoricalGoalsRequest,
+  options?: EmployeeApiOptions,
+): Promise<HistoricalGoalsResponse> {
+  const search = new URLSearchParams({
+    status: 'historical',
+    page: String(params.page),
+  });
+
+  if (params.page_size !== undefined) {
+    search.set('page_size', String(params.page_size));
+  }
+
+  if (params.q) {
+    search.set('q', params.q);
+  }
+
+  if (params.cycle_id) {
+    search.set('cycle_id', params.cycle_id);
+  }
+
+  return requestJson<HistoricalGoalsResponse>(
+    `/me/goals?${search.toString()}`,
+    isHistoricalGoalsResponse,
+    options,
+  );
 }
 
 export function createMyGoal(
