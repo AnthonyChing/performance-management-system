@@ -1,1 +1,1 @@
-export {};
+export type { AuditLogListResponse } from '../../../api/hr';

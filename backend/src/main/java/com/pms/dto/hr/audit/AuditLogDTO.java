@@ -10,6 +10,7 @@ import lombok.Getter;
 public class AuditLogDTO {
     private UUID id;
     private UUID actorId;
+    private String actorName;
     private String action;
     private String resource;
     private UUID resourceId;
