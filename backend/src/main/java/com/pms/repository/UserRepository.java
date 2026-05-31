@@ -14,6 +14,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
+    List<User> findByManagerId(UUID managerId);
+
     @Query(
             value =
                     """

@@ -3,7 +3,7 @@ import { getStoredAuthToken, toAuthorizationHeader } from '../features/auth/toke
 export const API_BASE_PATH = (import.meta.env.VITE_API_ORIGIN || '') + '/api/v1';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 
-type GoalStatus = 'pending_review' | 'in_progress' | 'revision_requested' | 'completed' | 'cancelled';
+export type GoalStatus = 'pending_review' | 'in_progress' | 'revision_requested' | 'completed' | 'cancelled';
 type KpiType = 'individual' | 'team';
 type AppealStatus =
   | 'submitted'
@@ -631,6 +631,39 @@ export function submitKpiEvaluation(
     'PATCH',
     isEvaluationHistoryItem,
     payload,
+    options,
+  );
+}
+
+export function listAllSubordinateGoals(
+  params: { cycle_id?: string; status?: GoalStatus } = {},
+  options?: ManagerApiOptions,
+): Promise<{ data: SubordinateGoal[] }> {
+  const query = new URLSearchParams();
+  if (params.cycle_id) query.set('cycle_id', params.cycle_id);
+  if (params.status) query.set('status', params.status);
+  const path = query.toString() ? `/manager/subordinates-goals?${query.toString()}` : `/manager/subordinates-goals`;
+  return requestJson(
+    path,
+    'GET',
+    (value: unknown): value is { data: SubordinateGoal[] } =>
+      isRecord(value) && Array.isArray(value.data) && value.data.every(isSubordinateGoal),
+    undefined,
+    options,
+  );
+}
+
+export function listMySubordinates(
+  options?: ManagerApiOptions,
+): Promise<{ data: Array<{ id: string; name: string; email: string; department: string; job_title: string }> }> {
+  return requestJson(
+    '/manager/subordinates',
+    'GET',
+    (value: unknown): value is { data: Array<{ id: string; name: string; email: string; department: string; job_title: string }> } =>
+      isRecord(value) && Array.isArray(value.data) && value.data.every(item =>
+        isRecord(item) && isString(item.id) && isString(item.name)
+      ),
+    undefined,
     options,
   );
 }

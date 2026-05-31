@@ -126,6 +126,32 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
         return goals.stream().map(ManagerGoalResponseDTO::from).toList();
     }
 
+    @Override
+    public List<ManagerGoalResponseDTO> listAllSubordinateGoals(
+            UUID managerId, String cycleId, String status) {
+        List<User> subordinates = userRepo.findByManagerId(managerId);
+        List<UUID> subordinateIds = subordinates.stream().map(User::getId).toList();
+        
+        if (subordinateIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Goal> goals;
+        if (cycleId != null) {
+            UUID cid = UUID.fromString(cycleId);
+            goals = goalRepo.findByCycleIdAndOwnerIdInAndDeletedAtIsNull(cid, subordinateIds);
+        } else {
+            PerformanceCycle cycle = getCurrentCycle();
+            goals = goalRepo.findByCycleIdAndOwnerIdInAndDeletedAtIsNull(cycle.getId(), subordinateIds);
+        }
+        
+        if (status != null) {
+            GoalStatus s = parseGoalStatus(status);
+            goals = goals.stream().filter(g -> g.getStatus() == s).toList();
+        }
+        return goals.stream().map(ManagerGoalResponseDTO::from).toList();
+    }
+
     private User assertDirectSubordinate(UUID managerId, UUID subordinateId) {
         User sub =
                 userRepo.findById(subordinateId)

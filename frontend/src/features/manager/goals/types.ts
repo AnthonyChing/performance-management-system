@@ -1,1 +1,1 @@
-export type { ReviewItem } from '../../../shared/api/mockData';
+export type { ReviewItem, TeamMember, Team } from '../../../shared/api/mockData';
