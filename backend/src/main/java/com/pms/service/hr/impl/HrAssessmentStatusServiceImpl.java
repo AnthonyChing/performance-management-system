@@ -68,7 +68,10 @@ public class HrAssessmentStatusServiceImpl implements HrAssessmentStatusService 
                             .employeeName(employee != null ? employee.getFullName() : null)
                             .department(dept != null ? dept.getName() : null)
                             .reviewStatus(review.getStatus().getDbValue())
-                            .finalRating(review.getFinalRating() != null ? review.getFinalRating().getDbValue() : null)
+                            .finalRating(
+                                    review.getFinalRating() != null
+                                            ? review.getFinalRating().getDbValue()
+                                            : null)
                             .build();
                 });
     }
