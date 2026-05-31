@@ -1,4 +1,4 @@
-const API_BASE_PATH = '/api/v1';
+import { API_BASE_PATH } from '../../api/config';
 const DEFAULT_REQUEST_CREDENTIALS: RequestCredentials = 'include';
 
 export interface GoogleAuthResponse {
