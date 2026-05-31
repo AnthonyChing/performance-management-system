@@ -109,6 +109,8 @@ public class HrCycleServiceImpl implements HrCycleService {
         cycle.setStatus(newStatus);
         if (newStatus == CycleStatus.LOCKED) {
             cycle.setIsLocked(true);
+        } else if (newStatus == CycleStatus.RESULTS_PUBLISHED) {
+            cycle.setResultsPublishedAt(java.time.OffsetDateTime.now());
         }
         cycleRepo.save(cycle);
         return CycleResponseDTO.from(cycle);
