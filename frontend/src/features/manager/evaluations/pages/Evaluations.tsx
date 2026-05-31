@@ -5,7 +5,7 @@ import {
   ApiRequestError,
   createInitialKpiDrafts,
   createInitialQuestionnaireDraft,
-  loadManagerData,
+  loadManagerDataAsync,
   loadMemberEvaluationWorkspace,
   loadTeamEvaluationStatuses,
   submitKpiEvaluation,
@@ -18,6 +18,7 @@ import type {
   RatingScale,
   TeamMemberEvaluationRow,
 } from '../types';
+import type { Team, TeamMember } from '../../../../shared/api/mockData';
 import EvaluationPhaseBanner from '../components/EvaluationPhaseBanner';
 import EvaluationsEmptyState from '../components/EvaluationsEmptyState';
 import KpiScoringForm from '../components/KpiScoringForm';
@@ -35,7 +36,20 @@ export default function Evaluations() {
   const initialTeam = searchParams.get('team') || 'all';
   const initialMember = searchParams.get('member');
 
-  const [managerData] = useState(() => loadManagerData());
+  const [managerData, setManagerData] = useState<{ teams: Team[]; members: TeamMember[] }>({ teams: [], members: [] });
+  const [managerDataLoaded, setManagerDataLoaded] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    loadManagerDataAsync().then(data => {
+      if (mounted) {
+        setManagerData(data);
+        setManagerDataLoaded(true);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
   const [teamFilter, setTeamFilter] = useState(initialTeam);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(initialMember);
@@ -142,8 +156,10 @@ export default function Evaluations() {
   }, [searchParams]);
 
   useEffect(() => {
-    void refreshStatuses();
-  }, [refreshStatuses]);
+    if (managerDataLoaded) {
+      void refreshStatuses();
+    }
+  }, [refreshStatuses, managerDataLoaded]);
 
   useEffect(() => {
     if (!selectedMemberId) {

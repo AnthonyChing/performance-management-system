@@ -4,8 +4,8 @@ import {
   listKpis,
   submitKpiEvaluation,
   submitQuestionnaireEvaluation,
+  listMySubordinates,
 } from '../../../api/manager';
-import { loadManagerData } from '../../../shared/api/mockData';
 import {
   buildQuestionnaireDraftFromResponses,
   deriveSubmissionStatus,
@@ -13,7 +13,7 @@ import {
   getManagerEvaluationLockReason,
   resolveEvaluationQuestions,
 } from '../../../shared/evaluation';
-import type { TeamMember } from '../../../shared/api/mockData';
+import type { Team, TeamMember } from '../../../shared/api/mockData';
 import type { EvaluationHistoryItem } from '../../../api/manager';
 import type { MemberEvaluationWorkspace, TeamMemberEvaluationRow } from './types';
 
@@ -23,8 +23,38 @@ export {
   listKpis,
   submitKpiEvaluation,
   submitQuestionnaireEvaluation,
-  loadManagerData,
 };
+
+export async function loadManagerDataAsync(): Promise<{ teams: Team[]; members: TeamMember[] }> {
+  try {
+    const res = await listMySubordinates();
+    
+    const members: TeamMember[] = res.data.map(sub => ({
+      id: sub.id,
+      name: sub.name,
+      teamId: sub.department || 'General',
+      role: sub.job_title || 'Employee',
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.name)}&background=random`,
+      email: sub.email,
+      progress: 0,
+      goalsCount: 0
+    }));
+
+    const teamIds = Array.from(new Set(members.map(m => m.teamId)));
+    const teams: Team[] = teamIds.map(tid => ({
+      id: tid,
+      name: tid,
+      manager: 'You',
+      memberCount: members.filter(m => m.teamId === tid).length,
+      avgProgress: 0
+    }));
+
+    return { teams, members };
+  } catch (error) {
+    console.error('Failed to load manager data', error);
+    return { teams: [], members: [] };
+  }
+}
 
 function pickCurrentEvaluation(evaluations: EvaluationHistoryItem[]): EvaluationHistoryItem | null {
   if (evaluations.length === 0) return null;
