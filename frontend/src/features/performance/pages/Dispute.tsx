@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle, CheckCircle2, FileText, X } from 'lucide-react';
+import { CheckCircle, CheckCircle2, FileText, X } from 'lucide-react';
 import {
   ApiRequestError,
   getMyAppeals,
@@ -36,6 +36,18 @@ function isUnauthorizedError(error: unknown) {
     error instanceof ApiRequestError &&
     error.status === 401 &&
     error.code === 'UNAUTHORIZED'
+  );
+}
+
+function isNoCurrentAppealDataError(error: unknown) {
+  return (
+    error instanceof ApiRequestError &&
+    error.status === 404 &&
+    (
+      error.code === 'CURRENT_APPEAL_PERIOD_NOT_FOUND' ||
+      error.code === 'REVIEW_NOT_FOUND' ||
+      error.code === 'CYCLE_NOT_FOUND'
+    )
   );
 }
 
@@ -123,6 +135,7 @@ export default function Dispute() {
   const [appealsData, setAppealsData] = useState<AppealsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
+  const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -140,6 +153,7 @@ export default function Dispute() {
 
         setAppealsData(response);
         setLoadErrorMessage(null);
+        setEmptyMessage(null);
         setView(response.current_appeal ? 'list' : requestedView);
       } catch (error) {
         if (!isMounted || isAbortError(error)) return;
@@ -150,7 +164,16 @@ export default function Dispute() {
           return;
         }
 
+        if (isNoCurrentAppealDataError(error)) {
+          setAppealsData(null);
+          setLoadErrorMessage(null);
+          setEmptyMessage('目前沒有可提出績效異議的考核資料。');
+          setView('list');
+          return;
+        }
+
         setLoadErrorMessage(getApiErrorMessage(error));
+        setEmptyMessage(null);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -235,6 +258,9 @@ export default function Dispute() {
       }
 
       setSubmitErrorMessage(getApiErrorMessage(error));
+      if (isNoCurrentAppealDataError(error)) {
+        setSubmitErrorMessage('目前沒有可提出績效異議的考核資料。');
+      }
       setIsModalOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -245,7 +271,7 @@ export default function Dispute() {
     <div className="w-full max-w-4xl">
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-          績效異議處理 (Performance Dispute Handling)
+          績效異議處理
         </h1>
         {view === 'list' && !currentAppeal && (
           <button
@@ -261,6 +287,10 @@ export default function Dispute() {
       {isLoading ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
           載入績效異議資料中...
+        </div>
+      ) : emptyMessage && !appealsData ? (
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
+          {emptyMessage}
         </div>
       ) : loadErrorMessage || !appealsData ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
@@ -326,16 +356,11 @@ export default function Dispute() {
       ) : currentAppeal ? (
         <AppealResultPanel appeal={currentAppeal} appealsData={appealsData} />
       ) : (
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 text-slate-500" />
-            <div>
-              <div className="font-semibold text-slate-800">目前尚未提出本期績效異議。</div>
-              <div className="mt-2 text-sm text-slate-500">
-                {unavailableMessage ?? `申訴績效期間：${formatPeriod(null, appealsData)}`}
-              </div>
-            </div>
-          </div>
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
+          <p>目前尚未提出本期績效異議。</p>
+          {unavailableMessage && (
+            <p className="mt-2">{unavailableMessage}</p>
+          )}
         </div>
       )}
 

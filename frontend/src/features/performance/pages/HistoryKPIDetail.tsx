@@ -165,23 +165,21 @@ export default function HistoryKPIDetail() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-0 overflow-hidden">
-        {activeTab === 'standards' && (
-          <CurrentKpiStandardsContent
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-            standards={standards}
-          />
-        )}
+      {activeTab === 'standards' && (
+        <CurrentKpiStandardsContent
+          isLoading={isLoading}
+          errorMessage={errorMessage}
+          standards={standards}
+        />
+      )}
 
-        {activeTab === 'results' && (
-          <HistoryKpiResultsContent
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-            result={result}
-          />
-        )}
-      </div>
+      {activeTab === 'results' && (
+        <HistoryKpiResultsContent
+          isLoading={isLoading}
+          errorMessage={errorMessage}
+          result={result}
+        />
+      )}
     </div>
   );
 }
@@ -196,21 +194,26 @@ export function HistoryKpiResultsContent({
   result: KpiResultSummary | null;
 }) {
   if (isLoading) {
-    return <div className="p-6 text-sm text-slate-500">載入歷史 KPI 考核結果中...</div>;
+    return <div className="text-sm text-slate-500">載入歷史 KPI 考核結果中...</div>;
   }
 
   if (errorMessage) {
-    return <div className="p-6 text-sm text-red-700">{errorMessage}</div>;
+    return <div className="text-sm text-red-700">{errorMessage}</div>;
   }
 
   if (!result) {
-    return <div className="p-6 text-sm text-slate-500">目前沒有可顯示的歷史 KPI 考核結果。</div>;
+    return (
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
+        目前沒有可顯示的歷史 KPI 考核結果。
+      </div>
+    );
   }
 
   const scoreSummary = result.score_summary;
   const kpiResults = result.kpi_results ?? [];
 
   return (
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
     <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <ResultSummaryCard
@@ -300,6 +303,7 @@ export function HistoryKpiResultsContent({
           此考核週期的評估結果已正式入檔且不可更改。
         </div>
       </div>
+    </div>
     </div>
   );
 }

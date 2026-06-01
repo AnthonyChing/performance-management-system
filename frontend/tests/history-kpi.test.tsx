@@ -209,7 +209,8 @@ describe('employee historical KPI pages', () => {
 
     expect(await screen.findByText('核心產品開發進度')).toBeInTheDocument();
     expect(screen.getByText('準時完成 Q4 路線圖中的核心模組。')).toBeInTheDocument();
-    expect(screen.getByText('通過率 >= 95%')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '目標值' })).not.toBeInTheDocument();
+    expect(screen.queryByText('通過率 >= 95%')).not.toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledWith(
       '/api/v1/me/kpis/result?status=historical&page=1&pageSize=100&cycleId=cycle_2024_q4',
       expect.objectContaining({

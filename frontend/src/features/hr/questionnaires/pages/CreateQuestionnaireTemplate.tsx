@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Info, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Info, Loader2 } from 'lucide-react';
 import {
   createAssessmentTemplate,
   createAssessmentTemplateQuestion,
@@ -101,12 +101,6 @@ export default function CreateQuestionnaireTemplate() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          <AlertCircle className="w-4 h-4 shrink-0" />{error}
-        </div>
-      )}
-
       <TemplateMetaForm
         name={name}
         setName={setName}
@@ -142,6 +136,11 @@ export default function CreateQuestionnaireTemplate() {
             onEdit={(q) => { setEditingQ(q as QuestionDraft); setIsModalOpen(true); }}
             onDelete={(q) => handleDeleteQuestion(q as QuestionDraft)}
           />
+        )}
+        {error && (
+          <div className="mx-4 mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {error}
+          </div>
         )}
         <div className="p-4 bg-white border-t border-slate-200 flex justify-between items-center bg-slate-50">
           <div className="text-sm font-medium text-slate-600">

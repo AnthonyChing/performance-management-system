@@ -91,6 +91,29 @@ describe('CurrentGoals', () => {
     );
   });
 
+  it('renders an empty state when the current cycle is missing', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        error: {
+          code: 'CYCLE_NOT_FOUND',
+          message: 'No current performance cycle found',
+        },
+      }, { status: 404 }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    localStorage.setItem('token', 'dev-jwt-token');
+
+    render(
+      <MemoryRouter initialEntries={['/goals/current']}>
+        <CurrentGoals />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('目前沒有可顯示的考核週期。')).toBeInTheDocument();
+    expect(screen.queryByText('No current performance cycle found')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '新增目標' })).toBeDisabled();
+  });
+
   it('renders loading, empty, and error states without mock rows', () => {
     const { rerender } = render(
       <MemoryRouter>

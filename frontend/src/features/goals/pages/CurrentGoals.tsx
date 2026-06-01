@@ -29,6 +29,14 @@ function isUnauthorizedError(error: unknown) {
   );
 }
 
+function isNoCurrentCycleError(error: unknown) {
+  return (
+    error instanceof ApiRequestError &&
+    error.status === 404 &&
+    (error.code === 'CYCLE_NOT_FOUND' || error.code === 'CURRENT_CYCLE_NOT_FOUND')
+  );
+}
+
 function getApiErrorMessage(error: unknown) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
@@ -86,6 +94,7 @@ export default function CurrentGoals() {
   const [goalsData, setGoalsData] = useState<CurrentGoalsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -98,6 +107,7 @@ export default function CurrentGoals() {
         if (!isMounted) return;
         setGoalsData(response);
         setErrorMessage(null);
+        setEmptyMessage(null);
       } catch (error) {
         if (!isMounted || isAbortError(error)) return;
 
@@ -107,7 +117,15 @@ export default function CurrentGoals() {
           return;
         }
 
+        if (isNoCurrentCycleError(error)) {
+          setGoalsData(null);
+          setErrorMessage(null);
+          setEmptyMessage('目前沒有可顯示的考核週期。');
+          return;
+        }
+
         setErrorMessage(getApiErrorMessage(error));
+        setEmptyMessage(null);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -123,7 +141,7 @@ export default function CurrentGoals() {
     };
   }, [location.pathname, location.search, navigate]);
 
-  const canCreateGoal = goalsData?.available_actions?.can_create_goal !== false;
+  const canCreateGoal = !emptyMessage && goalsData?.available_actions?.can_create_goal !== false;
 
   return (
     <div className="w-full">
@@ -156,6 +174,7 @@ export default function CurrentGoals() {
       <CurrentGoalsContent
         isLoading={isLoading}
         errorMessage={errorMessage}
+        emptyMessage={emptyMessage}
         goals={goalsData?.goals ?? []}
       />
     </div>
@@ -165,10 +184,12 @@ export default function CurrentGoals() {
 export function CurrentGoalsContent({
   isLoading,
   errorMessage,
+  emptyMessage,
   goals,
 }: {
   isLoading: boolean;
   errorMessage: string | null;
+  emptyMessage?: string | null;
   goals: EmployeeGoal[];
 }) {
   if (isLoading) {
@@ -182,7 +203,7 @@ export function CurrentGoalsContent({
   if (goals.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
-        目前尚未建立本期目標。
+        {emptyMessage ?? '目前尚未建立本期目標。'}
       </div>
     );
   }

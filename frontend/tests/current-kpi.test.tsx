@@ -153,6 +153,32 @@ describe('CurrentKpiStandardsContent', () => {
     expect(await screen.findByText('94.5')).toBeInTheDocument();
   });
 
+  it('renders empty KPI states when the current KPI cycle is missing', async () => {
+    const fetcher = vi.fn(async () =>
+      jsonResponse({
+        error: {
+          code: 'CURRENT_KPI_CYCLE_NOT_FOUND',
+          message: 'No current KPI cycle found',
+        },
+      }, { status: 404 }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    localStorage.setItem('token', 'dev-jwt-token');
+
+    render(
+      <MemoryRouter initialEntries={['/performance/current']}>
+        <CurrentKPI />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('目前尚未設定 KPI 標準。')).toBeInTheDocument();
+    expect(screen.queryByText('No current KPI cycle found')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '考核結果' }));
+    expect(await screen.findByText('目前沒有可顯示的 KPI 考核結果。')).toBeInTheDocument();
+    expect(screen.queryByText('No current KPI cycle found')).not.toBeInTheDocument();
+  });
+
   it('renders KPI standards from backend-shaped data', () => {
     render(
       <CurrentKpiStandardsContent
@@ -165,8 +191,9 @@ describe('CurrentKpiStandardsContent', () => {
     expect(screen.getByText('核心產品開發進度')).toBeInTheDocument();
     expect(screen.getByText('準時完成 Q3 路線圖中的 A、B 模組。')).toBeInTheDocument();
     expect(screen.getByText('40%')).toBeInTheDocument();
-    expect(screen.getByText('通過率 >= 95%')).toBeInTheDocument();
-    expect(screen.getByText('gte 2 times')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: '目標值' })).not.toBeInTheDocument();
+    expect(screen.queryByText('通過率 >= 95%')).not.toBeInTheDocument();
+    expect(screen.queryByText('gte 2 times')).not.toBeInTheDocument();
   });
 
   it('renders loading, empty, and error states without mock rows', () => {

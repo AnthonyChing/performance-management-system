@@ -76,7 +76,7 @@ describe('ProfileView rendering', () => {
     expect(screen.getByText('員工編號: #PP-88293')).toBeInTheDocument();
     expect(screen.getByText('資深軟體工程師')).toBeInTheDocument();
     expect(screen.getByText('技術研發部')).toBeInTheDocument();
-    expect(screen.getByText('台北總部')).toBeInTheDocument();
+    expect(screen.queryByText('台北總部')).not.toBeInTheDocument();
     expect(screen.getByText('david.chen@performanceplus.com')).toBeInTheDocument();
     expect(screen.getByText('DC')).toBeInTheDocument();
     expect(screen.getByText('已公佈考核結果')).toBeInTheDocument();

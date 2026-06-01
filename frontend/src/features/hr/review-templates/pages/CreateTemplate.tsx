@@ -263,12 +263,6 @@ export default function CreateTemplate() {
         </div>
       </div>
 
-      {submitError ? (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {submitError}
-        </div>
-      ) : null}
-
       {step === 1 ? (
         <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="p-8">
@@ -332,6 +326,12 @@ export default function CreateTemplate() {
               </div>
             </div>
           </div>
+
+          {submitError ? (
+            <div className="mx-8 mb-6 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {submitError}
+            </div>
+          ) : null}
 
           <div className="flex items-center justify-between rounded-b-lg border-t border-slate-200 bg-slate-50 p-6">
             <button
@@ -503,6 +503,12 @@ export default function CreateTemplate() {
             )}
           </div>
 
+          {submitError ? (
+            <div className="mx-8 mb-6 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {submitError}
+            </div>
+          ) : null}
+
           <div className="flex items-center justify-between rounded-b-lg border-t border-slate-200 bg-slate-50 p-6">
             <button
               type="button"
@@ -588,6 +594,12 @@ export default function CreateTemplate() {
               </div>
             </div>
           </div>
+
+          {submitError ? (
+            <div className="mx-8 mb-6 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {submitError}
+            </div>
+          ) : null}
 
           <div className="flex items-center justify-between rounded-b-lg border-t border-slate-200 bg-slate-50 p-6">
             <button
