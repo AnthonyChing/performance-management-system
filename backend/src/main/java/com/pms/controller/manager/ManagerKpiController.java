@@ -50,8 +50,7 @@ public class ManagerKpiController {
     }
 
     @DeleteMapping("/{kpiId}")
-    public ResponseEntity<Void> deleteKpi(
-            @PathVariable UUID userId, @PathVariable UUID kpiId) {
+    public ResponseEntity<Void> deleteKpi(@PathVariable UUID userId, @PathVariable UUID kpiId) {
         kpiService.deleteKpi(SecurityUtils.currentUserId(), userId, kpiId);
         return ResponseEntity.noContent().build();
     }
