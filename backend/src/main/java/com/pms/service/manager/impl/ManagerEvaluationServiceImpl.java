@@ -14,6 +14,7 @@ import com.pms.entity.EvaluationTemplateComponent;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
+import com.pms.entity.TemplateVersion;
 import com.pms.entity.User;
 import com.pms.entity.enums.RatingScale;
 import com.pms.entity.enums.ReviewStatus;
@@ -388,10 +389,24 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
 
                 List<com.pms.entity.TemplateQuestion> allQuestions = new java.util.ArrayList<>();
                 for (EvaluationTemplateComponent comp : components) {
+                    UUID resolvedTemplateId = comp.getAssessmentTemplateId();
+                    TemplateVersion version =
+                            templateVersionRepo.findById(comp.getAssessmentTemplateVersionId())
+                                    .orElse(null);
+                    if (version != null) {
+                        resolvedTemplateId = version.getTemplateId();
+                    }
                     List<com.pms.entity.TemplateQuestion> compQuestions =
                             templateQuestionRepo
                                     .findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
-                                            comp.getAssessmentTemplateId());
+                                            resolvedTemplateId);
+                    if (compQuestions.isEmpty()
+                            && !resolvedTemplateId.equals(comp.getAssessmentTemplateId())) {
+                        compQuestions =
+                                templateQuestionRepo
+                                        .findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                                                comp.getAssessmentTemplateId());
+                    }
                     allQuestions.addAll(compQuestions);
                 }
 
