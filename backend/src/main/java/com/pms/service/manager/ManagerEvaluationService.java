@@ -16,6 +16,9 @@ public interface ManagerEvaluationService {
             UUID evaluationId,
             ManagerEvaluationUpdateRequestDTO request);
 
+    ManagerQuestionnaireResponseDTO getQuestionnaire(
+            UUID managerId, UUID subordinateId, UUID evaluationId);
+
     ManagerQuestionnaireResponseDTO updateQuestionnaire(
             UUID managerId,
             UUID subordinateId,
