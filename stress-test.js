@@ -16,15 +16,15 @@ export const options = {
         { target: 300,  duration: '2m' },
         { target: 500,  duration: '2m' },
         { target: 800,  duration: '2m' },
-        { target: 1000, duration: '2m' }, // CI 預期目標
-        { target: 1200, duration: '2m' }, // 超載區
-        { target: 1500, duration: '2m' }, // 找崩潰點
+        { target: 1000, duration: '2m' }, // CI ?��??��?
+        { target: 1200, duration: '2m' }, // 超�??�
+        { target: 1500, duration: '2m' }, // ?�崩潰�?
         { target: 0,    duration: '5m' },
       ],
       exec: 'employeeFlow',
     },
   },
-  // Stress Test 不設 threshold，目的是觀察，不是通過/失敗
+  // Stress Test 不設 threshold，目?�是觀察�?不是?��?/失�?
 };
 
 const BASE_URL = __ENV.BASE_URL || 'https://backend-staging-1078971769535.asia-east1.run.app';
@@ -36,13 +36,13 @@ function getHeaders(token) {
   };
 }
 
-// 產生隨機的 Employee Email (3001 ~ 30000)
+// ?��??��???Employee Email (3001 ~ 30000)
 function getRandomEmployeeEmail() {
   const id = Math.floor(Math.random() * 27000) + 3001;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;
 }
 
-// 產生隨機的 Manager Email (3 ~ 3000)
+// ?��??��???Manager Email (3 ~ 3000)
 function getRandomManagerEmail() {
   const id = Math.floor(Math.random() * 2998) + 3;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;
@@ -139,4 +139,15 @@ export function hrFlow() {
     `${BASE_URL}/api/v1/hr/performance-cycles`,
     { headers: getHeaders(token), tags: { endpoint: 'read' } }
   );
+}
+
+
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+
+export function handleSummary(data) {
+  return {
+    "summary.html": htmlReport(data),
+    stdout: textSummary(data, { indent: " ", enableColors: true }),
+  };
 }
