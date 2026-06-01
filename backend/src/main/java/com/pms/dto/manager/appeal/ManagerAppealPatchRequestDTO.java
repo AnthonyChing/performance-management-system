@@ -11,4 +11,6 @@ import lombok.Setter;
 public class ManagerAppealPatchRequestDTO {
     @NotBlank private String responseText;
     private Boolean isFinal;
+    /** "approved" or "rejected" — required when isFinal is true */
+    private String outcome;
 }

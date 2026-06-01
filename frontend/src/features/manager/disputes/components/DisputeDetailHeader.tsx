@@ -23,7 +23,7 @@ export default function DisputeDetailHeader({ appeal }: DisputeDetailHeaderProps
     <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
       <div className="flex items-start gap-4">
         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-100 to-slate-200 flex items-center justify-center text-xl font-bold text-indigo-700 shrink-0">
-          {appeal.filed_by ? appeal.filed_by.substring(0, 2) : '?'}
+          {appeal.filed_by_name ? appeal.filed_by_name.substring(0, 2) : '?'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
@@ -33,8 +33,8 @@ export default function DisputeDetailHeader({ appeal }: DisputeDetailHeaderProps
             <DisputeStatusBadge status={appeal.status} size="md" />
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            申覆人：{appeal.filed_by} ·
-            指派給：{appeal.assigned_to} ({appeal.assigned_to_type})
+            申覆人：{appeal.filed_by_name} ·
+            指派給：{appeal.assigned_to_name} ({appeal.assigned_to_type})
           </p>
           <div className="flex items-center gap-4 mt-2 text-xs text-slate-400 font-mono">
             <span className="flex items-center gap-1">

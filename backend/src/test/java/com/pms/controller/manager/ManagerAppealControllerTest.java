@@ -198,12 +198,13 @@ class ManagerAppealControllerTest {
 
     @Test
     @Order(11)
-    void respondToAppeal_withFinalResponse_resolvesAppeal() {
+    void respondToAppeal_withFinalRejection_resolvesAppealAsRejected() {
         String body =
                 """
                 {
-                  "response_text": "經核對附檔確認，Q2 專案表現確有貢獻。已同步更新評分表內容。",
-                  "is_final": true
+                  "response_text": "評分依據充分，異議不成立。",
+                  "is_final": true,
+                  "outcome": "rejected"
                 }
                 """;
 
@@ -214,6 +215,7 @@ class ManagerAppealControllerTest {
                 .then()
                 .statusCode(200)
                 .body("id", equalTo(APPEAL_ID))
+                .body("status", equalTo("rejected"))
                 .body("resolved_at", notNullValue())
                 .body("responses.is_final", hasItem(true));
     }
@@ -236,5 +238,34 @@ class ManagerAppealControllerTest {
                 .then()
                 .statusCode(409)
                 .body("error.code", equalTo("STATE_CONFLICT"));
+    }
+
+    @Test
+    @Order(13)
+    void respondToAppeal_withFinalApproval_resolvesAppealAsApproved() {
+        jdbc.execute(
+                "UPDATE appeals SET status = 'submitted', resolved_at = NULL WHERE id = '"
+                        + APPEAL_ID + "'");
+        jdbc.execute("DELETE FROM appeal_responses WHERE appeal_id = '" + APPEAL_ID + "'");
+
+        String body =
+                """
+                {
+                  "response_text": "經核對附檔確認，Q2 專案表現確有貢獻。已同步更新評分表內容。",
+                  "is_final": true,
+                  "outcome": "approved"
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .patch("/" + TEAM_ID + "/appeals/" + APPEAL_ID)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(APPEAL_ID))
+                .body("status", equalTo("approved"))
+                .body("resolved_at", notNullValue())
+                .body("responses.is_final", hasItem(true));
     }
 }

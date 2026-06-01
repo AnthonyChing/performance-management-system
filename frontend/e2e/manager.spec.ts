@@ -316,8 +316,10 @@ test.describe('Manager Module (detailed API-aligned tests)', () => {
           review_id: 'rev-1',
           case_no: 'CASE-001',
           filed_by: 'm2',
+          filed_by_name: '王小明',
           assigned_to_type: 'senior_manager',
           assigned_to: 'mgr-2',
+          assigned_to_name: '李主管',
           reason: '分數不合理',
           status: 'submitted',
           filed_at: '2026-05-24T09:12:05+08:00',
@@ -335,7 +337,21 @@ test.describe('Manager Module (detailed API-aligned tests)', () => {
 
       await page.route('**/api/v1/teams/team-1/appeals/a1', async route => {
         if (route.request().method() === 'PATCH') {
-          await route.fulfill({ status: 200, json: { id: 'a1', status: 'approved', resolved_at: '2026-05-30T10:00:00+08:00' } });
+          await route.fulfill({ status: 200, json: {
+            id: 'a1',
+            review_id: 'rev-1',
+            case_no: 'CASE-001',
+            filed_by: 'm2',
+            filed_by_name: '王小明',
+            assigned_to_type: 'senior_manager',
+            assigned_to: 'mgr-2',
+            assigned_to_name: '李主管',
+            reason: '分數不合理',
+            status: 'approved',
+            filed_at: '2026-05-24T09:12:05+08:00',
+            resolved_at: '2026-05-30T10:00:00+08:00',
+            responses: [],
+          } });
         }
       });
 

@@ -8,7 +8,7 @@ interface DisputeResponseFormProps {
   statusLabel: string;
   /** Whether submission is in progress */
   isSubmitting: boolean;
-  onSubmit: (responseText: string, isFinal: boolean) => void;
+  onSubmit: (responseText: string, isFinal: boolean, outcome?: 'approved' | 'rejected') => void;
 }
 
 export default function DisputeResponseForm({
@@ -28,14 +28,14 @@ export default function DisputeResponseForm({
 
   const handleApprove = () => {
     if (!responseText.trim()) return;
-    onSubmit(responseText, true);
+    onSubmit(responseText, true, 'approved');
     setResponseText('');
     setIsFinal(false);
   };
 
   const handleReject = () => {
     if (!responseText.trim()) return;
-    onSubmit(responseText, true);
+    onSubmit(responseText, true, 'rejected');
     setResponseText('');
     setIsFinal(false);
   };
