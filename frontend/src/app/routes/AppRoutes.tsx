@@ -38,9 +38,11 @@ import ManagerEvaluations from '../../features/manager/evaluations/pages/Evaluat
 import ManagerHistory from '../../features/manager/history/pages/History';
 import ManagerDispute from '../../features/manager/disputes/pages/Dispute';
 
+import { getUserRole } from '../../features/auth';
+
 function RequireRole({ allowedRoles }: { allowedRoles: string[] }) {
   const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+  const role = getUserRole();
 
   if (!token) {
     return <Navigate to="/login" replace />;
