@@ -389,19 +389,13 @@ export default function KpiCriteria() {
           description={formDescription}
           kpiType={formKpiType}
           unit={formUnit}
-          targetOperator={formTargetOperator}
           targetValue={formTargetValue}
-          targetUnit={formTargetUnit}
-          targetDisplayText={formTargetDisplayText}
           weight={formWeight}
           onTitleChange={setFormTitle}
           onDescriptionChange={setFormDescription}
           onKpiTypeChange={setFormKpiType}
           onUnitChange={setFormUnit}
-          onTargetOperatorChange={setFormTargetOperator}
           onTargetValueChange={setFormTargetValue}
-          onTargetUnitChange={setFormTargetUnit}
-          onTargetDisplayTextChange={setFormTargetDisplayText}
           onWeightChange={setFormWeight}
           onSubmit={handleSubmit}
           onClose={() => {

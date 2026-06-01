@@ -20,7 +20,7 @@ function operatorLabel(op: string | null): string {
 }
 
 export default function KpiCriterionCard({ kpi, employeeName, onEdit, onDelete }: KpiCriterionCardProps) {
-  const hasTarget = kpi.targetValue !== null || kpi.targetDisplayText;
+  const hasTarget = kpi.targetValue !== null;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 group">
@@ -61,22 +61,14 @@ export default function KpiCriterionCard({ kpi, employeeName, onEdit, onDelete }
             <Target className="w-3 h-3" />
             衡量準則
           </div>
-          {kpi.targetDisplayText ? (
-            <div className="text-sm font-semibold text-slate-700">{kpi.targetDisplayText}</div>
-          ) : (
-            <div className="flex items-baseline gap-1.5">
-              {kpi.targetOperator && (
-                <span className="text-indigo-600 font-bold text-sm">{operatorLabel(kpi.targetOperator)}</span>
-              )}
-              {kpi.targetValue !== null && (
-                <span className="text-slate-800 font-bold text-lg font-mono">{kpi.targetValue}</span>
-              )}
-              {(kpi.targetUnit || kpi.unit) && (
-                <span className="text-slate-500 text-xs font-medium">{kpi.targetUnit || kpi.unit}</span>
-              )}
-            </div>
-          )}
-
+          <div className="flex items-baseline gap-1.5">
+            {kpi.targetValue !== null && (
+              <span className="text-slate-800 font-bold text-lg font-mono">{kpi.targetValue}</span>
+            )}
+            {kpi.unit && (
+              <span className="text-slate-500 text-xs font-medium">{kpi.unit}</span>
+            )}
+          </div>
           {/* Current progress */}
           {kpi.currentValue !== null && (
             <div className="mt-2 pt-2 border-t border-indigo-100/60">
@@ -84,8 +76,8 @@ export default function KpiCriterionCard({ kpi, employeeName, onEdit, onDelete }
                 <span className="text-slate-500">目前數值</span>
                 <span className="font-bold font-mono text-slate-700">
                   {kpi.currentValue}
-                  {(kpi.targetUnit || kpi.unit) && (
-                    <span className="text-slate-400 font-normal ml-0.5">{kpi.targetUnit || kpi.unit}</span>
+                  {kpi.unit && (
+                    <span className="text-slate-400 font-normal ml-0.5">{kpi.unit}</span>
                   )}
                 </span>
               </div>

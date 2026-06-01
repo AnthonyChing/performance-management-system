@@ -10,19 +10,13 @@ interface CreateKpiModalProps {
   description: string;
   kpiType: 'individual' | 'team';
   unit: string;
-  targetOperator: string;
   targetValue: string;
-  targetUnit: string;
-  targetDisplayText: string;
   weight: string;
   onTitleChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onKpiTypeChange: (v: 'individual' | 'team') => void;
   onUnitChange: (v: string) => void;
-  onTargetOperatorChange: (v: string) => void;
   onTargetValueChange: (v: string) => void;
-  onTargetUnitChange: (v: string) => void;
-  onTargetDisplayTextChange: (v: string) => void;
   onWeightChange: (v: string) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
@@ -37,19 +31,13 @@ export default function CreateKpiModal({
   description,
   kpiType,
   unit,
-  targetOperator,
   targetValue,
-  targetUnit,
-  targetDisplayText,
   weight,
   onTitleChange,
   onDescriptionChange,
   onKpiTypeChange,
   onUnitChange,
-  onTargetOperatorChange,
   onTargetValueChange,
-  onTargetUnitChange,
-  onTargetDisplayTextChange,
   onWeightChange,
   onSubmit,
   onClose,
@@ -171,23 +159,6 @@ export default function CreateKpiModal({
             </h4>
 
             <div className="grid grid-cols-2 gap-3">
-              {/* Target Operator */}
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">衡量運算子</label>
-                <select
-                  value={targetOperator}
-                  onChange={(e) => onTargetOperatorChange(e.target.value)}
-                  className="w-full bg-white text-xs text-slate-700 rounded-lg px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
-                >
-                  <option value="">選擇...</option>
-                  <option value=">=">≥ 大於或等於</option>
-                  <option value="<=">≤ 小於或等於</option>
-                  <option value=">">＞ 大於</option>
-                  <option value="<">＜ 小於</option>
-                  <option value="=">＝ 等於</option>
-                </select>
-              </div>
-
               {/* Target Value */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 mb-1 block">目標數值</label>
@@ -201,9 +172,7 @@ export default function CreateKpiModal({
                   className="w-full bg-white text-xs text-slate-700 rounded-lg px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
               {/* Unit */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 mb-1 block">衡量單位</label>
@@ -215,30 +184,6 @@ export default function CreateKpiModal({
                   className="w-full bg-white text-xs text-slate-700 rounded-lg px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
                 />
               </div>
-
-              {/* Target Unit */}
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">目標單位</label>
-                <input
-                  type="text"
-                  placeholder="如: %、次、筆"
-                  value={targetUnit}
-                  onChange={(e) => onTargetUnitChange(e.target.value)}
-                  className="w-full bg-white text-xs text-slate-700 rounded-lg px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
-                />
-              </div>
-            </div>
-
-            {/* Target Display Text */}
-            <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">目標顯示文字</label>
-              <input
-                type="text"
-                placeholder="如：「客戶滿意度 ≥ 95%」"
-                value={targetDisplayText}
-                onChange={(e) => onTargetDisplayTextChange(e.target.value)}
-                className="w-full bg-white text-xs text-slate-700 rounded-lg px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
-              />
             </div>
           </div>
 
