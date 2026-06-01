@@ -117,7 +117,7 @@ export async function loadManagerOverviewDataAsync(): Promise<{
         id: a.id,
         memberId: a.filed_by,
         memberName: a.filed_by_name || '未知同仁',
-        teamId: owner?.department || 'General',
+        teamId: subordinates.find(s => s.id === a.filed_by)?.department || 'General',
         period: '目前考核週期',
         kpiName: a.reason,
         originalScore: 0,

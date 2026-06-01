@@ -23,11 +23,17 @@ public class ManagerAppealDetailDTO {
     private String reason;
     private String status;
     private OffsetDateTime filedAt;
+
     @JsonInclude(JsonInclude.Include.ALWAYS)
     private OffsetDateTime resolvedAt;
+
     private List<ManagerAppealResponseItemDTO> responses;
 
-    public static ManagerAppealDetailDTO from(Appeal a, List<AppealResponse> responses, String filedByName, String assignedToName) {
+    public static ManagerAppealDetailDTO from(
+            Appeal a,
+            List<AppealResponse> responses,
+            String filedByName,
+            String assignedToName) {
         return ManagerAppealDetailDTO.builder()
                 .id(a.getId())
                 .reviewId(a.getReviewId())

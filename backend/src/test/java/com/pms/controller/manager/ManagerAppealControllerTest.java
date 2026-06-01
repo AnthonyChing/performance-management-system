@@ -245,7 +245,8 @@ class ManagerAppealControllerTest {
     void respondToAppeal_withFinalApproval_resolvesAppealAsApproved() {
         jdbc.execute(
                 "UPDATE appeals SET status = 'submitted', resolved_at = NULL WHERE id = '"
-                        + APPEAL_ID + "'");
+                        + APPEAL_ID
+                        + "'");
         jdbc.execute("DELETE FROM appeal_responses WHERE appeal_id = '" + APPEAL_ID + "'");
 
         String body =
