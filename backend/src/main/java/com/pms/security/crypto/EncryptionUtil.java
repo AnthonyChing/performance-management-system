@@ -1,10 +1,10 @@
 package com.pms.security.crypto;
 
-import jakarta.annotation.PostConstruct;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
@@ -22,16 +22,12 @@ public class EncryptionUtil {
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
 
-    private static String secretKeyString;
-    private static SecretKey secretKey;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final AtomicReference<SecretKey> secretKeyRef = new AtomicReference<>();
 
     @Value("${pms.crypto.secret:default-insecure-secret-key-min-32-chars!}")
     public void setSecretKeyString(String secret) {
-        EncryptionUtil.secretKeyString = secret;
-    }
-
-    @PostConstruct
-    public void init() {
+        String secretKeyString = secret;
         if (secretKeyString == null || secretKeyString.length() < 32) {
             log.warn("Crypto secret key is not set or is too short. Using default insecure key!");
             secretKeyString = "default-insecure-secret-key-min-32-chars!";
@@ -40,7 +36,7 @@ public class EncryptionUtil {
         byte[] keyBytes = new byte[32];
         byte[] providedBytes = secretKeyString.getBytes(StandardCharsets.UTF_8);
         System.arraycopy(providedBytes, 0, keyBytes, 0, Math.min(providedBytes.length, 32));
-        secretKey = new SecretKeySpec(keyBytes, ALGORITHM);
+        secretKeyRef.set(new SecretKeySpec(keyBytes, ALGORITHM));
     }
 
     public static String encrypt(String plainText) {
@@ -50,11 +46,11 @@ public class EncryptionUtil {
 
         try {
             byte[] iv = new byte[GCM_IV_LENGTH];
-            new SecureRandom().nextBytes(iv);
+            SECURE_RANDOM.nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
             GCMParameterSpec parameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKeyRef.get(), parameterSpec);
 
             byte[] cipherText = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
 
@@ -93,7 +89,10 @@ public class EncryptionUtil {
             byteBuffer.get(cipherText);
 
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    secretKeyRef.get(),
+                    new GCMParameterSpec(GCM_TAG_LENGTH, iv));
 
             byte[] plainText = cipher.doFinal(cipherText);
             return new String(plainText, StandardCharsets.UTF_8);
