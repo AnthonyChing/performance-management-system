@@ -334,7 +334,7 @@ function isTemplateQuestion(value: unknown): value is TemplateQuestion {
     isString(value.question_text) &&
     isString(value.question_type) &&
     questionTypes.has(value.question_type as QuestionType) &&
-    (value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
+    (value.rating_scale_max === undefined || value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
     isBoolean(value.is_required) &&
     isNumber(value.sort_order)
   );

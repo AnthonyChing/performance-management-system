@@ -27,10 +27,12 @@ export default function TemplateCard({ template, onDuplicate, onDelete }: Templa
               職類：{template.job_category}
             </div>
           )}
-          <div className="flex items-center">
-            <HelpCircle className="w-4 h-4 mr-1.5 text-slate-400" />
-            {template.is_active ? '啟用中' : '已停用'}
-          </div>
+          {template.status === 'published' && (
+            <div className="flex items-center">
+              <HelpCircle className="w-4 h-4 mr-1.5 text-slate-400" />
+              {template.is_active ? '啟用中' : '已停用'}
+            </div>
+          )}
         </div>
       </div>
 
