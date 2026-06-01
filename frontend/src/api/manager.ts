@@ -726,11 +726,11 @@ export function listAllSubordinateGoals(
 
 export function listMySubordinates(
   options?: ManagerApiOptions,
-): Promise<{ data: Array<{ id: string; name: string; email: string; department: string; job_title: string }> }> {
+): Promise<{ data: Array<{ id: string; employee_id: string; name: string; email: string; department: string; job_title: string }> }> {
   return requestJson(
     '/manager/subordinates',
     'GET',
-    (value: unknown): value is { data: Array<{ id: string; name: string; email: string; department: string; job_title: string }> } =>
+    (value: unknown): value is { data: Array<{ id: string; employee_id: string; name: string; email: string; department: string; job_title: string }> } =>
       isRecord(value) && Array.isArray(value.data) && value.data.every(item =>
         isRecord(item) && isString(item.id) && isString(item.name)
       ),

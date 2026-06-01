@@ -11,6 +11,7 @@ export interface Team {
 export interface TeamMember {
   id: string;
   teamId: string;
+  employeeId?: string;
   name: string;
   avatar: string;
   role: string;
@@ -23,8 +24,10 @@ export interface ReviewItem {
   id: string;
   memberId: string;
   memberName: string;
+  employeeId?: string;
   teamId: string;
   title: string;
+  description?: string;
   type: '目標' | 'KPI';
   status: '待審核' | '進行中' | '已否決' | '已評估';
   weight?: number;

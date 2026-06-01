@@ -181,7 +181,7 @@ export default function Goals() {
       <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-200 mb-6">
         {[
           { id: '待審核', label: '待核准' },
-          { id: '進行中', label: '待評分' }
+          { id: '進行中', label: '已核准' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -245,8 +245,6 @@ export default function Goals() {
         <GoalsEmptyState />
       ) : (
         <div className="grid grid-cols-1 gap-8 items-start">
-
-          {/* Left Column: SMART (Goals) */}
           <div className="space-y-4">
             <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2 pb-2 border-b border-slate-200">
               <span className="w-2 h-6 bg-purple-500 rounded-sm"></span> 目標列表

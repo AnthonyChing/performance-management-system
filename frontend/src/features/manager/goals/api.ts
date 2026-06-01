@@ -37,6 +37,7 @@ export async function loadManagerDataAsync(): Promise<{ teams: Team[]; members: 
 
     const members: TeamMember[] = subsRes.data.map(sub => ({
       id: sub.id,
+      employeeId: sub.employee_id,
       name: sub.name,
       teamId: sub.department,
       role: sub.job_title,
@@ -61,8 +62,10 @@ export async function loadManagerDataAsync(): Promise<{ teams: Team[]; members: 
       return {
         id: g.id,
         title: g.title,
+        description: g.description ?? undefined,
         type: g.goal_type === 'KPI' ? 'KPI' : '目標',
         memberId: g.owner_id,
+        employeeId: member?.employeeId,
         memberName: member?.name || 'Unknown',
         teamId: member?.teamId || 'Unknown',
         weight: undefined, // Backend might not have weight on goals directly
