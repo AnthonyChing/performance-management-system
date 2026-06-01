@@ -51,16 +51,29 @@ export function toAuthorizationHeader(token: string) {
   return /^Bearer\s+/i.test(token) ? token : `Bearer ${token}`;
 }
 
-export function getUserRole(): string | null {
-  // First try localStorage/sessionStorage role key
-  let role = globalThis.localStorage?.getItem('role') || globalThis.sessionStorage?.getItem('role');
-  if (role) {
-    return role;
+export function getUserRoles(): string[] {
+  // Try to parse from localStorage cached JSON or roles key
+  const cachedRoles = globalThis.localStorage?.getItem('roles') || globalThis.sessionStorage?.getItem('roles');
+  if (cachedRoles) {
+    try {
+      const parsed = JSON.parse(cachedRoles);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch {
+      // ignore
+    }
   }
 
-  // If not present, decode the JWT token dynamically to recover the role!
+  const singleRole = globalThis.localStorage?.getItem('role') || globalThis.sessionStorage?.getItem('role');
+  const rolesList: string[] = [];
+  if (singleRole) {
+    rolesList.push(singleRole);
+  }
+
+  // If not present or we want to recover dynamically from JWT token
   const token = getStoredAuthToken();
-  if (!token) return null;
+  if (!token) return rolesList;
 
   try {
     const parts = token.split('.');
@@ -75,17 +88,19 @@ export function getUserRole(): string | null {
       );
       const payload = JSON.parse(jsonPayload);
       if (payload && Array.isArray(payload.roles) && payload.roles.length > 0) {
-        const decodedRole = payload.roles[0];
-        // Save it back to localStorage so it is cached
-        if (decodedRole && typeof decodedRole === 'string') {
-          globalThis.localStorage?.setItem('role', decodedRole);
-          return decodedRole;
-        }
+        // Save it back to localStorage as JSON
+        globalThis.localStorage?.setItem('roles', JSON.stringify(payload.roles));
+        return payload.roles;
       }
     }
   } catch (e) {
     // ignore
   }
 
-  return null;
+  return rolesList;
+}
+
+export function getUserRole(): string | null {
+  const roles = getUserRoles();
+  return roles.length > 0 ? roles[0] : null;
 }

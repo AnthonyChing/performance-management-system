@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Navigate } from 'react-route
 import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
 import { deleteSession } from '../../api/auth';
 import { getMyProfile, type EmployeeProfile } from '../../api/employee';
-import { getUserRole } from '../../features/auth';
+import { getUserRoles } from '../../features/auth';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
   return (
@@ -124,7 +124,9 @@ export default function Layout() {
   const [currentUser, setCurrentUser] = useState<EmployeeProfile | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
-  const role = getUserRole();
+  const roles = getUserRoles();
+  const isManager = roles.some(r => r.toLowerCase() === 'manager');
+  const isHr = roles.some(r => r.toLowerCase() === 'hr');
 
   useEffect(() => {
     let isMounted = true;
@@ -261,7 +263,7 @@ export default function Layout() {
             <SidebarSubItem to="/goals/history" label="歷史目標" />
           </SidebarGroup>
 
-          {role === 'manager' && (
+          {isManager && (
             <SidebarGroup icon={ClipboardList} label="主管專區" basePath="/manager" isSidebarOpen={isSidebarOpen}>
               <SidebarSubItem to="/manager/overview" label="總覽" />
               <SidebarSubItem to="/manager/goals" label="目標 / KPI 管理" />
@@ -271,7 +273,7 @@ export default function Layout() {
             </SidebarGroup>
           )}
 
-          {role === 'hr' && (
+          {isHr && (
             <SidebarGroup icon={Users} label="HR 專區" basePath="/hr" isSidebarOpen={isSidebarOpen}>
               <SidebarSubItem to="/hr/cycles" label="考核週期" />
               <SidebarSubItem to="/hr/questionnaires" label="問卷模板" />
