@@ -209,6 +209,46 @@ class EmployeeKpiControllerTest {
     }
 
     @Test
+    @Order(10)
+    void getKpiResult_whenCurrentValueIsNull_returnsNullActual() {
+        String kpiId = "00000000-0000-0000-0000-000000060001";
+        Double original =
+                jdbc.queryForObject(
+                        "SELECT current_value FROM kpi_assignments WHERE kpi_id = ? AND user_id = ?",
+                        Double.class,
+                        UUID.fromString(kpiId),
+                        UUID.fromString(USER_ID));
+        try {
+            jdbc.update(
+                    "UPDATE kpi_assignments SET current_value = NULL WHERE kpi_id = ? AND user_id"
+                            + " = ?",
+                    UUID.fromString(kpiId),
+                    UUID.fromString(USER_ID));
+
+            given().when()
+                    .get("/kpis/result")
+                    .then()
+                    .statusCode(200)
+                    .contentType("application/json")
+                    .body(
+                            "result.kpi_results.find { it.kpi_id == '" + kpiId + "' }.actual.value",
+                            nullValue())
+                    .body(
+                            "result.kpi_results.find { it.kpi_id == '"
+                                    + kpiId
+                                    + "' }.actual.display_text",
+                            nullValue());
+        } finally {
+            jdbc.update(
+                    "UPDATE kpi_assignments SET current_value = ? WHERE kpi_id = ? AND user_id ="
+                            + " ?",
+                    original,
+                    UUID.fromString(kpiId),
+                    UUID.fromString(USER_ID));
+        }
+    }
+
+    @Test
     @Order(9)
     void getKpiResult_whenNotPublished_returnsNotPublishedStatus() {
         jdbc.update(
