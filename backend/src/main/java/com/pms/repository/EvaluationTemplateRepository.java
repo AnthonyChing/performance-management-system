@@ -1,6 +1,7 @@
 package com.pms.repository;
 
 import com.pms.entity.EvaluationTemplate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 public interface EvaluationTemplateRepository extends JpaRepository<EvaluationTemplate, UUID> {
 
     Optional<EvaluationTemplate> findByIdAndDeletedAtIsNull(UUID id);
+
+    List<EvaluationTemplate> findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(UUID cycleId);
 
     boolean
             existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
