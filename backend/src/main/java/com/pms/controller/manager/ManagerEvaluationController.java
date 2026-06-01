@@ -51,6 +51,14 @@ public class ManagerEvaluationController {
                         SecurityUtils.currentUserId(), userId, evaluationId, req));
     }
 
+    @GetMapping("/{evaluationId}/questionnaire")
+    public ResponseEntity<ManagerQuestionnaireResponseDTO> getQuestionnaire(
+            @PathVariable UUID userId, @PathVariable UUID evaluationId) {
+        return ResponseEntity.ok(
+                evaluationService.getQuestionnaire(
+                        SecurityUtils.currentUserId(), userId, evaluationId));
+    }
+
     @PatchMapping("/{evaluationId}/questionnaire")
     public ResponseEntity<ManagerQuestionnaireResponseDTO> updateQuestionnaire(
             @PathVariable UUID userId,

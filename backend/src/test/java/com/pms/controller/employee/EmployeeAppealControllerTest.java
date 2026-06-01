@@ -37,6 +37,7 @@ class EmployeeAppealControllerTest {
     // Review ID for Cycle 1 (the one that gets appealed in Order 5)
     private static final String REVIEW_ID_CYCLE1 = "00000000-0000-0000-0000-000000020001";
     private static final String USER_ID = "00000000-0000-0000-0000-0000000000c1";
+    private static final String MANAGER_ID = "00000000-0000-0000-0000-0000000000b1";
 
     @Autowired JdbcTemplate jdbc;
 
@@ -159,6 +160,8 @@ class EmployeeAppealControllerTest {
                 .contentType("application/json")
                 .body("appeal.status", equalTo("submitted"))
                 .body("appeal.reason", equalTo("Need clarification on rating"))
+                .body("appeal.handler.type", equalTo("senior_manager"))
+                .body("appeal.handler.user_id", equalTo(MANAGER_ID))
                 .body("available_actions.can_submit", equalTo(false))
                 .body("available_actions.submit_unavailable_reason", equalTo("already_submitted"));
     }

@@ -35,6 +35,12 @@ class ManagerEvaluationControllerTest {
     private static final String EVALUATION_ID = "123e4567-e89b-12d3-a456-426614174060";
     private static final String EVALUATION_ID_WRONG_STAGE = "123e4567-e89b-12d3-a456-426614174061";
     private static final String NON_SUBORDINATE_USER_ID = "00000000-0000-0000-0000-000000000099";
+    private static final String CYCLE_ID = "123e4567-e89b-12d3-a456-426614174001";
+    private static final String ASSESSMENT_TEMPLATE_ID = "123e4567-e89b-12d3-a456-426614174080";
+    private static final String QUESTION_ID = "123e4567-e89b-12d3-a456-426614174090";
+    private static final String EVAL_TEMPLATE_ID = "eeeeeeee-e89b-12d3-a456-426614174001";
+    private static final String EVAL_COMPONENT_ID = "cccccccc-e89b-12d3-a456-426614174001";
+    private static final String TEMPLATE_VERSION_ID = "bbbbbbbb-e89b-12d3-a456-426614174001";
 
     @Autowired JwtUtil jwtUtil;
     @Autowired JdbcTemplate jdbc;
@@ -52,6 +58,43 @@ class ManagerEvaluationControllerTest {
                         + EVALUATION_ID
                         + "'");
         jdbc.execute("DELETE FROM review_responses WHERE review_id = '" + EVALUATION_ID + "'");
+        jdbc.execute(
+                "DELETE FROM evaluation_template_components WHERE id = '"
+                        + EVAL_COMPONENT_ID
+                        + "'");
+        jdbc.execute("DELETE FROM evaluation_templates WHERE id = '" + EVAL_TEMPLATE_ID + "'");
+        jdbc.execute("DELETE FROM template_versions WHERE id = '" + TEMPLATE_VERSION_ID + "'");
+        jdbc.update(
+                """
+                INSERT INTO template_versions (id, template_id, version, created_at)
+                VALUES (?::uuid, ?::uuid, 1, NOW())
+                ON CONFLICT (id) DO NOTHING
+                """,
+                TEMPLATE_VERSION_ID,
+                ASSESSMENT_TEMPLATE_ID);
+        jdbc.update(
+                """
+                INSERT INTO evaluation_templates
+                    (id, cycle_id, name, status, employee_group_type, employee_group_ref,
+                     is_active, created_by, updated_by)
+                VALUES (?::uuid, ?::uuid, 'Manager Test Eval Template', 'published',
+                        'job_category', 'engineering', true, ?::uuid, ?::uuid)
+                """,
+                EVAL_TEMPLATE_ID,
+                CYCLE_ID,
+                MANAGER_ID,
+                MANAGER_ID);
+        jdbc.update(
+                """
+                INSERT INTO evaluation_template_components
+                    (id, evaluation_template_id, assessment_template_id,
+                     assessment_template_version_id, weight_percent, sort_order)
+                VALUES (?::uuid, ?::uuid, ?::uuid, ?::uuid, 100.00, 1)
+                """,
+                EVAL_COMPONENT_ID,
+                EVAL_TEMPLATE_ID,
+                ASSESSMENT_TEMPLATE_ID,
+                TEMPLATE_VERSION_ID);
     }
 
     @BeforeEach
@@ -67,6 +110,36 @@ class ManagerEvaluationControllerTest {
 
     @Test
     @Order(1)
+    void getQuestionnaire_returnsQuestionsAndResponses() {
+        given().when()
+                .get("/" + USER_ID + "/evaluations/" + EVALUATION_ID + "/questionnaire")
+                .then()
+                .statusCode(200)
+                .body("review_id", equalTo(EVALUATION_ID))
+                .body("questions.size()", equalTo(1))
+                .body("questions[0].question_id", equalTo(QUESTION_ID))
+                .body("questions[0].question_type", equalTo("rating"))
+                .body("questions[0].is_required", equalTo(true))
+                .body("responses", notNullValue());
+    }
+
+    @Test
+    @Order(2)
+    void getQuestionnaire_forNonSubordinate_returns403() {
+        given().when()
+                .get(
+                        "/"
+                                + NON_SUBORDINATE_USER_ID
+                                + "/evaluations/"
+                                + EVALUATION_ID
+                                + "/questionnaire")
+                .then()
+                .statusCode(403)
+                .body("error.code", equalTo("FORBIDDEN"));
+    }
+
+    @Test
+    @Order(3)
     void submitEvaluation_whenNotAuthorized_returns403() {
         String body =
                 """
@@ -86,7 +159,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(2)
+    @Order(4)
     void submitEvaluation_whenEvaluationNotFound_returns404() {
         String body =
                 """
@@ -106,7 +179,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(3)
+    @Order(5)
     void getEvaluationHistory_returnsHistoricalEvaluations() {
         given().when()
                 .get("/" + USER_ID + "/evaluations")
@@ -117,7 +190,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(4)
+    @Order(6)
     void getEvaluationHistory_withCycleIdFilter_returnsFilteredHistory() {
         given().queryParam("cycle_id", "123e4567-e89b-12d3-a456-426614174001")
                 .when()
@@ -128,7 +201,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(5)
+    @Order(7)
     void getEvaluationHistory_forNonSubordinate_returns403() {
         given().when()
                 .get("/" + NON_SUBORDINATE_USER_ID + "/evaluations")
@@ -138,7 +211,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(6)
+    @Order(8)
     void getEvaluationHistory_forNonExistentUser_returns404() {
         given().when()
                 .get("/00000000-0000-0000-0000-000000000000/evaluations")
@@ -148,7 +221,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(7)
+    @Order(9)
     void submitEvaluation_withMissingRequiredResponse_returns400() {
         String body =
                 """
@@ -169,7 +242,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(8)
+    @Order(10)
     void submitEvaluation_whenNotInEvalStage_returns409() {
         String body =
                 """
@@ -189,7 +262,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(9)
+    @Order(11)
     void saveInProgressEvaluation_returnsInProgressStatus() {
         String body =
                 """
@@ -214,7 +287,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(10)
+    @Order(12)
     void updateQuestionnaire_returnsSavedQuestionnaire() {
         String body =
                 """
@@ -235,11 +308,13 @@ class ManagerEvaluationControllerTest {
                 .patch("/" + USER_ID + "/evaluations/" + EVALUATION_ID + "/questionnaire")
                 .then()
                 .statusCode(200)
+                .body("questions.size()", equalTo(1))
+                .body("questions[0].question_id", equalTo(QUESTION_ID))
                 .body("responses", notNullValue());
     }
 
     @Test
-    @Order(11)
+    @Order(13)
     void updateKpiEvaluation_returnsUpdatedEvaluation() {
         String body =
                 """
@@ -265,7 +340,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(12)
+    @Order(14)
     void submitEvaluation_returnsCompletedEvaluation() {
         String body =
                 """
