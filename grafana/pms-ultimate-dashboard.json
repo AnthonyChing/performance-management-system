@@ -194,7 +194,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Errors (Infra Errors)",
+      "title": "Errors (DB Conn Timeouts)",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -203,8 +203,8 @@
       },
       "targets": [
         {
-          "expr": "vector(0)",
-          "legendFormat": "Infra Errors (Healthy)",
+          "expr": "sum(rate(hikaricp_connections_timeout_total{application=~\"$application\"}[$__rate_interval]))",
+          "legendFormat": "DB Timeouts/sec",
           "refId": "A"
         }
       ],
