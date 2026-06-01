@@ -15,7 +15,11 @@ public enum EvaluationTemplateStatus {
     }
 
     public static EvaluationTemplateStatus fromDbValue(String v) {
-        for (EvaluationTemplateStatus s : values()) if (s.dbValue.equals(v)) return s;
+        for (EvaluationTemplateStatus s : values()) {
+            if (s.dbValue.equals(v)) {
+                return s;
+            }
+        }
         throw new IllegalArgumentException("Unknown EvaluationTemplateStatus: " + v);
     }
 }

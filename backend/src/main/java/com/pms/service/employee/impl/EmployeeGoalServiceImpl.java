@@ -5,19 +5,47 @@ import com.pms.dto.employee.AvailableActionsDTO;
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.ManagerDTO;
 import com.pms.dto.employee.PaginationDTO;
-import com.pms.dto.employee.goal.*;
-import com.pms.entity.*;
+import com.pms.dto.employee.goal.GoalCreationResponseDTO;
+import com.pms.dto.employee.goal.GoalDTO;
+import com.pms.dto.employee.goal.GoalProgressUpdateDTO;
+import com.pms.dto.employee.goal.GoalProgressUpdateRequestDTO;
+import com.pms.dto.employee.goal.GoalProgressUpdateResponseDTO;
+import com.pms.dto.employee.goal.GoalRequestDTO;
+import com.pms.dto.employee.goal.GoalReviewDTO;
+import com.pms.dto.employee.goal.GoalReviewResultDTO;
+import com.pms.dto.employee.goal.GoalReviewResultResponseDTO;
+import com.pms.dto.employee.goal.GoalSummaryDTO;
+import com.pms.dto.employee.goal.GoalsResponseDTO;
+import com.pms.dto.employee.goal.HistoricalGoalsResponseDTO;
+import com.pms.entity.Department;
+import com.pms.entity.Goal;
+import com.pms.entity.GoalProgressUpdate;
+import com.pms.entity.GoalReview;
+import com.pms.entity.PerformanceCycle;
+import com.pms.entity.User;
 import com.pms.entity.enums.CycleStatus;
 import com.pms.entity.enums.GoalStatus;
 import com.pms.entity.enums.GoalType;
 import com.pms.exception.ConflictException;
 import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
-import com.pms.repository.*;
+import com.pms.repository.DepartmentRepository;
+import com.pms.repository.GoalProgressUpdateRepository;
+import com.pms.repository.GoalRepository;
+import com.pms.repository.GoalReviewRepository;
+import com.pms.repository.PerformanceCycleRepository;
+import com.pms.repository.UserRepository;
 import com.pms.service.employee.EmployeeGoalService;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -61,10 +89,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
         final GoalStatus finalStatusFilter = statusFilter;
         if (finalStatusFilter != null) {
-            goals =
-                    goals.stream()
-                            .filter(g -> g.getStatus() == finalStatusFilter)
-                            .collect(Collectors.toList());
+            goals = goals.stream().filter(g -> g.getStatus() == finalStatusFilter).toList();
         }
         if (q != null && !q.isBlank()) {
             String lq = q.toLowerCase();
@@ -80,10 +105,10 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                                             && g.getDescription()
                                                                     .toLowerCase()
                                                                     .contains(lq)))
-                            .collect(Collectors.toList());
+                            .toList();
         }
 
-        List<UUID> goalIds = goals.stream().map(Goal::getId).collect(Collectors.toList());
+        List<UUID> goalIds = goals.stream().map(Goal::getId).toList();
 
         Map<UUID, GoalProgressUpdate> latestProgressMap = Collections.emptyMap();
         Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
@@ -215,7 +240,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                                                 && g.getDescription()
                                                                         .toLowerCase()
                                                                         .contains(lq)))
-                                .collect(Collectors.toList());
+                                .toList();
             }
 
             int total = allGoals.size();
@@ -223,7 +248,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             int toIdx = Math.min(fromIdx + size, total);
             List<Goal> pagedGoals = allGoals.subList(fromIdx, toIdx);
 
-            List<UUID> goalIds = pagedGoals.stream().map(Goal::getId).collect(Collectors.toList());
+            List<UUID> goalIds = pagedGoals.stream().map(Goal::getId).toList();
             Map<UUID, GoalProgressUpdate> latestProgressMap = Collections.emptyMap();
             Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
             if (!goalIds.isEmpty()) {
@@ -509,7 +534,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
         List<Goal> allGoals =
                 goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
-        List<UUID> goalIds = allGoals.stream().map(Goal::getId).collect(Collectors.toList());
+        List<UUID> goalIds = allGoals.stream().map(Goal::getId).toList();
 
         Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
         if (!goalIds.isEmpty()) {
@@ -588,7 +613,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                             .reviewer(grReviewer)
                                             .build();
                                 })
-                        .collect(Collectors.toList());
+                        .toList();
 
         return GoalReviewResultResponseDTO.builder()
                 .cycle(buildCycleSummaryDTO(cycle))
@@ -730,11 +755,17 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         int total = goals.size();
         int pending = 0, inProgress = 0, revisionRequested = 0, completed = 0, cancelled = 0;
         for (Goal g : goals) {
-            if (g.getStatus() == GoalStatus.PENDING_REVIEW) pending++;
-            else if (g.getStatus() == GoalStatus.IN_PROGRESS) inProgress++;
-            else if (g.getStatus() == GoalStatus.REVISION_REQUESTED) revisionRequested++;
-            else if (g.getStatus() == GoalStatus.COMPLETED) completed++;
-            else if (g.getStatus() == GoalStatus.CANCELLED) cancelled++;
+            if (g.getStatus() == GoalStatus.PENDING_REVIEW) {
+                pending++;
+            } else if (g.getStatus() == GoalStatus.IN_PROGRESS) {
+                inProgress++;
+            } else if (g.getStatus() == GoalStatus.REVISION_REQUESTED) {
+                revisionRequested++;
+            } else if (g.getStatus() == GoalStatus.COMPLETED) {
+                completed++;
+            } else if (g.getStatus() == GoalStatus.CANCELLED) {
+                cancelled++;
+            }
         }
         return GoalSummaryDTO.builder()
                 .totalCount(total)
@@ -747,16 +778,24 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
     }
 
     private String computeOverallStatus(List<Goal> goals) {
-        if (goals.isEmpty()) return "no_goals";
+        if (goals.isEmpty()) {
+            return "no_goals";
+        }
         boolean anyRevision =
                 goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.REVISION_REQUESTED);
-        if (anyRevision) return "revision_requested";
+        if (anyRevision) {
+            return "revision_requested";
+        }
         boolean anyPending =
                 goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.PENDING_REVIEW);
-        if (anyPending) return "pending_review";
+        if (anyPending) {
+            return "pending_review";
+        }
         boolean anyInProgress =
                 goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.IN_PROGRESS);
-        if (anyInProgress) return "in_progress";
+        if (anyInProgress) {
+            return "in_progress";
+        }
         boolean anyCompleted = goals.stream().anyMatch(g -> g.getStatus() == GoalStatus.COMPLETED);
         boolean allDone =
                 goals.stream()
@@ -764,9 +803,13 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                 g ->
                                         g.getStatus() == GoalStatus.COMPLETED
                                                 || g.getStatus() == GoalStatus.CANCELLED);
-        if (allDone && anyCompleted) return "completed";
+        if (allDone && anyCompleted) {
+            return "completed";
+        }
         boolean allCancelled = goals.stream().allMatch(g -> g.getStatus() == GoalStatus.CANCELLED);
-        if (allCancelled) return "cancelled";
+        if (allCancelled) {
+            return "cancelled";
+        }
         return "in_progress";
     }
 

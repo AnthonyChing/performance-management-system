@@ -101,11 +101,17 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
                                         new NotFoundException(
                                                 "RESOURCE_NOT_FOUND", "KPI assignment not found"));
 
-        if (req.getTitle() != null) kpi.setTitle(req.getTitle());
-        if (req.getDescription() != null) kpi.setDescription(req.getDescription());
+        if (req.getTitle() != null) {
+            kpi.setTitle(req.getTitle());
+        }
+        if (req.getDescription() != null) {
+            kpi.setDescription(req.getDescription());
+        }
         kpiRepo.save(kpi);
 
-        if (req.getTargetValue() != null) assignment.setTargetValue(req.getTargetValue());
+        if (req.getTargetValue() != null) {
+            assignment.setTargetValue(req.getTargetValue());
+        }
         kpiAssignmentRepo.save(assignment);
 
         return ManagerKpiResponseDTO.from(kpi, assignment);
