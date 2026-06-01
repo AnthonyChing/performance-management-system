@@ -18,6 +18,7 @@ import {
   updateKpiCriterion,
   deleteKpiCriterion,
 } from '../api';
+import { getCurrentPerformanceCycle } from '../../../../api/employee';
 import type { Subordinate, KpiCriterion } from '../api';
 import CreateKpiModal from '../components/CreateKpiModal';
 import KpiCriterionCard from '../components/KpiCriterionCard';
@@ -29,6 +30,7 @@ export default function KpiCriteria() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingKpis, setIsLoadingKpis] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
 
   // Create / Edit modal
   const [showModal, setShowModal] = useState(false);
@@ -59,6 +61,21 @@ export default function KpiCriteria() {
         setSelectedEmployee(subs[0].id);
       }
       setIsLoading(false);
+    });
+
+    getCurrentPerformanceCycle().then((res) => {
+      if (res.cycle) {
+        const now = new Date();
+        const start = res.cycle.manager_eval_start ? new Date(res.cycle.manager_eval_start) : null;
+        const end = res.cycle.manager_eval_end ? new Date(res.cycle.manager_eval_end) : null;
+        if (start && end && now >= start && now <= end) {
+          setIsEvaluationOpen(true);
+        } else {
+          setIsEvaluationOpen(false);
+        }
+      }
+    }).catch(() => {
+      // Ignore if no active cycle
     });
   }, []);
 
@@ -164,6 +181,17 @@ export default function KpiCriteria() {
     resetForm();
   };
 
+  const handleUpdateCurrentValue = async (kpiId: string, newValue: number) => {
+    const ok = await updateKpiCriterion(selectedEmployee, kpiId, { current_value: newValue });
+    if (ok) {
+      showToast('KPI 數值已更新', 'success');
+      const refreshed = await loadKpisForEmployee(selectedEmployee);
+      setKpis(refreshed);
+    } else {
+      showToast('更新失敗，請稍後再試', 'error');
+    }
+  };
+
   const handleDelete = async (kpiId: string) => {
     setDeletingKpiId(kpiId);
   };
@@ -227,7 +255,7 @@ export default function KpiCriteria() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
             <Target className="w-6 h-6 text-indigo-500" />
-            KPI 準則設定
+            KPI 設定與評估
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             為直屬員工設定 KPI 考核指標、衡量標準與權重配置。每項 KPI 代表一個可量化的績效衡量依據。
@@ -372,6 +400,8 @@ export default function KpiCriteria() {
                   employeeName={selectedSub?.name || ''}
                   onEdit={openEditModal}
                   onDelete={handleDelete}
+                  isEvaluationOpen={isEvaluationOpen}
+                  onUpdateCurrentValue={handleUpdateCurrentValue}
                 />
               </motion.div>
             ))}

@@ -119,6 +119,7 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
         kpiRepo.save(kpi);
 
         if (req.getTargetValue() != null) assignment.setTargetValue(req.getTargetValue());
+        if (req.getCurrentValue() != null) assignment.setCurrentValue(req.getCurrentValue());
         if (req.getWeight() != null) assignment.setWeight(req.getWeight());
         kpiAssignmentRepo.save(assignment);
 

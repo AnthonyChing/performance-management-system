@@ -149,11 +149,8 @@ export default function CurrentGoals() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">本期目標</h1>
           {goalsData?.cycle.period_label && (
-            <p className="mt-1 text-sm text-slate-500">{goalsData.cycle.period_label}</p>
+            <p className="mt-1 text-sm text-slate-500">瀏覽本期的目標：{goalsData.cycle.period_label}</p>
           )}
-          <div className="text-sm text-slate-500 mt-1 flex px-1 breadcrumbs">
-             主控台 <ChevronRight className="w-3 h-3 mx-1 mt-1" /> 目前目標頁面
-          </div>
         </div>
         {canCreateGoal ? (
           <Link to="/goals/new" className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">

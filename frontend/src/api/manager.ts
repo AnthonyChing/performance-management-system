@@ -572,6 +572,7 @@ export function updateKpi(
   kpiId: string,
   payload: {
     target_value?: number;
+    current_value?: number;
     weight?: number;
     title?: string;
     description?: string;

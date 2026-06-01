@@ -18,4 +18,5 @@ public class ManagerKpiPatchRequestDTO {
     private String targetOperator;
     private String targetUnit;
     private String targetDisplayText;
+    private BigDecimal currentValue;
 }

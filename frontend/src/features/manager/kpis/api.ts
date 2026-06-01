@@ -115,6 +115,7 @@ export async function updateKpiCriterion(
     kpi_type?: 'individual' | 'team';
     weight?: number;
     target_value?: number;
+    current_value?: number;
     target_operator?: string;
     target_unit?: string;
     target_display_text?: string;
