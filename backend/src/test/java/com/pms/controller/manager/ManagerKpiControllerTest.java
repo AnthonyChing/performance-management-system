@@ -244,4 +244,10 @@ class ManagerKpiControllerTest {
                 .body("data[0].kpi_type", equalTo("individual"))
                 .body("data[0].assignment.target_value", equalTo(1000000.0f));
     }
+
+    @Test
+    @Order(12)
+    void deleteKpi_returnsNoContent() {
+        given().when().delete("/" + USER_ID + "/kpis/" + KPI_ID).then().statusCode(204);
+    }
 }
