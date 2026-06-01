@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -403,7 +402,7 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                                                 .weightPercent(info.weightPercent())
                                                 .sortOrder(info.sortOrder())
                                                 .build()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private EvaluationTemplateResponse buildResponse(
