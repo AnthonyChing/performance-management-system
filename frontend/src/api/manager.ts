@@ -232,7 +232,7 @@ function isKpiAssignment(value: unknown): value is KpiAssignment {
 function isSubordinateGoal(value: unknown): value is SubordinateGoal {
   return (
     isRecord(value) &&
-    isString(value.id) &&
+    (isString(value.id) || isString(value.goal_id) || isString(value.goalId)) &&
     isString(value.cycle_id) &&
     isString(value.owner_id) &&
     isString(value.set_by) &&
@@ -243,7 +243,7 @@ function isSubordinateGoal(value: unknown): value is SubordinateGoal {
     isNullableString(value.due_date) &&
     isString(value.status) &&
     goalStatuses.has(value.status as GoalStatus) &&
-    isNullableString(value.published_at)
+    (value.published_at === undefined || isNullableString(value.published_at))
   );
 }
 
@@ -483,7 +483,10 @@ export function createGoal(
     isSubordinateGoal,
     payload,
     options,
-  );
+  ).then(res => ({
+    ...res,
+    id: res.id || (res as any).goal_id || (res as any).goalId
+  }));
 }
 
 export function updateGoal(
@@ -503,7 +506,10 @@ export function updateGoal(
     isSubordinateGoal,
     payload,
     options,
-  );
+  ).then(res => ({
+    ...res,
+    id: res.id || (res as any).goal_id || (res as any).goalId
+  }));
 }
 
 export function listGoals(
@@ -521,7 +527,12 @@ export function listGoals(
     isDataArray(value, isSubordinateGoal),
     undefined,
     options,
-  );
+  ).then(res => ({
+    data: res.data.map(item => ({
+      ...item,
+      id: item.id || (item as any).goal_id || (item as any).goalId
+    }))
+  }));
 }
 
 export function createKpi(
@@ -652,7 +663,12 @@ export function listAllSubordinateGoals(
       isRecord(value) && Array.isArray(value.data) && value.data.every(isSubordinateGoal),
     undefined,
     options,
-  );
+  ).then(res => ({
+    data: res.data.map(item => ({
+      ...item,
+      id: item.id || (item as any).goal_id || (item as any).goalId
+    }))
+  }));
 }
 
 export function listMySubordinates(

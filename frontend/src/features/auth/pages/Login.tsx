@@ -32,6 +32,9 @@ export default function Login() {
       try {
         const session = await authenticateWithGoogle(idToken);
         saveAuthToken(session.accessToken);
+        if (session.roles && session.roles.length > 0) {
+          localStorage.setItem('role', session.roles[0]);
+        }
         navigate(redirectPath, { replace: true });
       } catch (error) {
         setErrorMessage(
