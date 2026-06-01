@@ -1,5 +1,6 @@
 import {
   ApiRequestError,
+  getQuestionnaire,
   listEvaluations,
   listKpis,
   submitKpiEvaluation,
@@ -19,6 +20,7 @@ import type { MemberEvaluationWorkspace, TeamMemberEvaluationRow } from './types
 
 export {
   ApiRequestError,
+  getQuestionnaire,
   listEvaluations,
   listKpis,
   submitKpiEvaluation,
@@ -119,9 +121,17 @@ export async function loadMemberEvaluationWorkspace(
     return null;
   }
 
+  let questionnaireQuestions: EvaluationHistoryItem['questions'] = evaluation.questions;
+  try {
+    const questionnaire = await getQuestionnaire(member.id, evaluation.id);
+    questionnaireQuestions = questionnaire.questions;
+  } catch (error) {
+    console.warn('Failed to load manager questionnaire questions', error);
+  }
+
   const responseQuestionIds =
     evaluation.responses?.map((response) => response.question_id) ?? [];
-  const questions = resolveEvaluationQuestions(evaluation.questions, responseQuestionIds);
+  const questions = resolveEvaluationQuestions(questionnaireQuestions, responseQuestionIds);
   const editable = isManagerEvaluationEditable(evaluation.status);
 
   return {
