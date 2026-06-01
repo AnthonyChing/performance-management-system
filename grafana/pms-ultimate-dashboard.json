@@ -31,7 +31,7 @@
     },
     {
       "type": "stat",
-      "title": "2. Latency (P95)",
+      "title": "2. Latency (Avg)",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -123,7 +123,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Duration (P95 Latency per API)",
+      "title": "Duration (Avg Latency per API)",
       "gridPos": {
         "h": 8,
         "w": 8,
