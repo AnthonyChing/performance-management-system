@@ -60,6 +60,8 @@ public class EmployeeKpiServiceImplTest {
         cycle.setStatus(CycleStatus.IN_PROGRESS);
         cycle.setCycleType(com.pms.entity.enums.CycleType.QUARTERLY);
         cycle.setName("Test Cycle");
+        cycle.setResultsPublishedAt(java.time.OffsetDateTime.now());
+        cycle.setAppealDeadlineDays(7);
 
         review = new PerformanceReview();
         review.setId(UUID.randomUUID());
