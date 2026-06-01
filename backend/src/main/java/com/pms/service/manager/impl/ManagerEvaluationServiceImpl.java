@@ -9,7 +9,8 @@ import com.pms.dto.manager.evaluation.ManagerQuestionnaireResponseDTO;
 import com.pms.dto.manager.evaluation.ManagerQuestionnaireUpdateRequestDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireAnswerDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireResponseItemDTO;
-import com.pms.entity.KpiAssignment;
+import com.pms.entity.EvaluationTemplate;
+import com.pms.entity.EvaluationTemplateComponent;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
@@ -51,8 +52,10 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final KpiEvaluationRepository kpiEvalRepo;
     private final UserRepository userRepo;
     private final PerformanceCycleRepository cycleRepo;
-    private final KpiAssignmentRepository kpiAssignmentRepo;
+    private final TemplateVersionRepository templateVersionRepo;
     private final TemplateQuestionRepository templateQuestionRepo;
+    private final EvaluationTemplateRepository evalTemplateRepo;
+    private final EvaluationTemplateComponentRepository componentRepo;
 
     @Override
     @Transactional
@@ -121,11 +124,14 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         recomputeScoresAndRating(review);
         reviewRepo.save(review);
 
+        List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
+
         return ManagerEvaluationResponseDTO.from(
                 review,
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                         evaluationId, RESPONDENT_TYPE),
-                kpiEvalRepo.findByReviewId(evaluationId));
+                kpiEvalRepo.findByReviewId(evaluationId),
+                questions);
     }
 
     @Override
@@ -237,14 +243,14 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             }
         }
 
-        recomputeScoresAndRating(review);
-        reviewRepo.save(review);
+        List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
 
         return ManagerEvaluationResponseDTO.from(
                 review,
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                         evaluationId, RESPONDENT_TYPE),
-                kpiEvalRepo.findByReviewId(evaluationId));
+                kpiEvalRepo.findByReviewId(evaluationId),
+                questions);
     }
 
     @Override
@@ -272,13 +278,16 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                 .map(
                         r -> {
                             String cycleName = cycleMap.get(r.getCycleId());
+                            List<com.pms.entity.TemplateQuestion> questions =
+                                    getQuestionsForReview(r);
                             return ManagerEvaluationResponseDTO.from(
                                     r,
                                     cycleName,
                                     reviewResponseRepo
                                             .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                                                     r.getId(), RESPONDENT_TYPE),
-                                    kpiEvalRepo.findByReviewId(r.getId()));
+                                    kpiEvalRepo.findByReviewId(r.getId()),
+                                    questions);
                         })
                 .toList();
     }
@@ -334,121 +343,88 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
     }
 
-    private void recomputeScoresAndRating(PerformanceReview review) {
-        BigDecimal kpiScore = computeKpiScore(review);
-        BigDecimal reviewScore = computeQuestionnaireScore(review.getId());
-        review.setKpiScore(kpiScore);
-        review.setReviewScore(reviewScore);
-
-        if (kpiScore != null || reviewScore != null) {
-            review.setScoreComputedAt(OffsetDateTime.now());
-        }
-        if (kpiScore != null && reviewScore != null) {
-            BigDecimal finalScore =
-                    kpiScore.add(reviewScore)
-                            .divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
-            review.setFinalRating(toRatingScale(finalScore));
-        }
-    }
-
-    private BigDecimal computeKpiScore(PerformanceReview review) {
-        List<KpiEvaluation> evaluations =
-                kpiEvalRepo.findByReviewId(review.getId()).stream()
-                        .filter(e -> e.getManagerScore() != null)
-                        .toList();
-        if (evaluations.isEmpty()) {
-            return null;
+    private List<com.pms.entity.TemplateQuestion> getQuestionsForReview(PerformanceReview review) {
+        if (review == null) {
+            return java.util.Collections.emptyList();
         }
 
-        List<UUID> kpiIds = evaluations.stream().map(KpiEvaluation::getKpiId).toList();
-        Map<UUID, BigDecimal> weightByKpiId =
-                kpiAssignmentRepo.findByUserIdAndKpiIdIn(review.getEmployeeId(), kpiIds).stream()
-                        .collect(
-                                Collectors.toMap(
-                                        KpiAssignment::getKpiId, KpiAssignment::getWeight));
+        UUID cycleId = review.getCycleId();
+        UUID employeeId = review.getEmployeeId();
+        com.pms.entity.User employee = userRepo.findById(employeeId).orElse(null);
+        UUID templateVersionId = review.getTemplateVersionId();
 
-        BigDecimal weightedTotal = BigDecimal.ZERO;
-        BigDecimal totalWeight = BigDecimal.ZERO;
-        BigDecimal unweightedTotal = BigDecimal.ZERO;
-        int unweightedCount = 0;
+        if (employee != null) {
+            String deptIdStr =
+                    employee.getDepartmentId() != null
+                            ? employee.getDepartmentId().toString()
+                            : null;
+            String jobCat = employee.getJobCategory();
 
-        for (KpiEvaluation evaluation : evaluations) {
-            BigDecimal score = evaluation.getManagerScore();
-            BigDecimal weight = weightByKpiId.get(evaluation.getKpiId());
-            if (weight != null && weight.compareTo(BigDecimal.ZERO) > 0) {
-                weightedTotal = weightedTotal.add(score.multiply(weight));
-                totalWeight = totalWeight.add(weight);
-            } else {
-                unweightedTotal = unweightedTotal.add(score);
-                unweightedCount++;
+            List<EvaluationTemplate> templates =
+                    evalTemplateRepo.findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(cycleId);
+            EvaluationTemplate matchedTemplate = null;
+
+            if (deptIdStr != null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(
+                                        t ->
+                                                "department".equals(t.getEmployeeGroupType())
+                                                        && deptIdStr.equalsIgnoreCase(
+                                                                t.getEmployeeGroupRef()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate == null && jobCat != null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(
+                                        t ->
+                                                "job_category".equals(t.getEmployeeGroupType())
+                                                        && jobCat.equalsIgnoreCase(
+                                                                t.getEmployeeGroupRef()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate == null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(t -> "all".equals(t.getEmployeeGroupType()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate != null) {
+                List<EvaluationTemplateComponent> components =
+                        componentRepo.findByEvaluationTemplateIdOrderBySortOrder(
+                                matchedTemplate.getId());
+
+                List<com.pms.entity.TemplateQuestion> allQuestions = new java.util.ArrayList<>();
+                for (EvaluationTemplateComponent comp : components) {
+                    List<com.pms.entity.TemplateQuestion> compQuestions =
+                            templateQuestionRepo
+                                    .findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                                            comp.getAssessmentTemplateId());
+                    allQuestions.addAll(compQuestions);
+                }
+
+                if (!allQuestions.isEmpty()) {
+                    return allQuestions;
+                }
             }
         }
 
-        if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
-            return weightedTotal.divide(totalWeight, 2, RoundingMode.HALF_UP);
-        }
-        return unweightedTotal.divide(BigDecimal.valueOf(unweightedCount), 2, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal computeQuestionnaireScore(UUID reviewId) {
-        List<ReviewResponse> ratingResponses =
-                reviewResponseRepo
-                        .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
-                                reviewId, RESPONDENT_TYPE)
-                        .stream()
-                        .filter(r -> r.getRatingValue() != null)
-                        .toList();
-        if (ratingResponses.isEmpty()) {
-            return null;
+        if (templateVersionId != null) {
+            com.pms.entity.TemplateVersion version =
+                    templateVersionRepo.findById(templateVersionId).orElse(null);
+            if (version != null) {
+                return templateQuestionRepo.findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                        version.getTemplateId());
+            }
         }
 
-        List<UUID> questionIds =
-                ratingResponses.stream().map(ReviewResponse::getQuestionId).toList();
-        Map<UUID, TemplateQuestion> questionById =
-                templateQuestionRepo.findByIdInAndDeletedAtIsNull(questionIds).stream()
-                        .collect(Collectors.toMap(TemplateQuestion::getId, Function.identity()));
-
-        List<BigDecimal> normalizedScores =
-                ratingResponses.stream()
-                        .map(
-                                response -> {
-                                    TemplateQuestion question =
-                                            questionById.get(response.getQuestionId());
-                                    Integer scaleMax =
-                                            question != null ? question.getRatingScaleMax() : null;
-                                    if (scaleMax == null || scaleMax <= 0) {
-                                        return null;
-                                    }
-                                    return BigDecimal.valueOf(response.getRatingValue())
-                                            .multiply(BigDecimal.valueOf(100))
-                                            .divide(
-                                                    BigDecimal.valueOf(scaleMax),
-                                                    2,
-                                                    RoundingMode.HALF_UP);
-                                })
-                        .filter(Objects::nonNull)
-                        .toList();
-        if (normalizedScores.isEmpty()) {
-            return null;
-        }
-
-        BigDecimal total = normalizedScores.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        return total.divide(BigDecimal.valueOf(normalizedScores.size()), 2, RoundingMode.HALF_UP);
-    }
-
-    private RatingScale toRatingScale(BigDecimal score) {
-        if (score.compareTo(BigDecimal.valueOf(90)) >= 0) {
-            return RatingScale.OUTSTANDING;
-        }
-        if (score.compareTo(BigDecimal.valueOf(80)) >= 0) {
-            return RatingScale.EXCEEDS_EXPECTATIONS;
-        }
-        if (score.compareTo(BigDecimal.valueOf(70)) >= 0) {
-            return RatingScale.MEETS_EXPECTATIONS;
-        }
-        if (score.compareTo(BigDecimal.valueOf(60)) >= 0) {
-            return RatingScale.NEEDS_IMPROVEMENT;
-        }
-        return RatingScale.UNACCEPTABLE;
+        return java.util.Collections.emptyList();
     }
 }
