@@ -15,7 +15,13 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/teams/{teamId}/appeals")
@@ -52,7 +58,9 @@ public class ManagerAppealController {
 
     private void assertTeamOwnership(UUID teamId) {
         UUID currentUserId = SecurityUtils.currentUserId();
-        if (currentUserId.equals(teamId)) return;
+        if (currentUserId.equals(teamId)) {
+            return;
+        }
         userRepository
                 .findById(teamId)
                 .orElseThrow(() -> new NotFoundException("RESOURCE_NOT_FOUND", "Team not found"));

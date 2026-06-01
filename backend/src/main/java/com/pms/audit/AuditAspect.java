@@ -66,7 +66,9 @@ public class AuditAspect {
     }
 
     private UUID extractIdFromResult(Object result, String spec) {
-        if (result == null) return null;
+        if (result == null) {
+            return null;
+        }
         // "return" → getId() on the result
         // "return.field1.field2" → chain of getters (getField1, then getField2)
         String[] parts =
@@ -76,7 +78,9 @@ public class AuditAspect {
         Object current = result;
         try {
             for (String part : parts) {
-                if (current == null) return null;
+                if (current == null) {
+                    return null;
+                }
                 String getter = "get" + Character.toUpperCase(part.charAt(0)) + part.substring(1);
                 Method m = current.getClass().getMethod(getter);
                 current = m.invoke(current);
@@ -91,7 +95,9 @@ public class AuditAspect {
         MethodSignature sig = (MethodSignature) pjp.getSignature();
         String[] names = sig.getParameterNames();
         Object[] args = pjp.getArgs();
-        if (names == null) return null;
+        if (names == null) {
+            return null;
+        }
         for (int i = 0; i < names.length; i++) {
             if (paramName.equals(names[i])) {
                 return toUuid(args[i]);
@@ -101,7 +107,9 @@ public class AuditAspect {
     }
 
     private UUID toUuid(Object value) {
-        if (value instanceof UUID u) return u;
+        if (value instanceof UUID u) {
+            return u;
+        }
         if (value instanceof String s) {
             try {
                 return UUID.fromString(s);

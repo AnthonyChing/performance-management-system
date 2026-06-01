@@ -1,6 +1,12 @@
 package com.pms.service.employee;
 
-import com.pms.dto.employee.goal.*;
+import com.pms.dto.employee.goal.GoalCreationResponseDTO;
+import com.pms.dto.employee.goal.GoalProgressUpdateRequestDTO;
+import com.pms.dto.employee.goal.GoalProgressUpdateResponseDTO;
+import com.pms.dto.employee.goal.GoalRequestDTO;
+import com.pms.dto.employee.goal.GoalReviewResultResponseDTO;
+import com.pms.dto.employee.goal.GoalsResponseDTO;
+import com.pms.dto.employee.goal.HistoricalGoalsResponseDTO;
 import java.util.UUID;
 
 public interface EmployeeGoalService {

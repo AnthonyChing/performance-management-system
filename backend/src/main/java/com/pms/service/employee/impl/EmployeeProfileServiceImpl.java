@@ -192,7 +192,9 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
     }
 
     private ManagerDTO buildManagerDTO(UUID managerId) {
-        if (managerId == null) return null;
+        if (managerId == null) {
+            return null;
+        }
         return userRepository
                 .findById(managerId)
                 .map(

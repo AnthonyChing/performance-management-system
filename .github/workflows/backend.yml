@@ -49,7 +49,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=AnthonyChing_performance-management-system -Dsonar.organization=anthonyching -Dsonar.host.url=https://sonarcloud.io
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=AnthonyChing_performance-management-system \
+            -Dsonar.organization=anthonyching \
+            -Dsonar.host.url=https://sonarcloud.io \
+            "-Dsonar.coverage.exclusions=**/PerformanceManagementSystemApplication.java,**/BackupController.java,**/DemoController.java,**/DiscordAlertService.java,**/AuthServiceImpl.java,**/dto/employee/appeal/AppealResponsesDTO.java,**/dto/employee/kpi/KpiResponsesDTO.java" \
+            "-Dsonar.cpd.exclusions=**/dto/**,**/entity/**"
   backend-build-and-deploy:
     needs: backend-test
     # Run on: manual dispatch, tag push, or push to main

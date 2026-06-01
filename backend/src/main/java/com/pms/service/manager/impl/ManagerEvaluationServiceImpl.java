@@ -19,7 +19,11 @@ import com.pms.exception.ApiException;
 import com.pms.exception.ConflictException;
 import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
-import com.pms.repository.*;
+import com.pms.repository.KpiEvaluationRepository;
+import com.pms.repository.PerformanceCycleRepository;
+import com.pms.repository.PerformanceReviewRepository;
+import com.pms.repository.ReviewResponseRepository;
+import com.pms.repository.UserRepository;
 import com.pms.service.manager.ManagerEvaluationService;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -97,10 +101,15 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             }
         }
 
-        if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
-        if (req.getFinalRating() != null)
+        if (req.getStatus() != null) {
+            review.setStatus(parseReviewStatus(req.getStatus()));
+        }
+        if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
-        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        }
+        if (req.getManagerComment() != null) {
+            review.setManagerComment(req.getManagerComment());
+        }
         if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
@@ -190,10 +199,15 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                     "STATE_CONFLICT", "Review is not in manager evaluation phase");
         }
 
-        if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
-        if (req.getFinalRating() != null)
+        if (req.getStatus() != null) {
+            review.setStatus(parseReviewStatus(req.getStatus()));
+        }
+        if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
-        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        }
+        if (req.getManagerComment() != null) {
+            review.setManagerComment(req.getManagerComment());
+        }
         if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());

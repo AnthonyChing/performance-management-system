@@ -1,19 +1,45 @@
 package com.pms.service.hr.impl;
 
-import com.pms.dto.hr.evaluation.*;
-import com.pms.entity.*;
+import com.pms.dto.hr.evaluation.AssessmentTemplateComponentDto;
+import com.pms.dto.hr.evaluation.AssessmentTemplateComponentRequest;
+import com.pms.dto.hr.evaluation.AvailableActionsDto;
+import com.pms.dto.hr.evaluation.CreateEvaluationTemplateRequest;
+import com.pms.dto.hr.evaluation.EmployeeGroupDto;
+import com.pms.dto.hr.evaluation.EvalCycleInfoDto;
+import com.pms.dto.hr.evaluation.EvaluationTemplateListItemResponse;
+import com.pms.dto.hr.evaluation.EvaluationTemplateResponse;
+import com.pms.dto.hr.evaluation.PatchEvaluationTemplateRequest;
+import com.pms.entity.AssessmentTemplate;
+import com.pms.entity.Department;
+import com.pms.entity.EvaluationTemplate;
+import com.pms.entity.EvaluationTemplateComponent;
+import com.pms.entity.PerformanceCycle;
+import com.pms.entity.TemplateVersion;
 import com.pms.entity.enums.CycleStatus;
 import com.pms.entity.enums.EvaluationTemplateStatus;
 import com.pms.entity.enums.TemplateStatus;
 import com.pms.exception.ApiException;
 import com.pms.exception.ConflictException;
 import com.pms.exception.NotFoundException;
-import com.pms.repository.*;
+import com.pms.repository.AssessmentTemplateRepository;
+import com.pms.repository.DepartmentRepository;
+import com.pms.repository.EvaluationTemplateComponentRepository;
+import com.pms.repository.EvaluationTemplateRepository;
+import com.pms.repository.PerformanceCycleRepository;
+import com.pms.repository.TemplateQuestionRepository;
+import com.pms.repository.TemplateVersionRepository;
+import com.pms.repository.UserRepository;
 import com.pms.service.hr.HrEvaluationTemplateService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -119,8 +145,12 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
             return buildResponse(saved, cycle, components);
         }
 
-        if (req.getName() != null) et.setName(req.getName());
-        if (req.getDescription() != null) et.setDescription(req.getDescription());
+        if (req.getName() != null) {
+            et.setName(req.getName());
+        }
+        if (req.getDescription() != null) {
+            et.setDescription(req.getDescription());
+        }
 
         if (req.getCycleId() != null) {
             PerformanceCycle newCycle = findCycleOrThrow(req.getCycleId());
@@ -460,7 +490,9 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
     }
 
     private EvalCycleInfoDto toCycleDto(PerformanceCycle cycle) {
-        if (cycle == null) return null;
+        if (cycle == null) {
+            return null;
+        }
         return EvalCycleInfoDto.builder()
                 .cycleId(cycle.getId())
                 .name(cycle.getName())

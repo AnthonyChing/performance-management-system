@@ -95,10 +95,18 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
                                                 "RESOURCE_NOT_FOUND", "Cycle not found"));
         assertNotLocked(cycle);
 
-        if (req.getStatus() != null) goal.setStatus(parseGoalStatus(req.getStatus()));
-        if (req.getTitle() != null) goal.setTitle(req.getTitle());
-        if (req.getDescription() != null) goal.setDescription(req.getDescription());
-        if (req.getDueDate() != null) goal.setDueDate(req.getDueDate());
+        if (req.getStatus() != null) {
+            goal.setStatus(parseGoalStatus(req.getStatus()));
+        }
+        if (req.getTitle() != null) {
+            goal.setTitle(req.getTitle());
+        }
+        if (req.getDescription() != null) {
+            goal.setDescription(req.getDescription());
+        }
+        if (req.getDueDate() != null) {
+            goal.setDueDate(req.getDueDate());
+        }
         if (goal.getStatus() == GoalStatus.IN_PROGRESS && goal.getPublishedAt() == null) {
             goal.setPublishedAt(OffsetDateTime.now());
         }

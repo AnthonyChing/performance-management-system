@@ -4,20 +4,45 @@ import com.pms.audit.Auditable;
 import com.pms.dto.employee.AvailableActionsDTO;
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.PaginationDTO;
-import com.pms.dto.employee.kpi.*;
-import com.pms.dto.employee.kpi.KpiResponsesDTO.*;
-import com.pms.entity.*;
+import com.pms.dto.employee.kpi.KpiResponsesDTO.HistoricalKpiResultsResponseDTO;
+import com.pms.dto.employee.kpi.KpiResponsesDTO.KpiConfirmationRequestDTO;
+import com.pms.dto.employee.kpi.KpiResponsesDTO.KpiConfirmationResponseDTO;
+import com.pms.dto.employee.kpi.KpiResponsesDTO.KpiResultResponseDTO;
+import com.pms.dto.employee.kpi.KpiResponsesDTO.KpiStandardsResponseDTO;
+import com.pms.dto.employee.kpi.KpiResultDTO;
+import com.pms.dto.employee.kpi.KpiResultSummaryDTO;
+import com.pms.dto.employee.kpi.KpiStandardDTO;
+import com.pms.entity.Kpi;
+import com.pms.entity.KpiAssignment;
+import com.pms.entity.KpiProgressSnapshot;
+import com.pms.entity.KpiResultConfirmation;
+import com.pms.entity.PerformanceCycle;
+import com.pms.entity.PerformanceReview;
+import com.pms.entity.User;
 import com.pms.entity.enums.CycleStatus;
 import com.pms.exception.ConflictException;
 import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
-import com.pms.repository.*;
+import com.pms.repository.AppealRepository;
+import com.pms.repository.KpiAssignmentRepository;
+import com.pms.repository.KpiProgressSnapshotRepository;
+import com.pms.repository.KpiRepository;
+import com.pms.repository.KpiResultConfirmationRepository;
+import com.pms.repository.PerformanceCycleRepository;
+import com.pms.repository.PerformanceReviewRepository;
+import com.pms.repository.UserRepository;
 import com.pms.service.employee.EmployeeKpiService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -574,12 +599,18 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
 
     private String computeKpiResultStatus(
             PerformanceCycle cycle, PerformanceReview review, UUID userId) {
-        if (cycle.getResultsPublishedAt() == null) return "not_published";
-        if (kpiResultConfirmationRepository.findByReviewId(review.getId()).isPresent())
+        if (cycle.getResultsPublishedAt() == null) {
+            return "not_published";
+        }
+        if (kpiResultConfirmationRepository.findByReviewId(review.getId()).isPresent()) {
             return "confirmed";
-        if (appealRepository.findByReviewId(review.getId()).isPresent()) return "disputed";
-        if (cycle.getStatus() == CycleStatus.COMPLETED || cycle.getStatus() == CycleStatus.CLOSED)
+        }
+        if (appealRepository.findByReviewId(review.getId()).isPresent()) {
+            return "disputed";
+        }
+        if (cycle.getStatus() == CycleStatus.COMPLETED || cycle.getStatus() == CycleStatus.CLOSED) {
             return "finalized";
+        }
         return "pending_confirmation";
     }
 
@@ -635,7 +666,9 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
     }
 
     private KpiResultSummaryDTO.EmployeeSummaryDTO buildEmployeeSummaryDTO(User user) {
-        if (user == null) return null;
+        if (user == null) {
+            return null;
+        }
         return KpiResultSummaryDTO.EmployeeSummaryDTO.builder()
                 .userId(user.getId().toString())
                 .name(user.getFullName())
