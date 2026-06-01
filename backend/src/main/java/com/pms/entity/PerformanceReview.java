@@ -64,17 +64,21 @@ public class PerformanceReview {
     @Column(name = "hr_approved_at")
     private OffsetDateTime hrApprovedAt;
 
-    @Convert(converter = RatingScaleConverter.class)
-    @Column(name = "final_rating", columnDefinition = "rating_scale_enum")
+    // Note: finalRating encrypts an Enum, which requires the DB column to be VARCHAR, not rating_scale_enum
+    @Convert(converter = com.pms.security.crypto.CryptoConverter.class)
+    @Column(name = "final_rating", columnDefinition = "VARCHAR(255)")
     private RatingScale finalRating;
 
+    @Convert(converter = com.pms.security.crypto.CryptoConverter.class)
     @Column(name = "manager_comment", columnDefinition = "TEXT")
     private String managerComment;
 
-    @Column(name = "kpi_score", precision = 6, scale = 2)
+    @Convert(converter = com.pms.security.crypto.BigDecimalCryptoConverter.class)
+    @Column(name = "kpi_score", columnDefinition = "VARCHAR(255)")
     private BigDecimal kpiScore;
 
-    @Column(name = "review_score", precision = 6, scale = 2)
+    @Convert(converter = com.pms.security.crypto.BigDecimalCryptoConverter.class)
+    @Column(name = "review_score", columnDefinition = "VARCHAR(255)")
     private BigDecimal reviewScore;
 
     @Column(name = "score_computed_at")
