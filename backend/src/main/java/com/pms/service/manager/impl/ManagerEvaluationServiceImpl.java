@@ -9,6 +9,8 @@ import com.pms.dto.manager.evaluation.ManagerQuestionnaireResponseDTO;
 import com.pms.dto.manager.evaluation.ManagerQuestionnaireUpdateRequestDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireAnswerDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireResponseItemDTO;
+import com.pms.entity.EvaluationTemplate;
+import com.pms.entity.EvaluationTemplateComponent;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
@@ -43,6 +45,10 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final KpiEvaluationRepository kpiEvalRepo;
     private final UserRepository userRepo;
     private final PerformanceCycleRepository cycleRepo;
+    private final TemplateVersionRepository templateVersionRepo;
+    private final TemplateQuestionRepository templateQuestionRepo;
+    private final EvaluationTemplateRepository evalTemplateRepo;
+    private final EvaluationTemplateComponentRepository componentRepo;
 
     @Override
     @Transactional
@@ -107,11 +113,14 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
         reviewRepo.save(review);
 
+        List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
+
         return ManagerEvaluationResponseDTO.from(
                 review,
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                         evaluationId, RESPONDENT_TYPE),
-                kpiEvalRepo.findByReviewId(evaluationId));
+                kpiEvalRepo.findByReviewId(evaluationId),
+                questions);
     }
 
     @Override
@@ -219,11 +228,14 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             }
         }
 
+        List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
+
         return ManagerEvaluationResponseDTO.from(
                 review,
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                         evaluationId, RESPONDENT_TYPE),
-                kpiEvalRepo.findByReviewId(evaluationId));
+                kpiEvalRepo.findByReviewId(evaluationId),
+                questions);
     }
 
     @Override
@@ -251,13 +263,16 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                 .map(
                         r -> {
                             String cycleName = cycleMap.get(r.getCycleId());
+                            List<com.pms.entity.TemplateQuestion> questions =
+                                    getQuestionsForReview(r);
                             return ManagerEvaluationResponseDTO.from(
                                     r,
                                     cycleName,
                                     reviewResponseRepo
                                             .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                                                     r.getId(), RESPONDENT_TYPE),
-                                    kpiEvalRepo.findByReviewId(r.getId()));
+                                    kpiEvalRepo.findByReviewId(r.getId()),
+                                    questions);
                         })
                 .toList();
     }
@@ -311,5 +326,90 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid final_rating: " + value);
         }
+    }
+
+    private List<com.pms.entity.TemplateQuestion> getQuestionsForReview(PerformanceReview review) {
+        if (review == null) {
+            return java.util.Collections.emptyList();
+        }
+
+        UUID cycleId = review.getCycleId();
+        UUID employeeId = review.getEmployeeId();
+        com.pms.entity.User employee = userRepo.findById(employeeId).orElse(null);
+        UUID templateVersionId = review.getTemplateVersionId();
+
+        if (employee != null) {
+            String deptIdStr =
+                    employee.getDepartmentId() != null
+                            ? employee.getDepartmentId().toString()
+                            : null;
+            String jobCat = employee.getJobCategory();
+
+            List<EvaluationTemplate> templates =
+                    evalTemplateRepo.findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(cycleId);
+            EvaluationTemplate matchedTemplate = null;
+
+            if (deptIdStr != null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(
+                                        t ->
+                                                "department".equals(t.getEmployeeGroupType())
+                                                        && deptIdStr.equalsIgnoreCase(
+                                                                t.getEmployeeGroupRef()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate == null && jobCat != null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(
+                                        t ->
+                                                "job_category".equals(t.getEmployeeGroupType())
+                                                        && jobCat.equalsIgnoreCase(
+                                                                t.getEmployeeGroupRef()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate == null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(t -> "all".equals(t.getEmployeeGroupType()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate != null) {
+                List<EvaluationTemplateComponent> components =
+                        componentRepo.findByEvaluationTemplateIdOrderBySortOrder(
+                                matchedTemplate.getId());
+
+                List<com.pms.entity.TemplateQuestion> allQuestions = new java.util.ArrayList<>();
+                for (EvaluationTemplateComponent comp : components) {
+                    List<com.pms.entity.TemplateQuestion> compQuestions =
+                            templateQuestionRepo
+                                    .findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                                            comp.getAssessmentTemplateId());
+                    allQuestions.addAll(compQuestions);
+                }
+
+                if (!allQuestions.isEmpty()) {
+                    return allQuestions;
+                }
+            }
+        }
+
+        if (templateVersionId != null) {
+            com.pms.entity.TemplateVersion version =
+                    templateVersionRepo.findById(templateVersionId).orElse(null);
+            if (version != null) {
+                return templateQuestionRepo.findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                        version.getTemplateId());
+            }
+        }
+
+        return java.util.Collections.emptyList();
     }
 }
