@@ -89,10 +89,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
         final GoalStatus finalStatusFilter = statusFilter;
         if (finalStatusFilter != null) {
-            goals =
-                    goals.stream()
-                            .filter(g -> g.getStatus() == finalStatusFilter)
-                            .collect(Collectors.toList());
+            goals = goals.stream().filter(g -> g.getStatus() == finalStatusFilter).toList();
         }
         if (q != null && !q.isBlank()) {
             String lq = q.toLowerCase();
@@ -108,10 +105,10 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                                             && g.getDescription()
                                                                     .toLowerCase()
                                                                     .contains(lq)))
-                            .collect(Collectors.toList());
+                            .toList();
         }
 
-        List<UUID> goalIds = goals.stream().map(Goal::getId).collect(Collectors.toList());
+        List<UUID> goalIds = goals.stream().map(Goal::getId).toList();
 
         Map<UUID, GoalProgressUpdate> latestProgressMap = Collections.emptyMap();
         Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
@@ -243,7 +240,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                                                 && g.getDescription()
                                                                         .toLowerCase()
                                                                         .contains(lq)))
-                                .collect(Collectors.toList());
+                                .toList();
             }
 
             int total = allGoals.size();
@@ -251,7 +248,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             int toIdx = Math.min(fromIdx + size, total);
             List<Goal> pagedGoals = allGoals.subList(fromIdx, toIdx);
 
-            List<UUID> goalIds = pagedGoals.stream().map(Goal::getId).collect(Collectors.toList());
+            List<UUID> goalIds = pagedGoals.stream().map(Goal::getId).toList();
             Map<UUID, GoalProgressUpdate> latestProgressMap = Collections.emptyMap();
             Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
             if (!goalIds.isEmpty()) {
@@ -537,7 +534,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
         List<Goal> allGoals =
                 goalRepository.findByCycleIdAndOwnerIdAndDeletedAtIsNull(cycle.getId(), userId);
-        List<UUID> goalIds = allGoals.stream().map(Goal::getId).collect(Collectors.toList());
+        List<UUID> goalIds = allGoals.stream().map(Goal::getId).toList();
 
         Map<UUID, GoalReview> latestReviewMap = Collections.emptyMap();
         if (!goalIds.isEmpty()) {
@@ -616,7 +613,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                                             .reviewer(grReviewer)
                                             .build();
                                 })
-                        .collect(Collectors.toList());
+                        .toList();
 
         return GoalReviewResultResponseDTO.builder()
                 .cycle(buildCycleSummaryDTO(cycle))

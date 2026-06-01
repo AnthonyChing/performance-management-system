@@ -82,7 +82,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                                                 "No performance review found for current cycle"));
 
         List<Kpi> kpis = kpiRepository.findByCycleIdAndDeletedAtIsNull(cycle.getId());
-        List<UUID> kpiIds = kpis.stream().map(Kpi::getId).collect(Collectors.toList());
+        List<UUID> kpiIds = kpis.stream().map(Kpi::getId).toList();
         List<KpiAssignment> assignments =
                 kpiAssignmentRepository.findByUserIdAndKpiIdIn(userId, kpiIds);
 
@@ -127,7 +127,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                                                             .build())
                                             .build();
                                 })
-                        .collect(Collectors.toList());
+                        .toList();
 
         User user = userRepository.findById(userId).orElse(null);
         KpiResultSummaryDTO.EmployeeSummaryDTO employeeDTO = buildEmployeeSummaryDTO(user);
@@ -184,16 +184,14 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
         }
 
         List<Kpi> kpis = kpiRepository.findByCycleIdAndDeletedAtIsNull(cycle.getId());
-        List<UUID> kpiIds = kpis.stream().map(Kpi::getId).collect(Collectors.toList());
+        List<UUID> kpiIds = kpis.stream().map(Kpi::getId).toList();
         List<KpiAssignment> assignments =
                 kpiAssignmentRepository.findByUserIdAndKpiIdIn(userId, kpiIds);
         Map<UUID, KpiAssignment> assignmentMap =
                 assignments.stream()
                         .collect(Collectors.toMap(KpiAssignment::getKpiId, Function.identity()));
         List<Kpi> assignedKpis =
-                kpis.stream()
-                        .filter(k -> assignmentMap.containsKey(k.getId()))
-                        .collect(Collectors.toList());
+                kpis.stream().filter(k -> assignmentMap.containsKey(k.getId())).toList();
 
         double totalWeightedScore = 0.0;
         List<KpiResultDTO> kpiResults = new ArrayList<>();
@@ -447,7 +445,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                             .sorted(
                                     Comparator.comparing(PerformanceCycle::getHrReviewEnd)
                                             .reversed())
-                            .collect(Collectors.toList());
+                            .toList();
 
             // apply q filter on cycle name
             if (q != null && !q.isBlank()) {
@@ -458,7 +456,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                                         c ->
                                                 c.getName() != null
                                                         && c.getName().toLowerCase().contains(lq))
-                                .collect(Collectors.toList());
+                                .toList();
             }
 
             int total = historicalCycles.size();
@@ -495,7 +493,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                                                                 : null)
                                                 .build();
                                     })
-                            .collect(Collectors.toList());
+                            .toList();
 
             int totalPages = total == 0 ? 1 : (int) Math.ceil((double) total / size);
             PaginationDTO pagination =
@@ -537,7 +535,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                                                     "No KPI review found for cycle"));
 
             List<Kpi> kpis = kpiRepository.findByCycleIdAndDeletedAtIsNull(cycle.getId());
-            List<UUID> kpiIds = kpis.stream().map(Kpi::getId).collect(Collectors.toList());
+            List<UUID> kpiIds = kpis.stream().map(Kpi::getId).toList();
             List<KpiAssignment> assignments =
                     kpiAssignmentRepository.findByUserIdAndKpiIdIn(userId, kpiIds);
             Map<UUID, KpiAssignment> assignmentMap =
@@ -573,7 +571,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                                                                 .build())
                                                 .build();
                                     })
-                            .collect(Collectors.toList());
+                            .toList();
 
             User user = userRepository.findById(userId).orElse(null);
             KpiResultSummaryDTO result =
