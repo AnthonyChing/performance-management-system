@@ -14,6 +14,7 @@ import com.pms.entity.EvaluationTemplateComponent;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
+import com.pms.entity.TemplateQuestion;
 import com.pms.entity.User;
 import com.pms.entity.enums.RatingScale;
 import com.pms.entity.enums.ReviewStatus;
@@ -23,9 +24,15 @@ import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
 import com.pms.repository.*;
 import com.pms.service.manager.ManagerEvaluationService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -104,13 +111,17 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
 
         if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
-        if (req.getFinalRating() != null)
+        if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
-        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        }
+        if (req.getManagerComment() != null) {
+            review.setManagerComment(req.getManagerComment());
+        }
         if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
         }
+        recomputeScoresAndRating(review);
         reviewRepo.save(review);
 
         List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
@@ -142,7 +153,6 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
         if (review.getStatus() == ReviewStatus.PENDING_MANAGER_EVAL) {
             review.setStatus(ReviewStatus.MANAGER_EVAL_IN_PROGRESS);
-            reviewRepo.save(review);
         }
 
         for (QuestionnaireAnswerDTO ans : req.getResponses()) {
@@ -170,6 +180,9 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                                 .build());
             }
         }
+
+        recomputeScoresAndRating(review);
+        reviewRepo.save(review);
 
         List<ReviewResponse> saved =
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
@@ -200,14 +213,16 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
 
         if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
-        if (req.getFinalRating() != null)
+        if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
-        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        }
+        if (req.getManagerComment() != null) {
+            review.setManagerComment(req.getManagerComment());
+        }
         if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
         }
-        reviewRepo.save(review);
 
         if (req.getKpiEvaluations() != null) {
             for (KpiEvaluationItemDTO item : req.getKpiEvaluations()) {
