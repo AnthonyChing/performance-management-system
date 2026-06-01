@@ -43,9 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EmployeeAppealServiceImpl implements EmployeeAppealService {
 
-    private static final UUID HELEN_HO_UUID =
-            UUID.fromString("00000000-0000-0000-0000-0000000000a1");
-
     private final UserRepository userRepository;
     private final PerformanceCycleRepository performanceCycleRepository;
     private final PerformanceReviewRepository performanceReviewRepository;
@@ -181,21 +178,22 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         + "-"
                         + String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
 
+        UUID managerId = review.getManagerId();
         Appeal appeal =
                 Appeal.builder()
                         .id(UUID.randomUUID())
                         .reviewId(review.getId())
                         .caseNo(caseNo)
                         .filedBy(userId)
-                        .assignedToType(AppealAssignee.HR)
-                        .assignedTo(HELEN_HO_UUID)
+                        .assignedToType(AppealAssignee.SENIOR_MANAGER)
+                        .assignedTo(managerId)
                         .reason(request.getReason())
                         .status(AppealStatus.SUBMITTED)
                         .filedAt(OffsetDateTime.now())
                         .build();
         appeal = appealRepository.save(appeal);
 
-        User handler = userRepository.findById(HELEN_HO_UUID).orElse(null);
+        User handler = userRepository.findById(managerId).orElse(null);
         AppealDTO appealDTO = buildAppealDTO(appeal, review, cycle, handler, null);
 
         return AppealSubmitResponseDTO.builder()
