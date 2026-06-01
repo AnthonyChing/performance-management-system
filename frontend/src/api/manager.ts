@@ -40,6 +40,22 @@ export interface EvaluationQuestion {
   sort_order: number;
 }
 
+interface QuestionnaireQuestionApi {
+  question_id: string;
+  question_text: string;
+  question_type: QuestionType;
+  rating_scale_max: number | null;
+  is_required: boolean;
+  sort_order: number;
+}
+
+interface ManagerQuestionnaireResponse {
+  review_id: string;
+  questions: QuestionnaireQuestionApi[];
+  responses: ReviewResponse[];
+  updated_at: string;
+}
+
 export interface KpiEvaluationItem {
   kpi_id: string;
   manager_score: number | null;
@@ -270,8 +286,32 @@ function isReviewResponse(value: unknown): value is ReviewResponse {
     isString(value.respondent_type) &&
     (value.rating_value === null || isNumber(value.rating_value)) &&
     isNullableString(value.text_value) &&
-    (value.boolean_value === null || typeof value.boolean_value === 'boolean') &&
+    (value.boolean_value === undefined || value.boolean_value === null || typeof value.boolean_value === 'boolean') &&
     isString(value.responded_at)
+  );
+}
+
+function isQuestionnaireQuestionApi(value: unknown): value is QuestionnaireQuestionApi {
+  return (
+    isRecord(value) &&
+    isString(value.question_id) &&
+    isString(value.question_text) &&
+    isString(value.question_type) &&
+    (value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
+    typeof value.is_required === 'boolean' &&
+    isNumber(value.sort_order)
+  );
+}
+
+function isManagerQuestionnaireResponse(value: unknown): value is ManagerQuestionnaireResponse {
+  return (
+    isRecord(value) &&
+    isString(value.review_id) &&
+    Array.isArray(value.questions) &&
+    value.questions.every(isQuestionnaireQuestionApi) &&
+    Array.isArray(value.responses) &&
+    value.responses.every(isReviewResponse) &&
+    isString(value.updated_at)
   );
 }
 
@@ -622,6 +662,30 @@ export function submitQuestionnaireEvaluation(
     payload,
     options,
   );
+}
+
+export function getQuestionnaire(
+  userId: string,
+  evaluationId: string,
+  options?: ManagerApiOptions,
+): Promise<{ review_id: string; questions: EvaluationQuestion[]; responses: ReviewResponse[]; updated_at: string }> {
+  return requestJson(
+    `/users/${userId}/evaluations/${evaluationId}/questionnaire`,
+    'GET',
+    isManagerQuestionnaireResponse,
+    undefined,
+    options,
+  ).then((res) => ({
+    ...res,
+    questions: res.questions.map((question) => ({
+      id: question.question_id,
+      question_text: question.question_text,
+      question_type: question.question_type,
+      rating_scale_max: question.rating_scale_max,
+      is_required: question.is_required,
+      sort_order: question.sort_order,
+    })),
+  }));
 }
 
 export function submitKpiEvaluation(
