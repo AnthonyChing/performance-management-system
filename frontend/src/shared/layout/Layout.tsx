@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate, Navigate } from 'react-route
 import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
 import { deleteSession } from '../../api/auth';
 import { getMyProfile, type EmployeeProfile } from '../../api/employee';
+import { getUserRole } from '../../features/auth';
 
 const SidebarItem = ({ to, icon: Icon, label, exact, isSidebarOpen, isGroupStyle }: any) => {
   return (
@@ -123,7 +124,7 @@ export default function Layout() {
   const [currentUser, setCurrentUser] = useState<EmployeeProfile | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
-  const role = localStorage.getItem('role');
+  const role = getUserRole();
 
   useEffect(() => {
     let isMounted = true;
