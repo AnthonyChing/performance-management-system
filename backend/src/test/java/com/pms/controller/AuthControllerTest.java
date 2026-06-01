@@ -28,7 +28,13 @@ class AuthControllerTest {
 
     @MockBean AuthService authService;
 
-    @MockBean JwtUtil jwtUtil;
+    @org.springframework.boot.test.context.TestConfiguration
+    static class TestConfig {
+        @org.springframework.context.annotation.Bean
+        public JwtUtil jwtUtil() {
+            return new JwtUtil("dev-secret-key-that-is-at-least-32-bytes-long", 3600000);
+        }
+    }
 
     @Test
     void googleLogin_returnsAuthResponse() throws Exception {

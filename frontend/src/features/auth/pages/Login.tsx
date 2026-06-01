@@ -31,6 +31,9 @@ export default function Login() {
 
       try {
         const session = await authenticateWithGoogle(idToken);
+        if (session.accessToken) {
+          saveAuthToken(session.accessToken);
+        }
         if (session.roles && session.roles.length > 0) {
           localStorage.setItem('role', session.roles[0]);
           localStorage.setItem('roles', JSON.stringify(session.roles));

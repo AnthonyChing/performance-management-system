@@ -1,37 +1,76 @@
 package com.pms.security;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-@ExtendWith(MockitoExtension.class)
 class JwtAuthenticationFilterTest {
 
-    @Mock private JwtUtil jwtUtil;
-    @Mock private FilterChain filterChain;
-    @Mock private Claims claims;
-
+    private FakeJwtUtil jwtUtil;
+    private FakeFilterChain filterChain;
     private JwtAuthenticationFilter filter;
+
+    static class FakeJwtUtil extends JwtUtil {
+        Claims parsedClaims;
+        List<String> rolesToReturn;
+        JwtException parseException;
+        List<String> parsedTokens = new ArrayList<>();
+
+        public FakeJwtUtil() {
+            super("dev-secret-key-that-is-at-least-32-bytes-long", 3600000);
+        }
+
+        @Override
+        public Claims parseToken(String token) throws JwtException {
+            parsedTokens.add(token);
+            if (parseException != null) {
+                throw parseException;
+            }
+            return parsedClaims;
+        }
+
+        @Override
+        public List<String> getRoles(Claims claims) {
+            return rolesToReturn;
+        }
+    }
+
+    static class FakeFilterChain implements FilterChain {
+        boolean wasCalled = false;
+
+        @Override
+        public void doFilter(jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response)
+                throws IOException, ServletException {
+            wasCalled = true;
+        }
+    }
 
     @BeforeEach
     void setUp() {
+        jwtUtil = new FakeJwtUtil();
+        filterChain = new FakeFilterChain();
         filter = new JwtAuthenticationFilter(jwtUtil);
         SecurityContextHolder.clearContext();
+    }
+
+    private Claims createClaims(String subject, List<String> roles) {
+        return Jwts.claims()
+                .subject(subject)
+                .add("roles", roles)
+                .build();
     }
 
     @Test
@@ -40,9 +79,8 @@ class JwtAuthenticationFilterTest {
         request.addHeader("Authorization", "Bearer valid.jwt.token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtil.parseToken("valid.jwt.token")).thenReturn(claims);
-        when(jwtUtil.getRoles(claims)).thenReturn(List.of("employee"));
-        when(claims.getSubject()).thenReturn("00000000-0000-0000-0000-000000000001");
+        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000001", List.of("employee"));
+        jwtUtil.rolesToReturn = List.of("employee");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -52,7 +90,7 @@ class JwtAuthenticationFilterTest {
         assertTrue(
                 auth.getAuthorities().stream()
                         .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE")));
-        verify(filterChain).doFilter(request, response);
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
@@ -61,9 +99,8 @@ class JwtAuthenticationFilterTest {
         request.setCookies(new jakarta.servlet.http.Cookie("jwt", "cookie.jwt.token"));
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtil.parseToken("cookie.jwt.token")).thenReturn(claims);
-        when(jwtUtil.getRoles(claims)).thenReturn(List.of("hr"));
-        when(claims.getSubject()).thenReturn("00000000-0000-0000-0000-000000000002");
+        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000002", List.of("hr"));
+        jwtUtil.rolesToReturn = List.of("hr");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -71,7 +108,7 @@ class JwtAuthenticationFilterTest {
         assertNotNull(auth);
         assertTrue(
                 auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR")));
-        verify(filterChain).doFilter(request, response);
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
@@ -81,15 +118,14 @@ class JwtAuthenticationFilterTest {
         request.setCookies(new jakarta.servlet.http.Cookie("jwt", "cookie.jwt.token"));
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtil.parseToken("header.jwt.token")).thenReturn(claims);
-        when(jwtUtil.getRoles(claims)).thenReturn(List.of("manager"));
-        when(claims.getSubject()).thenReturn("00000000-0000-0000-0000-000000000003");
+        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000003", List.of("manager"));
+        jwtUtil.rolesToReturn = List.of("manager");
 
         filter.doFilterInternal(request, response, filterChain);
 
-        verify(jwtUtil).parseToken("header.jwt.token");
-        verify(jwtUtil, never()).parseToken("cookie.jwt.token");
-        verify(filterChain).doFilter(request, response);
+        assertTrue(jwtUtil.parsedTokens.contains("header.jwt.token"));
+        assertFalse(jwtUtil.parsedTokens.contains("cookie.jwt.token"));
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
@@ -98,12 +134,12 @@ class JwtAuthenticationFilterTest {
         request.addHeader("Authorization", "Bearer invalid.token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtil.parseToken("invalid.token")).thenThrow(new JwtException("bad token"));
+        jwtUtil.parseException = new JwtException("bad token");
 
         filter.doFilterInternal(request, response, filterChain);
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        verify(filterChain).doFilter(request, response);
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
@@ -114,20 +150,19 @@ class JwtAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        verify(jwtUtil, never()).parseToken(any());
-        verify(filterChain).doFilter(request, response);
+        assertTrue(jwtUtil.parsedTokens.isEmpty());
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
     void noCookiesNull_doesNotSetAuthentication() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        // getCookies() returns null when no cookies are set — MockHttpServletRequest does this
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilterInternal(request, response, filterChain);
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        verify(filterChain).doFilter(request, response);
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
@@ -139,8 +174,8 @@ class JwtAuthenticationFilterTest {
         filter.doFilterInternal(request, response, filterChain);
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        verify(jwtUtil, never()).parseToken(any());
-        verify(filterChain).doFilter(request, response);
+        assertTrue(jwtUtil.parsedTokens.isEmpty());
+        assertTrue(filterChain.wasCalled);
     }
 
     @Test
@@ -149,9 +184,8 @@ class JwtAuthenticationFilterTest {
         request.addHeader("Authorization", "Bearer multi.role.token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtil.parseToken("multi.role.token")).thenReturn(claims);
-        when(jwtUtil.getRoles(claims)).thenReturn(List.of("employee", "manager"));
-        when(claims.getSubject()).thenReturn("00000000-0000-0000-0000-000000000004");
+        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000004", List.of("employee", "manager"));
+        jwtUtil.rolesToReturn = List.of("employee", "manager");
 
         filter.doFilterInternal(request, response, filterChain);
 
