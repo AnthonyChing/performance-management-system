@@ -9,9 +9,12 @@ import com.pms.dto.manager.evaluation.ManagerQuestionnaireResponseDTO;
 import com.pms.dto.manager.evaluation.ManagerQuestionnaireUpdateRequestDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireAnswerDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireResponseItemDTO;
+import com.pms.entity.EvaluationTemplate;
+import com.pms.entity.EvaluationTemplateComponent;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
+import com.pms.entity.TemplateQuestion;
 import com.pms.entity.User;
 import com.pms.entity.enums.RatingScale;
 import com.pms.entity.enums.ReviewStatus;
@@ -25,9 +28,15 @@ import com.pms.repository.PerformanceReviewRepository;
 import com.pms.repository.ReviewResponseRepository;
 import com.pms.repository.UserRepository;
 import com.pms.service.manager.ManagerEvaluationService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,6 +56,10 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final KpiEvaluationRepository kpiEvalRepo;
     private final UserRepository userRepo;
     private final PerformanceCycleRepository cycleRepo;
+    private final TemplateVersionRepository templateVersionRepo;
+    private final TemplateQuestionRepository templateQuestionRepo;
+    private final EvaluationTemplateRepository evalTemplateRepo;
+    private final EvaluationTemplateComponentRepository componentRepo;
 
     @Override
     @Transactional
@@ -101,9 +114,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             }
         }
 
-        if (req.getStatus() != null) {
-            review.setStatus(parseReviewStatus(req.getStatus()));
-        }
+        if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
         if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
         }
@@ -114,13 +125,17 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
         }
+        recomputeScoresAndRating(review);
         reviewRepo.save(review);
+
+        List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
 
         return ManagerEvaluationResponseDTO.from(
                 review,
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                         evaluationId, RESPONDENT_TYPE),
-                kpiEvalRepo.findByReviewId(evaluationId));
+                kpiEvalRepo.findByReviewId(evaluationId),
+                questions);
     }
 
     @Override
@@ -142,7 +157,6 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
         if (review.getStatus() == ReviewStatus.PENDING_MANAGER_EVAL) {
             review.setStatus(ReviewStatus.MANAGER_EVAL_IN_PROGRESS);
-            reviewRepo.save(review);
         }
 
         for (QuestionnaireAnswerDTO ans : req.getResponses()) {
@@ -170,6 +184,9 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                                 .build());
             }
         }
+
+        recomputeScoresAndRating(review);
+        reviewRepo.save(review);
 
         List<ReviewResponse> saved =
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
@@ -199,9 +216,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                     "STATE_CONFLICT", "Review is not in manager evaluation phase");
         }
 
-        if (req.getStatus() != null) {
-            review.setStatus(parseReviewStatus(req.getStatus()));
-        }
+        if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
         if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
         }
@@ -212,7 +227,6 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
         }
-        reviewRepo.save(review);
 
         if (req.getKpiEvaluations() != null) {
             for (KpiEvaluationItemDTO item : req.getKpiEvaluations()) {
@@ -233,11 +247,14 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             }
         }
 
+        List<com.pms.entity.TemplateQuestion> questions = getQuestionsForReview(review);
+
         return ManagerEvaluationResponseDTO.from(
                 review,
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                         evaluationId, RESPONDENT_TYPE),
-                kpiEvalRepo.findByReviewId(evaluationId));
+                kpiEvalRepo.findByReviewId(evaluationId),
+                questions);
     }
 
     @Override
@@ -265,13 +282,16 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                 .map(
                         r -> {
                             String cycleName = cycleMap.get(r.getCycleId());
+                            List<com.pms.entity.TemplateQuestion> questions =
+                                    getQuestionsForReview(r);
                             return ManagerEvaluationResponseDTO.from(
                                     r,
                                     cycleName,
                                     reviewResponseRepo
                                             .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
                                                     r.getId(), RESPONDENT_TYPE),
-                                    kpiEvalRepo.findByReviewId(r.getId()));
+                                    kpiEvalRepo.findByReviewId(r.getId()),
+                                    questions);
                         })
                 .toList();
     }
@@ -325,5 +345,90 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid final_rating: " + value);
         }
+    }
+
+    private List<com.pms.entity.TemplateQuestion> getQuestionsForReview(PerformanceReview review) {
+        if (review == null) {
+            return java.util.Collections.emptyList();
+        }
+
+        UUID cycleId = review.getCycleId();
+        UUID employeeId = review.getEmployeeId();
+        com.pms.entity.User employee = userRepo.findById(employeeId).orElse(null);
+        UUID templateVersionId = review.getTemplateVersionId();
+
+        if (employee != null) {
+            String deptIdStr =
+                    employee.getDepartmentId() != null
+                            ? employee.getDepartmentId().toString()
+                            : null;
+            String jobCat = employee.getJobCategory();
+
+            List<EvaluationTemplate> templates =
+                    evalTemplateRepo.findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(cycleId);
+            EvaluationTemplate matchedTemplate = null;
+
+            if (deptIdStr != null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(
+                                        t ->
+                                                "department".equals(t.getEmployeeGroupType())
+                                                        && deptIdStr.equalsIgnoreCase(
+                                                                t.getEmployeeGroupRef()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate == null && jobCat != null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(
+                                        t ->
+                                                "job_category".equals(t.getEmployeeGroupType())
+                                                        && jobCat.equalsIgnoreCase(
+                                                                t.getEmployeeGroupRef()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate == null) {
+                matchedTemplate =
+                        templates.stream()
+                                .filter(t -> "all".equals(t.getEmployeeGroupType()))
+                                .findFirst()
+                                .orElse(null);
+            }
+
+            if (matchedTemplate != null) {
+                List<EvaluationTemplateComponent> components =
+                        componentRepo.findByEvaluationTemplateIdOrderBySortOrder(
+                                matchedTemplate.getId());
+
+                List<com.pms.entity.TemplateQuestion> allQuestions = new java.util.ArrayList<>();
+                for (EvaluationTemplateComponent comp : components) {
+                    List<com.pms.entity.TemplateQuestion> compQuestions =
+                            templateQuestionRepo
+                                    .findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                                            comp.getAssessmentTemplateId());
+                    allQuestions.addAll(compQuestions);
+                }
+
+                if (!allQuestions.isEmpty()) {
+                    return allQuestions;
+                }
+            }
+        }
+
+        if (templateVersionId != null) {
+            com.pms.entity.TemplateVersion version =
+                    templateVersionRepo.findById(templateVersionId).orElse(null);
+            if (version != null) {
+                return templateQuestionRepo.findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(
+                        version.getTemplateId());
+            }
+        }
+
+        return java.util.Collections.emptyList();
     }
 }
