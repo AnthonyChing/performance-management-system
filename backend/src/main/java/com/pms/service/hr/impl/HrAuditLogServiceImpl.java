@@ -37,7 +37,13 @@ public class HrAuditLogServiceImpl implements HrAuditLogService {
 
         java.util.List<UUID> actorIds =
                 logs.stream()
-                        .map(AuditLog::getActorId)
+                        .map(
+                                log ->
+                                        log.getActorId() != null
+                                                ? log.getActorId()
+                                                : ("LOGIN_GOOGLE".equals(log.getAction())
+                                                        ? log.getResourceId()
+                                                        : null))
                         .filter(java.util.Objects::nonNull)
                         .distinct()
                         .toList();
@@ -47,11 +53,17 @@ public class HrAuditLogServiceImpl implements HrAuditLogService {
 
         return logs.map(
                 log -> {
-                    User actor = userMap.get(log.getActorId());
+                    UUID actualActorId =
+                            log.getActorId() != null
+                                    ? log.getActorId()
+                                    : ("LOGIN_GOOGLE".equals(log.getAction())
+                                            ? log.getResourceId()
+                                            : null);
+                    User actor = actualActorId != null ? userMap.get(actualActorId) : null;
                     String name = actor != null ? actor.getFullName() : "系統/未知操作者";
                     return AuditLogDTO.builder()
                             .id(log.getId())
-                            .actorId(log.getActorId())
+                            .actorId(actualActorId)
                             .actorName(name)
                             .action(log.getAction())
                             .resource(log.getResource())
