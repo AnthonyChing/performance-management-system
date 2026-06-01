@@ -9,15 +9,12 @@ const writeTrend  = new Trend('write_duration', true);
 export const options = {
   scenarios: {
     spike: {
-      executor:          'ramping-arrival-rate',
-      startRate:         100,
-      timeUnit:          '1s',
-      preAllocatedVUs:   1000,
-      maxVUs:            6000, 
+      executor: 'ramping-vus',
+      startVUs: 0,
       stages: [
         { target: 100,  duration: '2m'  }, // 正常低流量
-        { target: 5000, duration: '10s' }, // 10 秒內暴衝
-        { target: 5000, duration: '3m'  }, // 維持高壓
+        { target: 1000, duration: '10s' }, // 10 秒內暴衝到 1000 人 (CI 極限)
+        { target: 1000, duration: '3m'  }, // 維持高壓
         { target: 100,  duration: '2m'  }, // 退潮
         { target: 0,    duration: '1m'  },
       ],

@@ -9,21 +9,17 @@ const writeTrend  = new Trend('write_duration', true);
 export const options = {
   scenarios: {
     stress: {
-      executor:          'ramping-arrival-rate',
-      startRate:         100,
-      timeUnit:          '1s',
-      preAllocatedVUs:   1000,
-      maxVUs:            10000,
+      executor: 'ramping-vus',
+      startVUs: 0,
       stages: [
-        { target: 500,  duration: '5m'  },
-        { target: 1000, duration: '5m'  },
-        { target: 2000, duration: '5m'  },
-        { target: 3000, duration: '5m'  },
-        { target: 4000, duration: '5m'  },
-        { target: 5000, duration: '5m'  }, // 預期目標
-        { target: 6000, duration: '5m'  }, // 超載區
-        { target: 7000, duration: '5m'  }, // 找崩潰點
-        { target: 0,    duration: '5m'  },
+        { target: 100,  duration: '2m' },
+        { target: 300,  duration: '2m' },
+        { target: 500,  duration: '2m' },
+        { target: 800,  duration: '2m' },
+        { target: 1000, duration: '2m' }, // CI 預期目標
+        { target: 1200, duration: '2m' }, // 超載區
+        { target: 1500, duration: '2m' }, // 找崩潰點
+        { target: 0,    duration: '5m' },
       ],
       exec: 'employeeFlow',
     },

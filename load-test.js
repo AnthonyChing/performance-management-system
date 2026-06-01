@@ -9,41 +9,32 @@ const writeTrend  = new Trend('write_duration', true);
 export const options = {
   scenarios: {
     employee_flow: {
-      executor:          'ramping-arrival-rate',
-      startRate:         100,
-      timeUnit:          '1s',
-      preAllocatedVUs:   500,
-      maxVUs:            3000, // Reduced max VUs for Staging limits, keeping the mathematical model safe
+      executor: 'ramping-vus',
+      startVUs: 0,
       stages: [
-        { target: 100,  duration: '1m'  }, // 暖機
-        { target: 500,  duration: '3m' }, // 爬升
-        { target: 500,  duration: '3m' }, // 維持尖峰
-        { target: 0,    duration: '1m'  }, // 冷卻
+        { target: 100, duration: '1m' }, // 暖機
+        { target: 900, duration: '3m' }, // 爬升 (900 VUs)
+        { target: 900, duration: '3m' }, // 維持尖峰
+        { target: 0,   duration: '1m' }, // 冷卻
       ],
       exec: 'employeeFlow',
     },
     manager_flow: {
-      executor:          'ramping-arrival-rate',
-      startRate:         5,
-      timeUnit:          '1s',
-      preAllocatedVUs:   50,
-      maxVUs:            200,
+      executor: 'ramping-vus',
+      startVUs: 0,
       stages: [
-        { target: 5,   duration: '1m'  },
-        { target: 40,  duration: '3m' }, 
-        { target: 40,  duration: '3m' },
-        { target: 0,   duration: '1m'  },
+        { target: 10, duration: '1m' },
+        { target: 80, duration: '3m' }, // 爬升 (80 VUs)
+        { target: 80, duration: '3m' },
+        { target: 0,  duration: '1m' },
       ],
       exec: 'managerFlow',
     },
     hr_flow: {
-      executor:        'constant-arrival-rate',
-      rate:            10,               
-      timeUnit:        '1s',
-      preAllocatedVUs: 10,
-      maxVUs:          50,
-      duration:        '8m',
-      exec:            'hrFlow',
+      executor: 'constant-vus',
+      vus: 20,                          // (20 VUs)
+      duration: '8m',
+      exec: 'hrFlow',
     },
   },
   thresholds: {
