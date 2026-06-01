@@ -27,6 +27,8 @@ const cyclePayload = {
   cycle_type: 'annual',
   status: 'not_started',
   timezone: 'Asia/Taipei',
+  cycle_start: '2027-01-01T00:00:00+08:00',
+  cycle_end: '2027-12-31T23:59:59+08:00',
   manager_eval_start: '2027-01-16T00:00:00+08:00',
   manager_eval_end: '2027-01-31T23:59:59+08:00',
   hr_review_end: '2027-02-07T23:59:59+08:00',
@@ -71,7 +73,7 @@ describe('HR performance cycle API', () => {
     );
   });
 
-  it('creates cycles with backend-shaped manager and HR review fields', async () => {
+  it('creates cycles with backend-shaped cycle, manager and HR review fields', async () => {
     const fetcher = vi.fn(async () => jsonResponse(cyclePayload, { status: 201 })) satisfies Fetcher;
 
     await createPerformanceCycle(
@@ -79,6 +81,8 @@ describe('HR performance cycle API', () => {
         name: '2027 年度績效考核',
         cycle_type: 'annual',
         timezone: 'Asia/Taipei',
+        cycle_start: '2027-01-01T00:00:00+08:00',
+        cycle_end: '2027-12-31T23:59:59+08:00',
         manager_eval_start: '2027-01-16T00:00:00+08:00',
         manager_eval_end: '2027-01-31T23:59:59+08:00',
         hr_review_end: '2027-02-07T23:59:59+08:00',
@@ -98,6 +102,8 @@ describe('HR performance cycle API', () => {
           name: '2027 年度績效考核',
           cycle_type: 'annual',
           timezone: 'Asia/Taipei',
+          cycle_start: '2027-01-01T00:00:00+08:00',
+          cycle_end: '2027-12-31T23:59:59+08:00',
           manager_eval_start: '2027-01-16T00:00:00+08:00',
           manager_eval_end: '2027-01-31T23:59:59+08:00',
           hr_review_end: '2027-02-07T23:59:59+08:00',
@@ -181,6 +187,12 @@ describe('HR performance cycle pages', () => {
     fireEvent.change(screen.getByLabelText('考核週期名稱'), {
       target: { value: '2027 年度績效考核' },
     });
+    fireEvent.change(screen.getByLabelText('考核起始日'), {
+      target: { value: '2027-01-01' },
+    });
+    fireEvent.change(screen.getByLabelText('考核結束日'), {
+      target: { value: '2027-12-31' },
+    });
     fireEvent.change(screen.getByLabelText('主管評核開始日'), {
       target: { value: '2027-01-16' },
     });
@@ -203,6 +215,8 @@ describe('HR performance cycle pages', () => {
             name: '2027 年度績效考核',
             cycle_type: 'annual',
             timezone: 'Asia/Taipei',
+            cycle_start: '2027-01-01T00:00:00+08:00',
+            cycle_end: '2027-12-31T23:59:59+08:00',
             manager_eval_start: '2027-01-16T00:00:00+08:00',
             manager_eval_end: '2027-01-31T23:59:59+08:00',
             hr_review_end: '2027-02-07T23:59:59+08:00',
@@ -262,6 +276,8 @@ describe('HR performance cycle pages', () => {
         body: JSON.stringify({
           name: '2027 年度績效考核 修正版',
           timezone: 'Asia/Taipei',
+          cycle_start: '2027-01-01T00:00:00+08:00',
+          cycle_end: '2027-12-31T23:59:59+08:00',
           manager_eval_start: '2027-01-16T00:00:00+08:00',
           manager_eval_end: '2027-02-02T23:59:59+08:00',
           hr_review_end: '2027-02-07T23:59:59+08:00',

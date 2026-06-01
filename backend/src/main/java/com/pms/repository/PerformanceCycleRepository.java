@@ -45,13 +45,13 @@ public interface PerformanceCycleRepository extends JpaRepository<PerformanceCyc
             value =
                     """
             SELECT * FROM performance_cycles
-            WHERE (:status IS NULL OR status::text = :status)
+            WHERE (CAST(:status AS text) IS NULL OR status::text = :status)
             ORDER BY created_at DESC
             """,
             countQuery =
                     """
             SELECT count(*) FROM performance_cycles
-            WHERE (:status IS NULL OR status::text = :status)
+            WHERE (CAST(:status AS text) IS NULL OR status::text = :status)
             """,
             nativeQuery = true)
     Page<PerformanceCycle> findAllFiltered(@Param("status") String status, Pageable pageable);

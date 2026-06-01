@@ -22,18 +22,18 @@ public interface EvaluationTemplateRepository extends JpaRepository<EvaluationTe
                     """
             SELECT * FROM evaluation_templates
             WHERE deleted_at IS NULL
-              AND (:status IS NULL OR status::text = :status)
-              AND (:cycleId IS NULL OR cycle_id = CAST(:cycleId AS uuid))
-              AND (:q IS NULL OR name ILIKE '%' || :q || '%')
+              AND (CAST(:status AS text) IS NULL OR status::text = :status)
+              AND (CAST(:cycleId AS text) IS NULL OR cycle_id = CAST(:cycleId AS uuid))
+              AND (CAST(:q AS text) IS NULL OR name ILIKE '%' || :q || '%')
             ORDER BY created_at DESC
             """,
             countQuery =
                     """
             SELECT count(*) FROM evaluation_templates
             WHERE deleted_at IS NULL
-              AND (:status IS NULL OR status::text = :status)
-              AND (:cycleId IS NULL OR cycle_id = CAST(:cycleId AS uuid))
-              AND (:q IS NULL OR name ILIKE '%' || :q || '%')
+              AND (CAST(:status AS text) IS NULL OR status::text = :status)
+              AND (CAST(:cycleId AS text) IS NULL OR cycle_id = CAST(:cycleId AS uuid))
+              AND (CAST(:q AS text) IS NULL OR name ILIKE '%' || :q || '%')
             """,
             nativeQuery = true)
     Page<EvaluationTemplate> findAllFiltered(

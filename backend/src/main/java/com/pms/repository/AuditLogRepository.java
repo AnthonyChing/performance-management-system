@@ -16,9 +16,9 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, AuditLog.Aud
             value =
                     """
             SELECT * FROM audit_logs
-            WHERE (:action IS NULL OR action = :action)
-              AND (:resource IS NULL OR resource = :resource)
-              AND (:actorId IS NULL OR actor_id = CAST(:actorId AS uuid))
+            WHERE (CAST(:action AS text) IS NULL OR action = :action)
+              AND (CAST(:resource AS text) IS NULL OR resource = :resource)
+              AND (CAST(:actorId AS text) IS NULL OR actor_id = CAST(:actorId AS uuid))
               AND (CAST(:from AS timestamptz) IS NULL OR created_at >= CAST(:from AS timestamptz))
               AND (CAST(:to AS timestamptz) IS NULL OR created_at <= CAST(:to AS timestamptz))
             ORDER BY created_at DESC
@@ -26,9 +26,9 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, AuditLog.Aud
             countQuery =
                     """
             SELECT count(*) FROM audit_logs
-            WHERE (:action IS NULL OR action = :action)
-              AND (:resource IS NULL OR resource = :resource)
-              AND (:actorId IS NULL OR actor_id = CAST(:actorId AS uuid))
+            WHERE (CAST(:action AS text) IS NULL OR action = :action)
+              AND (CAST(:resource AS text) IS NULL OR resource = :resource)
+              AND (CAST(:actorId AS text) IS NULL OR actor_id = CAST(:actorId AS uuid))
               AND (CAST(:from AS timestamptz) IS NULL OR created_at >= CAST(:from AS timestamptz))
               AND (CAST(:to AS timestamptz) IS NULL OR created_at <= CAST(:to AS timestamptz))
             """,

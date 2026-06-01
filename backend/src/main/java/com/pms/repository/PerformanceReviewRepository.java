@@ -22,17 +22,17 @@ public interface PerformanceReviewRepository extends JpaRepository<PerformanceRe
             value =
                     """
             SELECT pr.* FROM performance_reviews pr
-            WHERE (:cycleId IS NULL OR pr.cycle_id = CAST(:cycleId AS uuid))
-              AND (:employeeId IS NULL OR pr.employee_id = CAST(:employeeId AS uuid))
-              AND (:reviewStatus IS NULL OR pr.status::text = :reviewStatus)
+            WHERE (CAST(:cycleId AS text) IS NULL OR pr.cycle_id = CAST(:cycleId AS uuid))
+              AND (CAST(:employeeId AS text) IS NULL OR pr.employee_id = CAST(:employeeId AS uuid))
+              AND (CAST(:reviewStatus AS text) IS NULL OR pr.status::text = :reviewStatus)
             ORDER BY pr.created_at DESC
             """,
             countQuery =
                     """
             SELECT count(*) FROM performance_reviews pr
-            WHERE (:cycleId IS NULL OR pr.cycle_id = CAST(:cycleId AS uuid))
-              AND (:employeeId IS NULL OR pr.employee_id = CAST(:employeeId AS uuid))
-              AND (:reviewStatus IS NULL OR pr.status::text = :reviewStatus)
+            WHERE (CAST(:cycleId AS text) IS NULL OR pr.cycle_id = CAST(:cycleId AS uuid))
+              AND (CAST(:employeeId AS text) IS NULL OR pr.employee_id = CAST(:employeeId AS uuid))
+              AND (CAST(:reviewStatus AS text) IS NULL OR pr.status::text = :reviewStatus)
             """,
             nativeQuery = true)
     Page<PerformanceReview> findFiltered(
