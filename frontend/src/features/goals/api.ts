@@ -3,6 +3,7 @@ export {
   createMyGoal,
   getMyCurrentGoals,
   getMyHistoricalGoals,
+  resubmitMyGoal,
   updateMyGoalProgress,
   type CurrentGoalsResponse,
   type EmployeeAvailableActions,

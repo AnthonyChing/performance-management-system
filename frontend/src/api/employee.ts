@@ -1443,6 +1443,22 @@ export function createMyGoal(
   );
 }
 
+export function resubmitMyGoal(
+  goalId: string,
+  payload: GoalCreationRequest,
+  options?: EmployeeApiOptions,
+): Promise<GoalCreationResponse> {
+  return requestJson<GoalCreationResponse>(
+    `/me/goals/${encodeURIComponent(goalId)}`,
+    isGoalCreationResponse,
+    options,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
 export function updateMyGoalProgress(
   goalId: string,
   payload: GoalProgressUpdateRequest,
