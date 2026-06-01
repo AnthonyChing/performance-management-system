@@ -65,7 +65,7 @@ public class PerformanceReview {
 
     // Note: finalRating encrypts an Enum, which requires the DB column to be VARCHAR, not
     // rating_scale_enum
-    @Convert(converter = com.pms.security.crypto.CryptoConverter.class)
+    @Convert(converter = com.pms.security.crypto.RatingScaleCryptoConverter.class)
     @Column(name = "final_rating", columnDefinition = "VARCHAR(255)")
     private RatingScale finalRating;
 
