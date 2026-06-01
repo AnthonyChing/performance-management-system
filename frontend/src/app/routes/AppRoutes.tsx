@@ -41,10 +41,10 @@ import ManagerDispute from '../../features/manager/disputes/pages/Dispute';
 import { getUserRoles } from '../../features/auth';
 
 function RequireRole({ allowedRoles }: { allowedRoles: string[] }) {
-  const token = localStorage.getItem('token');
   const roles = getUserRoles();
+  const hasLoggedInIndicator = localStorage.getItem('role') || localStorage.getItem('roles');
 
-  if (!token) {
+  if (!hasLoggedInIndicator) {
     return <Navigate to="/login" replace />;
   }
 

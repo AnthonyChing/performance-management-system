@@ -132,10 +132,16 @@ export default function Layout() {
     let isMounted = true;
     const controller = new AbortController();
 
-    getMyProfile({ signal: controller.signal })
+     getMyProfile({ signal: controller.signal })
       .then((response) => {
         if (!isMounted) return;
         setCurrentUser(response.profile);
+        if ((response as any).roles) {
+          localStorage.setItem('roles', JSON.stringify((response as any).roles));
+          if ((response as any).roles.length > 0) {
+            localStorage.setItem('role', (response as any).roles[0]);
+          }
+        }
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -161,6 +167,7 @@ export default function Layout() {
     } finally {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
+      localStorage.removeItem('roles');
       navigate('/login', { replace: true });
     }
   };

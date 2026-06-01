@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,4 +18,5 @@ public class ProfileResponseDTO {
     private ProfileDTO profile;
     private CycleSummaryDTO cycle;
     private ReviewSummaryDTO review;
+    private List<String> roles;
 }

@@ -124,6 +124,7 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 .profile(profile)
                 .cycle(cycleSummaryDTO)
                 .review(reviewSummaryDTO)
+                .roles(userRepository.findRoleNamesByUserId(userId))
                 .build();
     }
 
