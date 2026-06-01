@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, CheckCircle2, FileText, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   ApiRequestError,
   getMyAppeals,
@@ -10,22 +11,6 @@ import {
 } from '../api';
 
 type DisputeView = 'submit' | 'list';
-
-const appealStatusLabels: Record<string, string> = {
-  submitted: '已提交',
-  under_review: '審核中',
-  need_more_info: '需補充資料',
-  approved: '異議通過',
-  rejected: '異議未通過',
-  cancelled: '已取消',
-};
-
-const unavailableReasonLabels: Record<string, string> = {
-  already_submitted: '本期已提交績效異議。',
-  not_open: '目前尚未開放異議。',
-  closed: '異議期間已結束。',
-  result_not_published: '考核結果尚未公佈。',
-};
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError';
@@ -51,20 +36,17 @@ function isNoCurrentAppealDataError(error: unknown) {
   );
 }
 
-function getApiErrorMessage(error: unknown) {
+function getApiErrorMessage(error: unknown, t: (key: string) => string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
-      return '尚未登入或 token 失效。';
+      return t('unauthorized');
     }
-
     return error.message;
   }
-
   if (error instanceof Error) {
     return error.message;
   }
-
-  return '績效異議資料載入失敗。';
+  return t('loadFailed');
 }
 
 function getRequestedView(locationState: unknown): DisputeView {
@@ -119,17 +101,10 @@ function formatHandler(appeal: Appeal | null | undefined) {
   return `${department}${handler.name}${englishName}`;
 }
 
-function getUnavailableMessage(reason: string | null | undefined) {
-  if (!reason) {
-    return null;
-  }
-
-  return unavailableReasonLabels[reason] ?? reason;
-}
-
 export default function Dispute() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation('dispute');
   const requestedView = useMemo(() => getRequestedView(location.state), [location.state]);
   const [view, setView] = useState<DisputeView>(requestedView);
   const [appealsData, setAppealsData] = useState<AppealsResponse | null>(null);
@@ -167,12 +142,12 @@ export default function Dispute() {
         if (isNoCurrentAppealDataError(error)) {
           setAppealsData(null);
           setLoadErrorMessage(null);
-          setEmptyMessage('目前沒有可提出績效異議的考核資料。');
+          setEmptyMessage(t('noData'));
           setView('list');
           return;
         }
 
-        setLoadErrorMessage(getApiErrorMessage(error));
+        setLoadErrorMessage(getApiErrorMessage(error, t));
         setEmptyMessage(null);
       } finally {
         if (isMounted) {
@@ -187,15 +162,16 @@ export default function Dispute() {
       isMounted = false;
       controller.abort();
     };
-  }, [location.pathname, location.search, navigate, requestedView]);
+  }, [location.pathname, location.search, navigate, requestedView, t]);
 
   const currentAppeal = appealsData?.current_appeal ?? null;
   const actions = appealsData?.available_actions;
   const canStartAppeal = Boolean(actions?.can_start_appeal);
   const canSubmit = Boolean(actions?.can_submit && appealsData?.period.cycle_id);
-  const unavailableMessage = getUnavailableMessage(
-    actions?.start_appeal_unavailable_reason ?? actions?.submit_unavailable_reason,
-  );
+  const unavailableReason = actions?.start_appeal_unavailable_reason ?? actions?.submit_unavailable_reason;
+  const unavailableMessage = unavailableReason
+    ? (t(`unavailableReason.${unavailableReason}`, unavailableReason))
+    : null;
 
   function openSubmitView() {
     setSubmitErrorMessage(null);
@@ -206,17 +182,17 @@ export default function Dispute() {
     const trimmedReason = reason.trim();
 
     if (!trimmedReason) {
-      setSubmitErrorMessage('請填寫異議說明內容。');
+      setSubmitErrorMessage(t('submitView.errors.emptyReason'));
       return;
     }
 
     if (trimmedReason.length > 2000) {
-      setSubmitErrorMessage('異議說明內容不可超過 2000 字。');
+      setSubmitErrorMessage(t('submitView.errors.tooLong'));
       return;
     }
 
     if (!canSubmit || !appealsData?.period.cycle_id) {
-      setSubmitErrorMessage(unavailableMessage ?? '目前無法提交績效異議。');
+      setSubmitErrorMessage(unavailableMessage ?? t('submitView.errors.unavailable'));
       return;
     }
 
@@ -226,7 +202,7 @@ export default function Dispute() {
 
   async function handleSubmitAppeal() {
     if (!appealsData?.period.cycle_id) {
-      setSubmitErrorMessage('目前沒有可提出異議的考核週期。');
+      setSubmitErrorMessage(t('submitView.errors.noCycle'));
       setIsModalOpen(false);
       return;
     }
@@ -257,9 +233,9 @@ export default function Dispute() {
         return;
       }
 
-      setSubmitErrorMessage(getApiErrorMessage(error));
+      setSubmitErrorMessage(getApiErrorMessage(error, t));
       if (isNoCurrentAppealDataError(error)) {
-        setSubmitErrorMessage('目前沒有可提出績效異議的考核資料。');
+        setSubmitErrorMessage(t('submitView.errors.noData'));
       }
       setIsModalOpen(false);
     } finally {
@@ -271,7 +247,7 @@ export default function Dispute() {
     <div className="w-full max-w-4xl">
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-          績效異議處理
+          {t('title')}
         </h1>
         {view === 'list' && !currentAppeal && (
           <button
@@ -279,14 +255,14 @@ export default function Dispute() {
             disabled={!canStartAppeal}
             className="text-sm px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            發起異議
+            {t('initiate')}
           </button>
         )}
       </div>
 
       {isLoading ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-          載入績效異議資料中...
+          {t('loading')}
         </div>
       ) : emptyMessage && !appealsData ? (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
@@ -294,12 +270,12 @@ export default function Dispute() {
         </div>
       ) : loadErrorMessage || !appealsData ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          {loadErrorMessage ?? '績效異議資料載入失敗。'}
+          {loadErrorMessage ?? t('loadFailed')}
         </div>
       ) : view === 'submit' && !currentAppeal ? (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="border-b border-slate-100 p-6">
-            <div className="text-sm text-slate-500">申訴績效期間</div>
+            <div className="text-sm text-slate-500">{t('submitView.period')}</div>
             <div className="mt-1 font-semibold text-slate-800">
               {formatPeriod(null, appealsData)}
             </div>
@@ -313,7 +289,7 @@ export default function Dispute() {
           <div className="p-6">
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                異議說明內容
+                {t('submitView.reasonLabel')}
               </label>
               <textarea
                 value={reason}
@@ -326,7 +302,7 @@ export default function Dispute() {
               />
               <div className="mt-2 flex items-center justify-between gap-4 text-xs text-slate-500">
                 <span>{unavailableMessage}</span>
-                <span>{reason.length}/2000</span>
+                <span>{t('submitView.charCount', { count: reason.length })}</span>
               </div>
             </div>
 
@@ -341,14 +317,14 @@ export default function Dispute() {
                 onClick={() => setView('list')}
                 className="px-6 py-2.5 border border-slate-300 bg-white rounded font-medium text-slate-700 hover:bg-slate-50 text-sm"
               >
-                返回
+                {t('submitView.back')}
               </button>
               <button
                 onClick={openConfirmationModal}
                 disabled={!canSubmit || isSubmitting}
                 className="px-6 py-2.5 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                提交異議申請
+                {t('submitView.submit')}
               </button>
             </div>
           </div>
@@ -357,7 +333,7 @@ export default function Dispute() {
         <AppealResultPanel appeal={currentAppeal} appealsData={appealsData} />
       ) : (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
-          <p>目前尚未提出本期績效異議。</p>
+          <p>{t('listView.noPending')}</p>
           {unavailableMessage && (
             <p className="mt-2">{unavailableMessage}</p>
           )}
@@ -370,7 +346,7 @@ export default function Dispute() {
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800 flex items-center">
                 <CheckCircle className="w-5 h-5 text-indigo-600 mr-2" />
-                確認提交異議申請
+                {t('modal.title')}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -382,11 +358,11 @@ export default function Dispute() {
 
             <div className="p-6">
               <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                確定要提交績效異議申請嗎？
+                {t('modal.body')}
               </p>
               <div className="bg-red-50 border border-red-200 text-red-800 text-xs p-3 rounded flex items-start">
-                <span className="font-bold mr-1">注意：</span>
-                申請提交後將進入人資審核流程，期間無法修改異議內容。
+                <span className="font-bold mr-1">{t('modal.warningLabel')}</span>
+                {t('modal.warning')}
               </div>
             </div>
 
@@ -395,14 +371,14 @@ export default function Dispute() {
                 onClick={() => setIsModalOpen(false)}
                 className="px-4 py-2 border border-slate-300 bg-white rounded font-medium text-slate-700 hover:bg-slate-50 text-sm"
               >
-                取消
+                {t('modal.cancel')}
               </button>
               <button
                 onClick={handleSubmitAppeal}
                 disabled={isSubmitting}
                 className="px-4 py-2 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? '提交中...' : '確認提交'}
+                {isSubmitting ? t('modal.submitting') : t('modal.submit')}
               </button>
             </div>
           </div>
@@ -419,7 +395,8 @@ function AppealResultPanel({
   appeal: Appeal;
   appealsData: AppealsResponse;
 }) {
-  const statusLabel = appealStatusLabels[appeal.status] ?? appeal.status;
+  const { t } = useTranslation('dispute');
+  const statusLabel = t(`status.${appeal.status}`, appeal.status);
   const isFinal = appeal.is_final_response || appeal.status === 'approved' || appeal.status === 'rejected';
 
   return (
@@ -427,22 +404,22 @@ function AppealResultPanel({
       <div className="mb-8">
         <div className="flex items-center font-bold text-slate-800 text-lg mb-4 border-b border-slate-200 pb-2">
           <FileText className="w-5 h-5 mr-2 text-indigo-600" />
-          異議內容 (Dispute Content)
+          {t('appealResult.disputeContentTitle')}
         </div>
         <div className="grid grid-cols-1 gap-4 mb-4 text-sm">
           <div>
-            <span className="text-slate-400 block mb-1">申訴績效期間</span>
+            <span className="text-slate-400 block mb-1">{t('appealResult.period')}</span>
             <span className="font-medium text-slate-800">{formatPeriod(appeal, appealsData)}</span>
           </div>
           <div>
-            <span className="text-slate-400 block mb-1">案件狀態</span>
+            <span className="text-slate-400 block mb-1">{t('appealResult.caseStatus')}</span>
             <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
               {statusLabel}
             </span>
           </div>
         </div>
         <div>
-          <span className="text-slate-400 block mb-2 text-sm">異議說明</span>
+          <span className="text-slate-400 block mb-2 text-sm">{t('appealResult.reasonLabel')}</span>
           <div className="bg-slate-50 p-4 rounded text-sm text-slate-700 border border-slate-200 leading-relaxed">
             {appeal.reason}
           </div>
@@ -452,16 +429,16 @@ function AppealResultPanel({
       <div>
         <div className="flex items-center font-bold text-slate-800 text-lg mb-4">
           <CheckCircle2 className="w-5 h-5 mr-2 text-indigo-600" />
-          區塊 B：異議結果
+          {t('appealResult.resultSectionTitle')}
         </div>
 
         <div className="border border-slate-200 rounded-lg overflow-hidden mb-6">
           <table className="w-full text-center text-sm">
             <thead className="bg-slate-100 text-slate-600 border-b border-slate-200">
               <tr>
-                <th className="font-medium py-3 px-4">異議編號</th>
-                <th className="font-medium py-3 px-4">提交日期</th>
-                <th className="font-medium py-3 px-4">處理人</th>
+                <th className="font-medium py-3 px-4">{t('appealResult.table.caseNo')}</th>
+                <th className="font-medium py-3 px-4">{t('appealResult.table.submittedAt')}</th>
+                <th className="font-medium py-3 px-4">{t('appealResult.table.handler')}</th>
               </tr>
             </thead>
             <tbody className="text-slate-800 font-medium">
@@ -481,20 +458,20 @@ function AppealResultPanel({
         <div className="bg-slate-50/50 p-5 rounded-lg border-l-4 border-indigo-600 text-sm">
           <div className="mb-2 flex items-center justify-between gap-3">
             <h4 className="font-semibold text-slate-900">
-              處理意見與備註 (Processing Comments)
+              {t('appealResult.processingComments')}
             </h4>
             {isFinal && (
               <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                最終回覆
+                {t('appealResult.finalResponse')}
               </span>
             )}
           </div>
           <p className="text-slate-600 leading-relaxed">
-            {appeal.processing_comment ?? '目前尚無處理意見。'}
+            {appeal.processing_comment ?? t('appealResult.noComment')}
           </p>
           {appeal.processing_comment_updated_at && (
             <div className="mt-3 text-xs text-slate-400">
-              更新時間：{formatDateTime(appeal.processing_comment_updated_at)}
+              {t('appealResult.updatedAt', { date: formatDateTime(appeal.processing_comment_updated_at) })}
             </div>
           )}
         </div>

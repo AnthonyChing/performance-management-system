@@ -1,0 +1,64 @@
+{
+  "title": "Performance Appeal",
+  "initiate": "Initiate Appeal",
+  "loading": "Loading appeal data...",
+  "loadFailed": "Failed to load appeal data.",
+  "noData": "No performance data available for appeal.",
+  "unauthorized": "Not logged in or token expired.",
+  "submitView": {
+    "period": "Performance Period",
+    "reasonLabel": "Appeal Reason",
+    "charCount": "{{count}}/2000",
+    "back": "Back",
+    "submit": "Submit Appeal",
+    "errors": {
+      "emptyReason": "Please enter an appeal reason.",
+      "tooLong": "Appeal reason cannot exceed 2000 characters.",
+      "unavailable": "Cannot submit appeal at this time.",
+      "noCycle": "No performance cycle available for appeal.",
+      "noData": "No performance data available for appeal."
+    }
+  },
+  "listView": {
+    "noPending": "No appeal submitted for this period."
+  },
+  "modal": {
+    "title": "Confirm Appeal Submission",
+    "body": "Are you sure you want to submit this appeal?",
+    "warningLabel": "Note: ",
+    "warning": "Once submitted, the appeal will enter HR review and cannot be modified.",
+    "cancel": "Cancel",
+    "submit": "Confirm",
+    "submitting": "Submitting..."
+  },
+  "status": {
+    "submitted": "Submitted",
+    "under_review": "Under Review",
+    "need_more_info": "More Info Needed",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled"
+  },
+  "unavailableReason": {
+    "already_submitted": "An appeal has already been submitted for this period.",
+    "not_open": "Appeal period has not started.",
+    "closed": "Appeal period has ended.",
+    "result_not_published": "Review results have not been published."
+  },
+  "appealResult": {
+    "disputeContentTitle": "Appeal Content",
+    "period": "Performance Period",
+    "caseStatus": "Case Status",
+    "reasonLabel": "Appeal Reason",
+    "resultSectionTitle": "Section B: Appeal Outcome",
+    "table": {
+      "caseNo": "Case No.",
+      "submittedAt": "Submitted At",
+      "handler": "Handler"
+    },
+    "processingComments": "Processing Comments",
+    "finalResponse": "Final Response",
+    "noComment": "No comments yet.",
+    "updatedAt": "Updated: {{date}}"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "title": "績效異議處理",
+  "initiate": "發起異議",
+  "loading": "載入績效異議資料中...",
+  "loadFailed": "績效異議資料載入失敗。",
+  "noData": "目前沒有可提出績效異議的考核資料。",
+  "unauthorized": "尚未登入或 token 失效。",
+  "submitView": {
+    "period": "申訴績效期間",
+    "reasonLabel": "異議說明內容",
+    "charCount": "{{count}}/2000",
+    "back": "返回",
+    "submit": "提交異議申請",
+    "errors": {
+      "emptyReason": "請填寫異議說明內容。",
+      "tooLong": "異議說明內容不可超過 2000 字。",
+      "unavailable": "目前無法提交績效異議。",
+      "noCycle": "目前沒有可提出異議的考核週期。",
+      "noData": "目前沒有可提出績效異議的考核資料。"
+    }
+  },
+  "listView": {
+    "noPending": "目前尚未提出本期績效異議。"
+  },
+  "modal": {
+    "title": "確認提交異議申請",
+    "body": "確定要提交績效異議申請嗎？",
+    "warningLabel": "注意：",
+    "warning": "申請提交後將進入人資審核流程，期間無法修改異議內容。",
+    "cancel": "取消",
+    "submit": "確認提交",
+    "submitting": "提交中..."
+  },
+  "status": {
+    "submitted": "已提交",
+    "under_review": "審核中",
+    "need_more_info": "需補充資料",
+    "approved": "異議通過",
+    "rejected": "異議未通過",
+    "cancelled": "已取消"
+  },
+  "unavailableReason": {
+    "already_submitted": "本期已提交績效異議。",
+    "not_open": "目前尚未開放異議。",
+    "closed": "異議期間已結束。",
+    "result_not_published": "考核結果尚未公佈。"
+  },
+  "appealResult": {
+    "disputeContentTitle": "異議內容 (Appeal Content)",
+    "period": "申訴績效期間",
+    "caseStatus": "案件狀態",
+    "reasonLabel": "異議說明",
+    "resultSectionTitle": "區塊 B：異議結果",
+    "table": {
+      "caseNo": "異議編號",
+      "submittedAt": "提交日期",
+      "handler": "處理人"
+    },
+    "processingComments": "處理意見與備註 (Processing Comments)",
+    "finalResponse": "最終回覆",
+    "noComment": "目前尚無處理意見。",
+    "updatedAt": "更新時間：{{date}}"
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Mail, Briefcase, CalendarDays } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ApiRequestError,
   getCurrentPerformanceCycle,
@@ -8,15 +9,6 @@ import {
   type CurrentPerformanceCycleResponse,
   type ProfileResponse,
 } from '../api';
-
-const cycleStatusLabels: Record<string, string> = {
-  not_started: '尚未開始',
-  in_progress: '進行中',
-  locked: '已鎖定',
-  results_published: '已公佈考核結果',
-  completed: '已完成',
-  closed: '已關閉',
-};
 
 const statusStyles: Record<string, string> = {
   not_started: 'bg-slate-100 text-slate-700',
@@ -41,20 +33,17 @@ function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-function getApiErrorMessage(error: unknown) {
+function getApiErrorMessage(error: unknown, t: (key: string) => string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
-      return '尚未登入或 token 失效。';
+      return t('unauthorized');
     }
-
     return error.message;
   }
-
   if (error instanceof Error) {
     return error.message;
   }
-
-  return '資料載入失敗。';
+  return t('loadFailed');
 }
 
 function isUnauthorizedError(error: unknown) {
@@ -68,6 +57,7 @@ function isUnauthorizedError(error: unknown) {
 export default function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('profile');
   const [profileData, setProfileData] = useState<ProfileResponse | null>(null);
   const [cycleData, setCycleData] = useState<CurrentPerformanceCycleResponse | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
@@ -99,7 +89,7 @@ export default function Profile() {
           return;
         }
 
-        setProfileErrorMessage(getApiErrorMessage(error));
+        setProfileErrorMessage(getApiErrorMessage(error, t));
       } finally {
         if (isMounted) {
           setIsProfileLoading(false);
@@ -133,7 +123,7 @@ export default function Profile() {
             return;
           }
 
-          setCycleErrorMessage(getApiErrorMessage(error));
+          setCycleErrorMessage(getApiErrorMessage(error, t));
         }
       } finally {
         if (isMounted) {
@@ -149,7 +139,7 @@ export default function Profile() {
       isMounted = false;
       controller.abort();
     };
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, t]);
 
   return (
     <ProfileView
@@ -173,6 +163,7 @@ export function ProfileView({
   cycleErrorMessage,
   hasCurrentCycle,
 }: ProfileViewProps) {
+  const { t } = useTranslation('profile');
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   useEffect(() => {
@@ -183,7 +174,7 @@ export function ProfileView({
     return (
       <div className="w-full max-w-4xl">
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-          載入我的資料中...
+          {t('loading')}
         </div>
       </div>
     );
@@ -193,7 +184,7 @@ export function ProfileView({
     return (
       <div className="w-full max-w-4xl">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          {profileErrorMessage ?? '資料載入失敗。'}
+          {profileErrorMessage ?? t('loadFailed')}
         </div>
       </div>
     );
@@ -216,8 +207,8 @@ export function ProfileView({
   return (
     <div className="w-full max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">我的資料頁面</h1>
-        <p className="text-slate-500 text-sm mt-2">檢視並管理您的個人基本資訊與績效考核進度。</p>
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{t('title')}</h1>
+        <p className="text-slate-500 text-sm mt-2">{t('subtitle')}</p>
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-6">
@@ -240,10 +231,10 @@ export function ProfileView({
             <div className="flex items-center mb-4">
               <h2 className="text-xl font-bold text-slate-800">{displayName}</h2>
               <span className="ml-4 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-md flex items-center">
-                員工編號: #{profile.employee_id}
+                {t('employeeId', { id: profile.employee_id })}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-start text-sm text-slate-600">
                 <Briefcase className="w-4 h-4 mr-2 text-slate-400 mt-0.5 flex-shrink-0" />
@@ -265,13 +256,13 @@ export function ProfileView({
 
       {isCycleLoading && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
-          載入目前考核週期中...
+          {t('cycleLoading')}
         </div>
       )}
 
       {!isCycleLoading && !hasCurrentCycle && (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
-          目前沒有可顯示的考核週期。
+          {t('noCycle')}
         </div>
       )}
 
@@ -293,7 +284,8 @@ export function CurrentCycleCard({
 }: {
   cycle: CurrentPerformanceCycleResponse['cycle'];
 }) {
-  const statusLabel = cycleStatusLabels[cycle.status] ?? cycle.status;
+  const { t } = useTranslation('profile');
+  const statusLabel = t(`cycleStatus.${cycle.status}`, cycle.status);
   const statusClassName = statusStyles[cycle.status] ?? statusStyles.in_progress;
 
   return (
@@ -307,7 +299,7 @@ export function CurrentCycleCard({
         <h3 className="text-lg font-bold text-slate-900">
           {cycle.name}{' '}
           <span className="font-normal text-slate-600 text-base">
-            （考核週期：{cycle.period_label}）
+            {t('cyclePeriod', { period: cycle.period_label })}
           </span>
         </h3>
       </div>

@@ -8,6 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ApiRequestError,
   getMyCurrentGoals,
@@ -16,13 +17,14 @@ import {
   type EmployeeGoalUpdateResult,
 } from '../api';
 
-const statusLabels: Record<string, string> = {
-  in_progress: '進行中',
-  pending_review: '待審核',
-  draft: '草稿',
-  completed: '已完成',
-  revision_requested: '需修改',
-  cancelled: '已取消',
+const statusStyles: Record<string, string> = {
+  in_progress: 'bg-green-100 text-green-700',
+  pending_review: 'bg-yellow-100 text-yellow-700',
+  draft: 'bg-slate-100 text-slate-600',
+  completed: 'bg-indigo-100 text-indigo-700',
+  revision_requested: 'bg-orange-100 text-orange-700',
+  cancelled: 'bg-slate-100 text-slate-500',
+  default: 'bg-orange-100 text-orange-700',
 };
 
 function isAbortError(error: unknown) {
@@ -37,28 +39,17 @@ function isUnauthorizedError(error: unknown) {
   );
 }
 
-function getApiErrorMessage(error: unknown) {
+function getApiErrorMessage(error: unknown, t: (key: string) => string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
-      return '尚未登入或 token 失效。';
+      return t('unauthorized');
     }
-
     return error.message;
   }
-
   if (error instanceof Error) {
     return error.message;
   }
-
-  return '目標詳情載入失敗。';
-}
-
-function formatStatus(status: string | null | undefined) {
-  if (!status) {
-    return '待處理';
-  }
-
-  return statusLabels[status] ?? status;
+  return t('goalDetail.loadFailed');
 }
 
 function formatDate(value: string | null | undefined) {
@@ -83,23 +74,12 @@ function mergeGoalUpdate(goal: EmployeeGoal, update: EmployeeGoalUpdateResult): 
 }
 
 const StatusBadge = ({ status }: { status: string | null | undefined }) => {
-  const label = formatStatus(status);
-  const styles: Record<string, string> = {
-    '進行中': 'bg-green-100 text-green-700',
-    '待審核': 'bg-yellow-100 text-yellow-700',
-    '草稿': 'bg-slate-100 text-slate-600',
-    '已完成': 'bg-indigo-100 text-indigo-700',
-    '需修改': 'bg-orange-100 text-orange-700',
-    '已取消': 'bg-slate-100 text-slate-500',
-    '待處理': 'bg-orange-100 text-orange-700',
-  };
+  const { t } = useTranslation('goals');
+  const label = t(`status.${status ?? 'default'}`, status ?? t('status.default'));
+  const style = statusStyles[status ?? 'default'] ?? 'bg-slate-100 text-slate-600';
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ml-4 ${
-        styles[label] ?? 'bg-slate-100 text-slate-600'
-      }`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ml-4 ${style}`}>
       {label}
     </span>
   );
@@ -109,6 +89,7 @@ export default function GoalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('goals');
   const [goal, setGoal] = useState<EmployeeGoal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -131,7 +112,7 @@ export default function GoalDetail() {
         setGoal(matchedGoal);
         setProgress(clampProgress(matchedGoal?.progress_percent));
         setNote('');
-        setErrorMessage(matchedGoal ? null : '找不到此目標。');
+        setErrorMessage(matchedGoal ? null : t('goalDetail.notFound'));
       } catch (error) {
         if (!isMounted || isAbortError(error)) return;
 
@@ -141,7 +122,7 @@ export default function GoalDetail() {
           return;
         }
 
-        setErrorMessage(getApiErrorMessage(error));
+        setErrorMessage(getApiErrorMessage(error, t));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -155,7 +136,7 @@ export default function GoalDetail() {
       isMounted = false;
       controller.abort();
     };
-  }, [id, location.pathname, location.search, navigate]);
+  }, [id, location.pathname, location.search, navigate, t]);
 
   async function handleUpdateProgress() {
     if (!goal) return;
@@ -181,18 +162,18 @@ export default function GoalDetail() {
         return;
       }
 
-      setSubmitErrorMessage(getApiErrorMessage(error));
+      setSubmitErrorMessage(getApiErrorMessage(error, t));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500">載入目標詳情中...</div>;
+    return <div className="text-sm text-slate-500">{t('goalDetail.loading')}</div>;
   }
 
   if (errorMessage || !goal) {
-    return <div className="text-sm text-red-700">{errorMessage ?? '找不到此目標。'}</div>;
+    return <div className="text-sm text-red-700">{errorMessage ?? t('goalDetail.notFound')}</div>;
   }
 
   const currentProgress = clampProgress(goal.progress_percent);
@@ -212,14 +193,14 @@ export default function GoalDetail() {
           </div>
           <div className="flex items-center text-sm text-slate-500 font-medium">
              <Calendar className="w-4 h-4 mr-1.5" />
-             截止日期： {formatDate(goal.due_date)}
+             {t('goalDetail.dueDate', { date: formatDate(goal.due_date) })}
           </div>
         </div>
         <div className="flex gap-2">
           {canEdit ? (
             <Link to={`/goals/edit/${goal.goal_id}`} className="flex items-center px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm">
               <Edit3 className="w-4 h-4 mr-2" />
-              修改目標
+              {t('goalDetail.editButton')}
             </Link>
           ) : (
             <button
@@ -227,7 +208,7 @@ export default function GoalDetail() {
               className="flex items-center px-4 py-2 bg-white text-slate-400 text-sm font-medium rounded-lg border border-slate-200 cursor-not-allowed"
             >
               <Edit3 className="w-4 h-4 mr-2" />
-              修改目標
+              {t('goalDetail.editButton')}
             </button>
           )}
           <button
@@ -241,38 +222,38 @@ export default function GoalDetail() {
             className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Rocket className="w-4 h-4 mr-2" />
-            更新進度
+            {t('goalDetail.updateButton')}
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-6 p-6">
          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">目標說明</h3>
+            <h3 className="text-sm font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">{t('goalDetail.descriptionSection')}</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-               {goal.description ?? '尚未提供目標說明。'}
+               {goal.description ?? t('goalDetail.noDescription')}
             </p>
          </div>
 
          <div>
             <div className="flex justify-between items-end mb-2 border-t border-slate-100 pt-6">
-               <h3 className="text-sm font-semibold text-slate-800">當前進度狀態</h3>
+               <h3 className="text-sm font-semibold text-slate-800">{t('goalDetail.progressSection')}</h3>
                <span className="text-2xl font-bold text-slate-900">{currentProgress}%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-3 mb-6">
                <div className="bg-indigo-600 h-3 rounded-full" style={{ width: `${currentProgress}%` }}></div>
             </div>
-            
+
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                   <div className="w-full sm:w-1/3 shrink-0">
-                     <span className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">上次更新時間</span>
+                     <span className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">{t('goalDetail.lastUpdated')}</span>
                      <span className="text-sm font-medium text-slate-800">{formatDate(latestUpdate?.created_at)}</span>
                   </div>
                   <div className="w-full sm:flex-1">
-                     <span className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">備註</span>
+                     <span className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">{t('goalDetail.noteLabel')}</span>
                      <p className="text-sm text-slate-700 leading-relaxed">
-                        {latestUpdate?.note ?? '目前尚無進度備註。'}
+                        {latestUpdate?.note ?? t('goalDetail.noNote')}
                      </p>
                   </div>
                </div>
@@ -283,26 +264,26 @@ export default function GoalDetail() {
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden p-6">
          <div className="flex items-center text-slate-800 font-bold mb-4">
             <MessageSquare className="w-5 h-5 mr-2 text-indigo-600" />
-            主管審核回饋
+            {t('goalDetail.managerFeedback')}
          </div>
 
          {latestReview ? (
            <div className="bg-slate-50 rounded-lg p-4 border-l-4 border-indigo-600">
               <div className="flex justify-between items-center mb-2">
                  <span className="text-sm font-bold text-indigo-900">
-                   {reviewer?.name ?? '主管'}{reviewer?.title ? ` (${reviewer.title})` : ''}
+                   {reviewer?.name ?? t('goalDetail.managerFallback')}{reviewer?.title ? ` (${reviewer.title})` : ''}
                  </span>
                  <span className="text-xs text-slate-400 font-medium">
                    {formatDate(latestReview.reviewed_at)}
                  </span>
               </div>
               <p className="text-sm text-slate-600 leading-relaxed">
-                 {latestReview.comment ?? '主管尚未留下文字回饋。'}
+                 {latestReview.comment ?? t('goalDetail.managerNoComment')}
               </p>
            </div>
          ) : (
            <div className="bg-slate-50 rounded-lg p-4 text-sm text-slate-500">
-             目前尚無主管審核回饋。
+             {t('goalDetail.noManagerFeedback')}
            </div>
          )}
       </div>
@@ -311,23 +292,23 @@ export default function GoalDetail() {
         <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">更新目標進度</h2>
+              <h2 className="text-lg font-bold text-slate-800">{t('goalDetail.updateModal.title')}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
                 <p className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">GOAL NAME</p>
                 <p className="text-sm font-bold text-slate-800 mb-4">{goal.title}</p>
-                
+
                 <div className="flex justify-between items-center text-xs text-slate-500 mb-2">
-                  <span>目前進度: {currentProgress}%</span>
+                  <span>{t('goalDetail.updateModal.currentProgress', { percent: currentProgress })}</span>
                   <div className="flex items-center text-right">
                     <span className="font-bold text-slate-800 mr-4 text-sm">{progress}%</span>
                     <div className="flex flex-col">
-                       <span className="text-[10px]">上次更新</span>
+                       <span className="text-[10px]">{t('goalDetail.updateModal.lastUpdate')}</span>
                        <span className="font-bold text-slate-800">{formatDate(latestUpdate?.created_at)}</span>
                     </div>
                   </div>
@@ -338,7 +319,7 @@ export default function GoalDetail() {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-3">設置新進度</label>
+                <label className="block text-sm font-medium text-slate-700 mb-3">{t('goalDetail.updateModal.setProgress')}</label>
                 <div className="flex items-center gap-4">
                   <input
                     type="range"
@@ -363,12 +344,12 @@ export default function GoalDetail() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">進度說明與備註</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">{t('goalDetail.updateModal.noteLabel')}</label>
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   className="w-full h-24 p-3 text-sm border border-slate-300 rounded-md focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
-                  placeholder="描述當前狀態、取得的成就或面臨的挑戰..."
+                  placeholder={t('goalDetail.updateModal.notePlaceholder')}
                 ></textarea>
               </div>
 
@@ -384,7 +365,7 @@ export default function GoalDetail() {
                 onClick={() => setIsModalOpen(false)}
                 className="px-6 py-2 bg-white border border-slate-300 rounded font-medium text-slate-700 hover:bg-slate-50 text-sm"
               >
-                取消
+                {t('goalDetail.updateModal.cancel')}
               </button>
               <button
                 onClick={handleUpdateProgress}
@@ -392,7 +373,7 @@ export default function GoalDetail() {
                 className="flex items-center px-6 py-2 bg-[#0c4a8f] text-white rounded font-medium hover:bg-[#09366e] text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                {isSubmitting ? '提交中...' : '確認更新'}
+                {isSubmitting ? t('goalDetail.updateModal.submitting') : t('goalDetail.updateModal.submit')}
               </button>
             </div>
           </div>

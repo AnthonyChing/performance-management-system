@@ -1,0 +1,101 @@
+{
+  "defaultTitle": "本期 KPI 績效指標與評估",
+  "unauthorized": "尚未登入或 token 失效。",
+  "loadFailed": "KPI 標準載入失敗。",
+  "dateRange": "{{start}} 至 {{end}}",
+  "tabs": {
+    "standards": "KPI 標準",
+    "results": "考核結果"
+  },
+  "standards": {
+    "loading": "載入 KPI 標準中...",
+    "empty": "目前尚未設定 KPI 標準。",
+    "table": {
+      "name": "KPI 名稱",
+      "description": "說明",
+      "weight": "權重"
+    }
+  },
+  "results": {
+    "loading": "載入 KPI 考核結果中...",
+    "empty": "目前沒有可顯示的 KPI 考核結果。",
+    "notPublished": "本期 KPI 考核結果尚未公佈。",
+    "noConfirmable": "目前沒有可確認的 KPI 結果。",
+    "summary": {
+      "performanceScore": "績效總分",
+      "performanceGrade": "績效等級",
+      "kpiAchievement": "KPI 達成率",
+      "weightedScore": "加權分數",
+      "managerReview": "主管評核",
+      "managerComment": "主管評語"
+    },
+    "kpiBreakdown": "各項 KPI 達成情況",
+    "kpiNotCalculated": "KPI 結果尚未計算完成。",
+    "actualTarget": "(實際值: {{actual}} / 目標值: {{target}})",
+    "statusInfo": {
+      "confirmed": "已於 {{date}} 確認評估結果。",
+      "disputeWindow": "若有疑問請於 {{start}}~{{end}} 之間提出異議。",
+      "default": "確認後評核結果將正式入檔。"
+    },
+    "actions": {
+      "dispute": "提出績效異議",
+      "confirm": "確認評估結果"
+    }
+  },
+  "confirmModal": {
+    "title": "確認評估結果",
+    "body": "您確定要確認此次的評估結果嗎？",
+    "warningLabel": "注意：",
+    "warning": "確認後結果將正式入檔且無法再提出異議或修改。",
+    "cancel": "取消",
+    "submit": "確認提交",
+    "submitting": "提交中..."
+  },
+  "historyList": {
+    "title": "歷史 KPI 列表",
+    "subtitle": "查閱過去所有考核週期的績效數據與最終評分",
+    "loading": "載入歷史 KPI 中...",
+    "loadFailed": "歷史 KPI 載入失敗。",
+    "empty": "目前尚無歷史 KPI 資料。",
+    "cycleRange": "考核區間：",
+    "unnamed": "未命名考核週期",
+    "totalScore": "總分",
+    "finalGrade": "最終等級",
+    "viewDetail": "查看詳情",
+    "prevPage": "上一頁",
+    "nextPage": "下一頁"
+  },
+  "historyDetail": {
+    "defaultTitle": "歷史 KPI 績效指標與評估",
+    "cycleLabel": "（所屬考核週期：{{period}}）",
+    "breadcrumb": {
+      "dashboard": "主控台",
+      "historyPage": "歷史 KPI 頁面"
+    },
+    "loading": "載入歷史 KPI 考核結果中...",
+    "loadFailed": "歷史 KPI 詳情載入失敗。",
+    "missingId": "缺少歷史 KPI 週期 ID。",
+    "empty": "目前沒有可顯示的歷史 KPI 考核結果。",
+    "summary": {
+      "performanceScore": "績效總分",
+      "performanceGrade": "績效等級",
+      "kpiAchievement": "KPI 達成率",
+      "weightedScore": "加權分數",
+      "managerReview": "主管評核",
+      "managerComment": "主管評語",
+      "resultStatus": "結果狀態",
+      "lastUpdated": "最後更新"
+    },
+    "kpiBreakdown": "各項 KPI 達成情況",
+    "kpiEmpty": "此歷史週期沒有可顯示的 KPI 達成明細。",
+    "finalizedNote": "此考核週期的評估結果已正式入檔且不可更改。",
+    "resultStatus": {
+      "finalized": "已入檔",
+      "confirmed": "已確認",
+      "disputed": "已提出異議",
+      "completed": "已完成",
+      "pending_confirmation": "待確認",
+      "not_published": "尚未公佈"
+    }
+  }
+}

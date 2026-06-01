@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlignLeft, CheckCircle, MessageSquare, X } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ApiRequestError,
   getMyCurrentGoals,
@@ -20,20 +21,17 @@ function isUnauthorizedError(error: unknown) {
   );
 }
 
-function getApiErrorMessage(error: unknown) {
+function getApiErrorMessage(error: unknown, t: (key: string) => string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
-      return '尚未登入或 token 失效。';
+      return t('unauthorized');
     }
-
     return error.message;
   }
-
   if (error instanceof Error) {
     return error.message;
   }
-
-  return '目標修改送審失敗。';
+  return t('editGoal.loadFailed');
 }
 
 function canEditGoal(goal: EmployeeGoal | null) {
@@ -44,6 +42,7 @@ export default function EditGoal() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('goals');
   const [goal, setGoal] = useState<EmployeeGoal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,7 +67,7 @@ export default function EditGoal() {
     async function loadGoal() {
       if (!id) {
         setIsLoading(false);
-        setErrorMessage('找不到此目標。');
+        setErrorMessage(t('editGoal.notFound'));
         return;
       }
 
@@ -80,7 +79,7 @@ export default function EditGoal() {
 
         if (!matchedGoal) {
           setGoal(null);
-          setErrorMessage('找不到此目標。');
+          setErrorMessage(t('editGoal.notFound'));
           return;
         }
 
@@ -91,7 +90,7 @@ export default function EditGoal() {
         setErrorMessage(
           canEditGoal(matchedGoal)
             ? null
-            : '此目標目前不可修改，只有主管要求修改的目標可以重新送審。',
+            : t('editGoal.notEditable'),
         );
       } catch (error) {
         if (!isMounted || isAbortError(error)) return;
@@ -102,7 +101,7 @@ export default function EditGoal() {
           return;
         }
 
-        setErrorMessage(getApiErrorMessage(error));
+        setErrorMessage(getApiErrorMessage(error, t));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -116,11 +115,11 @@ export default function EditGoal() {
       isMounted = false;
       controller.abort();
     };
-  }, [id, location.pathname, location.search, navigate]);
+  }, [id, location.pathname, location.search, navigate, t]);
 
   async function handleConfirmSubmit() {
     if (!id || !canSubmit) {
-      setErrorMessage('請填寫目標名稱、截止日期與目標說明。');
+      setErrorMessage(t('editGoal.fillRequired'));
       setIsModalOpen(false);
       return;
     }
@@ -142,7 +141,7 @@ export default function EditGoal() {
         return;
       }
 
-      setErrorMessage(getApiErrorMessage(error));
+      setErrorMessage(getApiErrorMessage(error, t));
       setIsModalOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -150,7 +149,7 @@ export default function EditGoal() {
   }
 
   if (isLoading) {
-    return <div className="text-sm text-slate-500">載入目標編輯資料中...</div>;
+    return <div className="text-sm text-slate-500">{t('editGoal.loading')}</div>;
   }
 
   const latestReview = goal?.latest_review;
@@ -159,27 +158,27 @@ export default function EditGoal() {
   return (
     <div className="w-full max-w-4xl relative">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">編輯個人目標</h1>
-        <p className="text-slate-500 text-sm">修改主管退回的目標內容並重新送審。</p>
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">{t('editGoal.title')}</h1>
+        <p className="text-slate-500 text-sm">{t('editGoal.subtitle')}</p>
       </div>
 
       {latestReview && (
         <div className="bg-white rounded-lg border border-orange-200 shadow-sm overflow-hidden mb-6 p-5">
           <div className="flex items-center text-slate-800 font-bold mb-3">
             <MessageSquare className="w-5 h-5 mr-2 text-orange-600" />
-            主管修改建議
+            {t('editGoal.managerSuggestion')}
           </div>
           <div className="bg-orange-50 rounded-lg p-4 border-l-4 border-orange-500">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-bold text-orange-950">
-                {reviewer?.name ?? '主管'}{reviewer?.title ? ` (${reviewer.title})` : ''}
+                {reviewer?.name ?? t('editGoal.managerFallback')}{reviewer?.title ? ` (${reviewer.title})` : ''}
               </span>
               <span className="text-xs text-orange-700 font-medium">
                 {latestReview.reviewed_at ?? '-'}
               </span>
             </div>
             <p className="text-sm text-orange-950 leading-relaxed">
-              {latestReview.comment ?? '主管尚未留下文字回饋。'}
+              {latestReview.comment ?? t('editGoal.managerNoComment')}
             </p>
           </div>
         </div>
@@ -188,12 +187,12 @@ export default function EditGoal() {
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-6">
         <div className="p-6 border-b border-slate-100 flex items-center text-slate-900 font-semibold bg-slate-50/50">
           <AlignLeft className="w-5 h-5 mr-3 text-indigo-600" />
-          基本目標資訊
+          {t('editGoal.formSection')}
         </div>
         <div className="p-6 space-y-6">
           <div>
             <label htmlFor="goal-title" className="block text-sm font-medium text-slate-700 mb-2">
-              目標名稱 <span className="text-red-500">*</span>
+              {t('editGoal.titleLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               id="goal-title"
@@ -207,7 +206,7 @@ export default function EditGoal() {
 
           <div>
             <label htmlFor="goal-due-date" className="block text-sm font-medium text-slate-700 mb-2">
-              預計達成時間 (截止日期) <span className="text-red-500">*</span>
+              {t('editGoal.dueDateLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               id="goal-due-date"
@@ -223,7 +222,7 @@ export default function EditGoal() {
 
           <div>
             <label htmlFor="goal-description" className="block text-sm font-medium text-slate-700 mb-2">
-              目標說明 <span className="text-red-500">*</span>
+              {t('editGoal.descriptionLabel')} <span className="text-red-500">*</span>
             </label>
             <textarea
               id="goal-description"
@@ -248,15 +247,15 @@ export default function EditGoal() {
           disabled={isSubmitting}
           className="px-6 py-2.5 border border-slate-300 rounded-md font-medium text-slate-700 bg-white hover:bg-slate-50 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          取消編輯
+          {t('editGoal.cancelEdit')}
         </button>
         <button
           onClick={() => {
             if (!canSubmit) {
               setErrorMessage(
                 canEditGoal(goal)
-                  ? '請填寫目標名稱、截止日期與目標說明。'
-                  : '此目標目前不可修改，只有主管要求修改的目標可以重新送審。',
+                  ? t('editGoal.fillRequired')
+                  : t('editGoal.notEditable'),
               );
               return;
             }
@@ -267,7 +266,7 @@ export default function EditGoal() {
           disabled={isSubmitting || !goal || !canEditGoal(goal)}
           className="px-6 py-2.5 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 text-sm shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSubmitting ? '提交中...' : '提交並送審'}
+          {isSubmitting ? t('editGoal.submitting') : t('editGoal.submitAndReview')}
         </button>
       </div>
 
@@ -277,7 +276,7 @@ export default function EditGoal() {
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800 flex items-center">
                 <CheckCircle className="w-5 h-5 text-indigo-600 mr-2" />
-                確認提交目標修改
+                {t('editGoal.modal.title')}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -290,11 +289,11 @@ export default function EditGoal() {
 
             <div className="p-6">
               <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                確定要提交修改後的目標內容嗎？
+                {t('editGoal.modal.body')}
               </p>
               <div className="bg-red-50 border border-red-200 text-red-800 text-xs p-3 rounded flex items-start">
-                <span className="font-bold mr-1">注意：</span>
-                送出後狀態會改為待審核，並由直屬主管重新審閱。
+                <span className="font-bold mr-1">{t('editGoal.modal.warningLabel')}</span>
+                {t('editGoal.modal.warning')}
               </div>
             </div>
 
@@ -304,14 +303,14 @@ export default function EditGoal() {
                 disabled={isSubmitting}
                 className="px-4 py-2 border border-slate-300 bg-white rounded font-medium text-slate-700 hover:bg-slate-50 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                取消
+                {t('editGoal.modal.cancel')}
               </button>
               <button
                 onClick={handleConfirmSubmit}
                 disabled={isSubmitting}
                 className="px-4 py-2 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? '提交中...' : '確認提交'}
+                {isSubmitting ? t('editGoal.modal.submitting') : t('editGoal.modal.submit')}
               </button>
             </div>
           </div>

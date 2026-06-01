@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ApiRequestError,
   getMyHistoricalKpiResults,
@@ -21,20 +22,17 @@ function isUnauthorizedError(error: unknown) {
   );
 }
 
-function getApiErrorMessage(error: unknown) {
+function getApiErrorMessage(error: unknown, t: (key: string) => string) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
-      return '尚未登入或 token 失效。';
+      return t('unauthorized');
     }
-
     return error.message;
   }
-
   if (error instanceof Error) {
     return error.message;
   }
-
-  return '歷史 KPI 詳情載入失敗。';
+  return t('historyDetail.loadFailed');
 }
 
 function formatValue(value: number | null | undefined, suffix = '') {
@@ -51,25 +49,12 @@ function formatDate(value: string | null | undefined) {
   return value ?? '-';
 }
 
-const statusLabels: Record<string, string> = {
-  finalized: '已入檔',
-  confirmed: '已確認',
-  disputed: '已提出異議',
-  completed: '已完成',
-  pending_confirmation: '待確認',
-  not_published: '尚未公佈',
-};
-
-function formatStatus(status: string | null | undefined) {
-  if (!status) return '-';
-  return statusLabels[status] ?? status;
-}
-
 export default function HistoryKPIDetail() {
   const [activeTab, setActiveTab] = useState<'standards' | 'results'>('standards');
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation('performance');
   const [standards, setStandards] = useState<KpiStandard[]>([]);
   const [result, setResult] = useState<KpiResultSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +63,7 @@ export default function HistoryKPIDetail() {
   useEffect(() => {
     if (!id) {
       setIsLoading(false);
-      setErrorMessage('缺少歷史 KPI 週期 ID。');
+      setErrorMessage(t('historyDetail.missingId'));
       return;
     }
 
@@ -107,7 +92,7 @@ export default function HistoryKPIDetail() {
           return;
         }
 
-        setErrorMessage(getApiErrorMessage(error));
+        setErrorMessage(getApiErrorMessage(error, t));
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -121,22 +106,22 @@ export default function HistoryKPIDetail() {
       isMounted = false;
       controller.abort();
     };
-  }, [id, location.pathname, location.search, navigate]);
+  }, [id, location.pathname, location.search, navigate, t]);
 
   return (
     <div className="w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-          {result?.cycle?.name ?? '歷史 KPI 績效指標與評估'}
+          {result?.cycle?.name ?? t('historyDetail.defaultTitle')}
           {result?.cycle?.period_label && (
             <span className="font-normal text-slate-600 text-lg">
-              （所屬考核週期：{result.cycle.period_label}）
+              {t('historyDetail.cycleLabel', { period: result.cycle.period_label })}
             </span>
           )}
         </h1>
         <div className="text-sm text-slate-500 mt-1 flex px-1 breadcrumbs">
-          主控台 <ChevronRight className="w-3 h-3 mx-1 mt-1" />
-          <Link to="/performance/history" className="hover:text-slate-800">歷史 KPI 頁面</Link>
+          {t('historyDetail.breadcrumb.dashboard')} <ChevronRight className="w-3 h-3 mx-1 mt-1" />
+          <Link to="/performance/history" className="hover:text-slate-800">{t('historyDetail.breadcrumb.historyPage')}</Link>
         </div>
       </div>
 
@@ -147,7 +132,7 @@ export default function HistoryKPIDetail() {
           }`}
           onClick={() => setActiveTab('standards')}
         >
-          KPI 標準
+          {t('tabs.standards')}
           {activeTab === 'standards' && (
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-lg"></div>
           )}
@@ -158,7 +143,7 @@ export default function HistoryKPIDetail() {
           }`}
           onClick={() => setActiveTab('results')}
         >
-          考核結果
+          {t('tabs.results')}
           {activeTab === 'results' && (
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-lg"></div>
           )}
@@ -193,8 +178,10 @@ export function HistoryKpiResultsContent({
   errorMessage: string | null;
   result: KpiResultSummary | null;
 }) {
+  const { t } = useTranslation('performance');
+
   if (isLoading) {
-    return <div className="text-sm text-slate-500">載入歷史 KPI 考核結果中...</div>;
+    return <div className="text-sm text-slate-500">{t('historyDetail.loading')}</div>;
   }
 
   if (errorMessage) {
@@ -204,53 +191,57 @@ export function HistoryKpiResultsContent({
   if (!result) {
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
-        目前沒有可顯示的歷史 KPI 考核結果。
+        {t('historyDetail.empty')}
       </div>
     );
   }
 
   const scoreSummary = result.score_summary;
   const kpiResults = result.kpi_results ?? [];
+  const resultStatusLabel = t(
+    `historyDetail.resultStatus.${result.status ?? ''}`,
+    result.status ?? '-',
+  );
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
     <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <ResultSummaryCard
-          label="績效總分"
+          label={t('historyDetail.summary.performanceScore')}
           value={formatValue(scoreSummary?.performance_score ?? result.performance_score)}
-          subLabel="績效等級"
+          subLabel={t('historyDetail.summary.performanceGrade')}
           subValue={result.final_grade ?? '-'}
           accent
         />
         <ResultSummaryCard
-          label="KPI 達成率"
+          label={t('historyDetail.summary.kpiAchievement')}
           value={formatValue(scoreSummary?.kpi_achievement_percent, '%')}
-          subLabel="加權分數"
+          subLabel={t('historyDetail.summary.weightedScore')}
           subValue={formatValue(result.weighted_score)}
         />
         <ResultSummaryCard
-          label="主管評核"
+          label={t('historyDetail.summary.managerReview')}
           value={formatValue(scoreSummary?.manager_review_score ?? result.review_score)}
-          subLabel="主管評語"
+          subLabel={t('historyDetail.summary.managerComment')}
           subValue={result.manager_evaluation?.comment ?? '-'}
         />
         <ResultSummaryCard
-          label="結果狀態"
-          value={formatStatus(result.status)}
-          subLabel="最後更新"
+          label={t('historyDetail.summary.resultStatus')}
+          value={resultStatusLabel}
+          subLabel={t('historyDetail.summary.lastUpdated')}
           subValue={formatDate(result.updated_at ?? result.reviewed_at)}
         />
       </div>
 
       <div className="mb-8">
         <h3 className="text-sm font-bold text-slate-800 mb-4 border-l-4 border-indigo-600 pl-2">
-          各項 KPI 達成情況
+          {t('historyDetail.kpiBreakdown')}
         </h3>
 
         {kpiResults.length === 0 ? (
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-            此歷史週期沒有可顯示的 KPI 達成明細。
+            {t('historyDetail.kpiEmpty')}
           </div>
         ) : (
           <div className="space-y-6">
@@ -268,7 +259,7 @@ export function HistoryKpiResultsContent({
                     <div>
                       <span className="font-bold text-slate-800 mr-2">{item.name}</span>
                       <span className="text-xs text-slate-500">
-                        (實際值: {actualText} / 目標值: {targetText})
+                        {t('results.actualTarget', { actual: actualText, target: targetText })}
                       </span>
                     </div>
                     <span
@@ -300,7 +291,7 @@ export function HistoryKpiResultsContent({
       <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col md:flex-row items-center justify-between">
         <div className="flex items-center text-sm text-slate-600 md:mb-0">
           <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 text-slate-500">✓</div>
-          此考核週期的評估結果已正式入檔且不可更改。
+          {t('historyDetail.finalizedNote')}
         </div>
       </div>
     </div>

@@ -1,0 +1,34 @@
+{
+  "systemName": "Performance Management",
+  "nav": {
+    "myProfile": "My Profile",
+    "performance": "Performance",
+    "currentKpi": "Current KPI",
+    "historyKpi": "KPI History",
+    "dispute": "Appeals",
+    "goals": "My Goals",
+    "currentGoals": "Current Goals",
+    "historyGoals": "Goal History"
+  },
+  "breadcrumb": {
+    "myProfile": "My Profile",
+    "performance": "Performance",
+    "currentKpi": "Current KPI",
+    "historyKpi": "KPI History",
+    "historyKpiDetail": "KPI History Detail",
+    "dispute": "Appeals",
+    "goals": "My Goals",
+    "currentGoals": "Current Goals",
+    "historyGoals": "Goal History",
+    "historyGoalsPeriod": "Period Goals",
+    "historyGoalsDetail": "Goal History Detail",
+    "goalDetail": "Goal Detail",
+    "newGoal": "New Goal",
+    "editGoal": "Edit Goal"
+  },
+  "user": {
+    "defaultName": "User",
+    "loading": "Loading..."
+  },
+  "languageSwitch": "中文"
+}

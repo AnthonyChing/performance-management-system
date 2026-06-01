@@ -1,0 +1,19 @@
+{
+  "title": "My Profile",
+  "subtitle": "View and manage your personal information and performance review progress.",
+  "employeeId": "Employee ID: #{{id}}",
+  "loading": "Loading profile...",
+  "loadFailed": "Failed to load data.",
+  "unauthorized": "Not logged in or token expired.",
+  "noCycle": "No performance cycle to display.",
+  "cycleLoading": "Loading current performance cycle...",
+  "cyclePeriod": "(Period: {{period}})",
+  "cycleStatus": {
+    "not_started": "Not Started",
+    "in_progress": "In Progress",
+    "locked": "Locked",
+    "results_published": "Results Published",
+    "completed": "Completed",
+    "closed": "Closed"
+  }
+}

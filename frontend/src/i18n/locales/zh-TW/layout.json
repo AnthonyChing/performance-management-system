@@ -1,0 +1,34 @@
+{
+  "systemName": "績效管理系統",
+  "nav": {
+    "myProfile": "我的資料",
+    "performance": "個人績效",
+    "currentKpi": "本期 KPI",
+    "historyKpi": "歷史 KPI",
+    "dispute": "績效異議",
+    "goals": "個人目標",
+    "currentGoals": "本期目標",
+    "historyGoals": "歷史目標"
+  },
+  "breadcrumb": {
+    "myProfile": "我的資料",
+    "performance": "個人績效",
+    "currentKpi": "本期 KPI",
+    "historyKpi": "歷史 KPI",
+    "historyKpiDetail": "歷史 KPI 詳情",
+    "dispute": "績效異議",
+    "goals": "個人目標",
+    "currentGoals": "本期目標",
+    "historyGoals": "歷史目標",
+    "historyGoalsPeriod": "某期歷史目標",
+    "historyGoalsDetail": "歷史目標詳情",
+    "goalDetail": "目標詳情",
+    "newGoal": "新增目標",
+    "editGoal": "編輯目標"
+  },
+  "user": {
+    "defaultName": "登入者",
+    "loading": "載入中..."
+  },
+  "languageSwitch": "EN"
+}

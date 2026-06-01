@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
-import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut } from 'lucide-react';
+import { User, LineChart, FileWarning, Target, Settings, HelpCircle, ChevronDown, ChevronRight, Users, ClipboardList, Menu, LogOut, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { deleteSession } from '../../api/auth';
 import { getMyProfile, type EmployeeProfile } from '../../api/employee';
 import { getUserRoles } from '../../features/auth';
@@ -44,7 +46,7 @@ const SidebarGroup = ({ icon: Icon, label, children, basePath, isSidebarOpen }: 
 
   return (
     <div className="space-y-1 py-1">
-      <div 
+      <div
         onClick={() => {
           if (isSidebarOpen) {
             setIsOpen(!isOpen);
@@ -87,9 +89,9 @@ const SidebarSubItem = ({ to, label }: any) => {
   );
 };
 
-function getDisplayName(profile: EmployeeProfile | null) {
+function getDisplayName(profile: EmployeeProfile | null, defaultName: string) {
   if (!profile) {
-    return '登入者';
+    return defaultName;
   }
 
   return profile.english_name ? `${profile.name} ${profile.english_name}` : profile.name;
@@ -120,6 +122,7 @@ function getAvatarInitials(profile: EmployeeProfile | null) {
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation('layout');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState<EmployeeProfile | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -165,6 +168,12 @@ export default function Layout() {
     }
   };
 
+  function toggleLanguage() {
+    const next = i18n.language === 'zh-TW' ? 'en' : 'zh-TW';
+    i18n.changeLanguage(next);
+    localStorage.setItem('language', next);
+  }
+
   const getBreadcrumbs = () => {
     const path = location.pathname;
 
@@ -183,34 +192,34 @@ export default function Layout() {
       </div>
     );
 
-    if (path === '/') return <BreadcrumbList items={['我的資料']} />;
-    
+    if (path === '/') return <BreadcrumbList items={[t('breadcrumb.myProfile')]} />;
+
     // Performance
-    if (path.startsWith('/performance/current')) return <BreadcrumbList items={['個人績效', '本期 KPI']} />;
-    if (path.startsWith('/performance/history/')) return <BreadcrumbList items={['個人績效', '歷史 KPI', '歷史 KPI 詳情']} />;
-    if (path.startsWith('/performance/history')) return <BreadcrumbList items={['個人績效', '歷史 KPI']} />;
-    
+    if (path.startsWith('/performance/current')) return <BreadcrumbList items={[t('breadcrumb.performance'), t('breadcrumb.currentKpi')]} />;
+    if (path.startsWith('/performance/history/')) return <BreadcrumbList items={[t('breadcrumb.performance'), t('breadcrumb.historyKpi'), t('breadcrumb.historyKpiDetail')]} />;
+    if (path.startsWith('/performance/history')) return <BreadcrumbList items={[t('breadcrumb.performance'), t('breadcrumb.historyKpi')]} />;
+
     // Dispute
-    if (path.startsWith('/dispute')) return <BreadcrumbList items={['個人績效', '績效異議']} />;
+    if (path.startsWith('/dispute')) return <BreadcrumbList items={[t('breadcrumb.performance'), t('breadcrumb.dispute')]} />;
 
     // Goals - New / Edit
-    if (path.startsWith('/goals/new')) return <BreadcrumbList items={['個人目標', '本期目標', '新增目標']} />;
-    if (path.startsWith('/goals/edit')) return <BreadcrumbList items={['個人目標', '本期目標', '編輯目標']} />;
-    
+    if (path.startsWith('/goals/new')) return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.currentGoals'), t('breadcrumb.newGoal')]} />;
+    if (path.startsWith('/goals/edit')) return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.currentGoals'), t('breadcrumb.editGoal')]} />;
+
     // Goals - Current
-    if (path.startsWith('/goals/current')) return <BreadcrumbList items={['個人目標', '本期目標']} />;
-    
+    if (path.startsWith('/goals/current')) return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.currentGoals')]} />;
+
     // Goals - History
     if (path.startsWith('/goals/history')) {
       const parts = path.split('/').filter(Boolean);
-      if (parts.length === 4) return <BreadcrumbList items={['個人目標', '歷史目標', '某期歷史目標', '歷史目標詳情']} />;
-      if (parts.length === 3) return <BreadcrumbList items={['個人目標', '歷史目標', '某期歷史目標']} />;
-      return <BreadcrumbList items={['個人目標', '歷史目標']} />;
+      if (parts.length === 4) return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.historyGoals'), t('breadcrumb.historyGoalsPeriod'), t('breadcrumb.historyGoalsDetail')]} />;
+      if (parts.length === 3) return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.historyGoals'), t('breadcrumb.historyGoalsPeriod')]} />;
+      return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.historyGoals')]} />;
     }
 
     // Goals - Detail
     if (path.startsWith('/goals/')) {
-        return <BreadcrumbList items={['個人目標', '本期目標', '目標詳情']} />;
+        return <BreadcrumbList items={[t('breadcrumb.goals'), t('breadcrumb.currentGoals'), t('breadcrumb.goalDetail')]} />;
     }
 
     // Manager
@@ -245,22 +254,22 @@ export default function Layout() {
           <div className="w-8 h-8 bg-[#0B2544] rounded-lg flex items-center justify-center shrink-0">
             <div className="w-4 h-4 border-2 border-white rounded-sm"></div>
           </div>
-          {isSidebarOpen && <span className="font-bold text-slate-800 tracking-tight text-lg truncate">績效管理系統</span>}
+          {isSidebarOpen && <span className="font-bold text-slate-800 tracking-tight text-lg truncate">{t('systemName')}</span>}
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-          <SidebarItem to="/" exact icon={User} label="我的資料" isSidebarOpen={isSidebarOpen} isGroupStyle={true} />
-          
-          <SidebarGroup icon={LineChart} label="個人績效" basePath="/performance" isSidebarOpen={isSidebarOpen}>
-            <SidebarSubItem to="/performance/current" label="本期 KPI" />
-            <SidebarSubItem to="/performance/history" label="歷史 KPI" />
+          <SidebarItem to="/" exact icon={User} label={t('nav.myProfile')} isSidebarOpen={isSidebarOpen} isGroupStyle={true} />
+
+          <SidebarGroup icon={LineChart} label={t('nav.performance')} basePath="/performance" isSidebarOpen={isSidebarOpen}>
+            <SidebarSubItem to="/performance/current" label={t('nav.currentKpi')} />
+            <SidebarSubItem to="/performance/history" label={t('nav.historyKpi')} />
           </SidebarGroup>
 
-          <SidebarItem to="/dispute" icon={FileWarning} label="績效異議" isSidebarOpen={isSidebarOpen} isGroupStyle={true} />
+          <SidebarItem to="/dispute" icon={FileWarning} label={t('nav.dispute')} isSidebarOpen={isSidebarOpen} isGroupStyle={true} />
 
-          <SidebarGroup icon={Target} label="個人目標" basePath="/goals" isSidebarOpen={isSidebarOpen}>
-            <SidebarSubItem to="/goals/current" label="本期目標" />
-            <SidebarSubItem to="/goals/history" label="歷史目標" />
+          <SidebarGroup icon={Target} label={t('nav.goals')} basePath="/goals" isSidebarOpen={isSidebarOpen}>
+            <SidebarSubItem to="/goals/current" label={t('nav.currentGoals')} />
+            <SidebarSubItem to="/goals/history" label={t('nav.historyGoals')} />
           </SidebarGroup>
 
           {isManager && (
@@ -290,7 +299,7 @@ export default function Layout() {
               {currentUser?.avatar_url && !avatarFailed ? (
                 <img
                   src={currentUser.avatar_url}
-                  alt={getDisplayName(currentUser)}
+                  alt={getDisplayName(currentUser, t('user.defaultName'))}
                   className="h-full w-full object-cover"
                   onError={() => setAvatarFailed(true)}
                 />
@@ -300,9 +309,9 @@ export default function Layout() {
             </div>
             {isSidebarOpen && (
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-slate-800 truncate">{getDisplayName(currentUser)}</p>
+                <p className="text-xs font-bold text-slate-800 truncate">{getDisplayName(currentUser, t('user.defaultName'))}</p>
                 <p className="text-[10px] text-slate-400 truncate">
-                  {currentUser?.job_title ?? '載入中...'}
+                  {currentUser?.job_title ?? t('user.loading')}
                 </p>
               </div>
             )}
@@ -331,7 +340,7 @@ export default function Layout() {
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
             >
@@ -339,6 +348,14 @@ export default function Layout() {
             </button>
             {getBreadcrumbs()}
           </div>
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+            title="Switch language"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            {t('languageSwitch')}
+          </button>
         </header>
 
         {/* Page Content Viewport */}

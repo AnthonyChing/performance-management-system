@@ -1,0 +1,19 @@
+{
+  "title": "我的資料頁面",
+  "subtitle": "檢視並管理您的個人基本資訊與績效考核進度。",
+  "employeeId": "員工編號: #{{id}}",
+  "loading": "載入我的資料中...",
+  "loadFailed": "資料載入失敗。",
+  "unauthorized": "尚未登入或 token 失效。",
+  "noCycle": "目前沒有可顯示的考核週期。",
+  "cycleLoading": "載入目前考核週期中...",
+  "cyclePeriod": "（考核週期：{{period}}）",
+  "cycleStatus": {
+    "not_started": "尚未開始",
+    "in_progress": "進行中",
+    "locked": "已鎖定",
+    "results_published": "已公佈考核結果",
+    "completed": "已完成",
+    "closed": "已關閉"
+  }
+}

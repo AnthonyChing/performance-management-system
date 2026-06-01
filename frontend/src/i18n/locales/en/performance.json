@@ -1,0 +1,101 @@
+{
+  "defaultTitle": "Current KPI Performance Indicators",
+  "unauthorized": "Not logged in or token expired.",
+  "loadFailed": "Failed to load KPI standards.",
+  "dateRange": "{{start}} to {{end}}",
+  "tabs": {
+    "standards": "KPI Standards",
+    "results": "Review Results"
+  },
+  "standards": {
+    "loading": "Loading KPI standards...",
+    "empty": "No KPI standards have been set.",
+    "table": {
+      "name": "KPI Name",
+      "description": "Description",
+      "weight": "Weight"
+    }
+  },
+  "results": {
+    "loading": "Loading KPI review results...",
+    "empty": "No KPI review results to display.",
+    "notPublished": "KPI review results have not been published yet.",
+    "noConfirmable": "No KPI result available to confirm.",
+    "summary": {
+      "performanceScore": "Performance Score",
+      "performanceGrade": "Performance Grade",
+      "kpiAchievement": "KPI Achievement",
+      "weightedScore": "Weighted Score",
+      "managerReview": "Manager Review",
+      "managerComment": "Manager Comment"
+    },
+    "kpiBreakdown": "Individual KPI Achievement",
+    "kpiNotCalculated": "KPI results have not been calculated yet.",
+    "actualTarget": "(Actual: {{actual}} / Target: {{target}})",
+    "statusInfo": {
+      "confirmed": "Results confirmed on {{date}}.",
+      "disputeWindow": "If you have concerns, submit an appeal between {{start}} and {{end}}.",
+      "default": "Results will be finalized upon confirmation."
+    },
+    "actions": {
+      "dispute": "Submit Appeal",
+      "confirm": "Confirm Results"
+    }
+  },
+  "confirmModal": {
+    "title": "Confirm Results",
+    "body": "Are you sure you want to confirm this review result?",
+    "warningLabel": "Note: ",
+    "warning": "Once confirmed, results will be finalized and cannot be appealed or modified.",
+    "cancel": "Cancel",
+    "submit": "Confirm",
+    "submitting": "Submitting..."
+  },
+  "historyList": {
+    "title": "KPI History",
+    "subtitle": "Review performance data and final scores from all past cycles",
+    "loading": "Loading KPI history...",
+    "loadFailed": "Failed to load KPI history.",
+    "empty": "No historical KPI data available.",
+    "cycleRange": "Period: ",
+    "unnamed": "Unnamed Cycle",
+    "totalScore": "Score",
+    "finalGrade": "Grade",
+    "viewDetail": "View Details",
+    "prevPage": "Previous",
+    "nextPage": "Next"
+  },
+  "historyDetail": {
+    "defaultTitle": "Historical KPI Performance",
+    "cycleLabel": "(Cycle: {{period}})",
+    "breadcrumb": {
+      "dashboard": "Dashboard",
+      "historyPage": "KPI History"
+    },
+    "loading": "Loading historical KPI results...",
+    "loadFailed": "Failed to load historical KPI details.",
+    "missingId": "Missing KPI cycle ID.",
+    "empty": "No historical KPI results to display.",
+    "summary": {
+      "performanceScore": "Performance Score",
+      "performanceGrade": "Performance Grade",
+      "kpiAchievement": "KPI Achievement",
+      "weightedScore": "Weighted Score",
+      "managerReview": "Manager Review",
+      "managerComment": "Manager Comment",
+      "resultStatus": "Result Status",
+      "lastUpdated": "Last Updated"
+    },
+    "kpiBreakdown": "Individual KPI Achievement",
+    "kpiEmpty": "No KPI details available for this cycle.",
+    "finalizedNote": "The results for this cycle have been finalized and cannot be changed.",
+    "resultStatus": {
+      "finalized": "Finalized",
+      "confirmed": "Confirmed",
+      "disputed": "Appealed",
+      "completed": "Completed",
+      "pending_confirmation": "Pending Confirmation",
+      "not_published": "Not Published"
+    }
+  }
+}
