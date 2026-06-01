@@ -69,4 +69,31 @@ class EncryptionUtilTest {
         assertNotEquals("4.50", dbData);
         assertEquals(rawScore, converter.convertToEntityAttribute(dbData));
     }
+
+    @Test
+    void testEncryptNull_returnsNull() {
+        assertNull(EncryptionUtil.encrypt(null));
+    }
+
+    @Test
+    void testDecryptNullOrEmpty_returnsOriginal() {
+        assertNull(EncryptionUtil.decrypt(null));
+        assertEquals("", EncryptionUtil.decrypt(""));
+        assertEquals("   ", EncryptionUtil.decrypt("   "));
+    }
+
+    @Test
+    void testFallbackSecretKeyIfTooShort() {
+        EncryptionUtil util = new EncryptionUtil();
+        util.setSecretKeyString("short");
+        String encrypted = EncryptionUtil.encrypt("test-data");
+        assertEquals("test-data", EncryptionUtil.decrypt(encrypted));
+        util.setSecretKeyString("my-super-secret-test-key-must-be-32-bytes");
+    }
+
+    @Test
+    void testDecryptWithInvalidBase64ButValidFallback_returnsOriginal() {
+        String plaintext = "This is valid plaintext but invalid base64!";
+        assertEquals(plaintext, EncryptionUtil.decrypt(plaintext));
+    }
 }
