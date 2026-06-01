@@ -24,7 +24,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\"}[2m]))",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\"}[2m]))",
           "refId": "A"
         }
       ]
@@ -40,7 +40,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate({__name__=~\"http_server_requests_bucket|http_server_requests_seconds_bucket\", application=~\"$application\"}[2m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate({__name__=~\"http_server_requests_milliseconds_bucket|http_server_requests_milliseconds_bucket\", application=~\"$application\"}[2m])) by (le))",
           "refId": "A"
         }
       ]
@@ -56,7 +56,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\", status=~\"5..\"}[2m])) / sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\"}[2m]))",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\", status=~\"5..\"}[2m])) / sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\"}[2m]))",
           "refId": "A"
         }
       ]
@@ -98,7 +98,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\"}[2m])) by (uri)",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\"}[2m])) by (uri)",
           "legendFormat": "{{uri}}",
           "refId": "A"
         }
@@ -115,7 +115,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\", status=~\"4..|5..\"}[2m])) by (uri, status)",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\", status=~\"4..|5..\"}[2m])) by (uri, status)",
           "legendFormat": "{{status}} - {{uri}}",
           "refId": "A"
         }
@@ -132,7 +132,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate({__name__=~\"http_server_requests_bucket|http_server_requests_seconds_bucket\", application=~\"$application\"}[2m])) by (le, uri))",
+          "expr": "histogram_quantile(0.95, sum(rate({__name__=~\"http_server_requests_milliseconds_bucket|http_server_requests_milliseconds_bucket\", application=~\"$application\"}[2m])) by (le, uri))",
           "legendFormat": "P95 {{uri}}",
           "refId": "A"
         }
@@ -209,7 +209,7 @@
         "hide": 0,
         "includeAll": true,
         "name": "application",
-        "query": "label_values({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\"}, application)",
+        "query": "label_values({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\"}, application)",
         "type": "query"
       }
     ]
