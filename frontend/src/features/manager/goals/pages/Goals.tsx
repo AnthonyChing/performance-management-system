@@ -14,7 +14,7 @@ export default function Goals() {
   const [searchParams] = useSearchParams();
   const initialTeam = searchParams.get('team') || 'all';
 
-  const [data, setData] = useState<{teams: any[], members: any[], goals: any[]}>({ teams: [], members: [], goals: [] });
+  const [data, setData] = useState<{ teams: any[], members: any[], goals: any[] }>({ teams: [], members: [], goals: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [teamFilter, setTeamFilter] = useState<string>(initialTeam);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -158,7 +158,7 @@ export default function Goals() {
     return matchesTeam && matchesStatus && matchesName;
   });
 
-  const okrs = filteredGoals.filter(g => g.type === '目標');
+  const goals = filteredGoals.filter(g => g.type === '目標');
   const kpis = filteredGoals.filter(g => g.type === 'KPI');
 
   if (isLoading) {
@@ -180,7 +180,7 @@ export default function Goals() {
       {/* Top Tabs */}
       <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-200 mb-6">
         {[
-          { id: '待審核', label: '待核准 (Pending)' },
+          { id: '待審核', label: '待核准' },
           { id: '進行中', label: '待評分' }
         ].map(tab => (
           <button
@@ -244,15 +244,15 @@ export default function Goals() {
       {filteredGoals.length === 0 ? (
         <GoalsEmptyState />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          
-          {/* Left Column: OKRs (Goals) */}
+        <div className="grid grid-cols-1 gap-8 items-start">
+
+          {/* Left Column: SMART (Goals) */}
           <div className="space-y-4">
             <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2 pb-2 border-b border-slate-200">
-              <span className="w-2 h-6 bg-purple-500 rounded-sm"></span> OKRs 發展目標
+              <span className="w-2 h-6 bg-purple-500 rounded-sm"></span> 目標列表
             </h2>
             <div className="grid grid-cols-1 gap-4">
-              {okrs.length > 0 ? okrs.map((goal) => (
+              {goals.length > 0 ? goals.map((goal) => (
                 <GoalCard
                   key={goal.id}
                   goal={goal}
@@ -274,36 +274,6 @@ export default function Goals() {
               )}
             </div>
           </div>
-
-          {/* Right Column: KPIs */}
-          <div className="space-y-4">
-            <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2 pb-2 border-b border-slate-200">
-              <span className="w-2 h-6 bg-indigo-500 rounded-sm"></span> KPI 績效指標
-            </h2>
-            <div className="grid grid-cols-1 gap-4">
-              {kpis.length > 0 ? kpis.map((goal) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  teamName={data.teams.find((team) => team.id === goal.teamId)?.name || '專案團隊'}
-                  onApprove={handleApprove}
-                  onReject={(target) => {
-                    setRejectingGoal(target);
-                    setRejectReason('');
-                  }}
-                  onEvaluate={(target) => {
-                    setEvaluatingGoal(target);
-                    setEvaluationScore(80);
-                    setEvaluationComment('');
-                  }}
-                  onReset={handleReset}
-                />
-              )) : (
-                <div className="p-8 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl bg-slate-50/50">沒有績效指標</div>
-              )}
-            </div>
-          </div>
-
         </div>
       )}
 

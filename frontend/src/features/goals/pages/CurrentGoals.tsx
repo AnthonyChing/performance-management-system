@@ -215,7 +215,7 @@ export function CurrentGoalsContent({
         const progressWidth = `${Math.min(Math.max(progress, 0), 100)}%`;
 
         return (
-          <div key={goal.goal_id} className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex items-center justify-between hover:border-slate-300 transition-colors">
+          <div key={goal.goal_id} className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex items-center justify-between hover:border-black transition-colors">
             <div className="flex-1">
               <div className="flex items-center mb-2">
                 <h3 className="text-base font-bold text-slate-800">{goal.title}</h3>

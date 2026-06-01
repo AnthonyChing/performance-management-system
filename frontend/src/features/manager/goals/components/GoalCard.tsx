@@ -19,14 +19,10 @@ export default function GoalCard({ goal, teamName, onApprove, onReject, onEvalua
   return (
     <div
       key={goal.id}
-      className={`bg-white rounded-xl border p-6 shadow-sm transition-all hover:border-slate-300 flex flex-col justify-between gap-6 ${isPending ? 'border-amber-200 bg-amber-50/10' : ''}`}
+      className={`bg-white rounded-xl border p-6 shadow-sm transition-all hover:border-black flex flex-col justify-between gap-6 ${isPending ? 'border-amber-200 bg-amber-50/10' : isActive ? 'border-gray-400' : 'border-slate-200'}`}
     >
       <div className="flex-1 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${goal.type === 'KPI' ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'}`}>
-            {goal.type}
-          </span>
-
           {isPending && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1">
               <Clock className="w-3 h-3" /> 待審核
