@@ -3,18 +3,19 @@ name: Load Test (k6)
 on:
   workflow_dispatch:
     inputs:
+      test_type:
+        description: 'Type of load test to run'
+        required: true
+        type: choice
+        options:
+          - load-test.js
+          - spike-test.js
+          - stress-test.js
+        default: 'load-test.js'
       target_env:
-        description: 'Target Environment URL (e.g., Staging URL)'
+        description: 'Target Environment URL'
         required: true
         default: 'https://backend-staging-1078971769535.asia-east1.run.app'
-      vus:
-        description: 'Max Virtual Users'
-        required: true
-        default: '500'
-      api_key:
-        description: 'A valid X-API-KEY to bypass Spring Security'
-        required: true
-        default: 'default-dev-key-do-not-use-in-prod'
 
 jobs:
   k6-load-test:
@@ -28,9 +29,7 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Run k6 local test
-        run: k6 run k6-load-test.js
+      - name: Run k6 test
+        run: k6 run ${{ github.event.inputs.test_type }}
         env:
           BASE_URL: ${{ github.event.inputs.target_env }}
-          MAX_VUS: ${{ github.event.inputs.vus }}
-          API_KEY: ${{ github.event.inputs.api_key }}

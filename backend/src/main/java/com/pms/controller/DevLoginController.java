@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@Profile("dev")
+@Profile({"dev", "staging"})
 @RequiredArgsConstructor
 public class DevLoginController {
 
