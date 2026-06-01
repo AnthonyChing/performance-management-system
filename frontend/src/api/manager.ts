@@ -108,7 +108,6 @@ export interface ReviewResponse {
 export interface AppealResponse {
   id: string;
   responded_by: string;
-  visibility: string;
   response_text: string;
   is_final: boolean;
   responded_at: string;
@@ -119,8 +118,10 @@ export interface Appeal {
   review_id: string;
   case_no: string;
   filed_by: string;
+  filed_by_name: string;
   assigned_to_type: string;
   assigned_to: string;
+  assigned_to_name: string;
   reason: string;
   status: AppealStatus;
   filed_at: string;
@@ -320,7 +321,6 @@ function isAppealResponse(value: unknown): value is AppealResponse {
     isRecord(value) &&
     isString(value.id) &&
     isString(value.responded_by) &&
-    isString(value.visibility) &&
     isString(value.response_text) &&
     typeof value.is_final === 'boolean' &&
     isString(value.responded_at)
@@ -334,8 +334,10 @@ function isAppeal(value: unknown): value is Appeal {
     isString(value.review_id) &&
     isString(value.case_no) &&
     isString(value.filed_by) &&
+    isString(value.filed_by_name) &&
     isString(value.assigned_to_type) &&
     isString(value.assigned_to) &&
+    isString(value.assigned_to_name) &&
     isString(value.reason) &&
     isString(value.status) &&
     isString(value.filed_at) &&
@@ -807,6 +809,7 @@ export function updateAppeal(
   payload: {
     response_text: string;
     is_final: boolean;
+    outcome?: 'approved' | 'rejected';
   },
   options?: ManagerApiOptions,
 ): Promise<Appeal> {

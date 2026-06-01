@@ -107,7 +107,6 @@ export async function loadManagerOverviewDataAsync(): Promise<{
     const allAppeals = allAppealsNested.flat();
 
     const disputes: DisputeItem[] = allAppeals.map(a => {
-      const owner = subordinates.find(s => s.id === a.filed_by);
       const disputeStatus = a.status === 'submitted' || a.status === 'under_review' || a.status === 'need_more_info'
         ? '待處理'
         : a.status === 'approved'
@@ -117,8 +116,8 @@ export async function loadManagerOverviewDataAsync(): Promise<{
       return {
         id: a.id,
         memberId: a.filed_by,
-        memberName: owner?.name || '未知同仁',
-        teamId: owner?.department || 'General',
+        memberName: a.filed_by_name || '未知同仁',
+        teamId: subordinates.find(s => s.id === a.filed_by)?.department || 'General',
         period: '目前考核週期',
         kpiName: a.reason,
         originalScore: 0,
