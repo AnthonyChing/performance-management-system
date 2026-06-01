@@ -37,7 +37,13 @@ export async function respondToAppeal(
   appealId: string,
   responseText: string,
   isFinal: boolean,
+  outcome?: 'approved' | 'rejected',
   options?: ManagerApiOptions,
 ): Promise<Appeal> {
-  return apiUpdateAppeal(teamId, appealId, { response_text: responseText, is_final: isFinal }, options);
+  return apiUpdateAppeal(
+    teamId,
+    appealId,
+    { response_text: responseText, is_final: isFinal, ...(isFinal && outcome ? { outcome } : {}) },
+    options,
+  );
 }

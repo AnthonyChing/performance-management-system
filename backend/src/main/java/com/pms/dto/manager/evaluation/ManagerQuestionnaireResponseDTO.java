@@ -10,6 +10,7 @@ import lombok.Getter;
 @Builder
 public class ManagerQuestionnaireResponseDTO {
     private UUID reviewId;
+    private List<EvaluationQuestionDTO> questions;
     private List<QuestionnaireResponseItemDTO> responses;
     private OffsetDateTime updatedAt;
 }

@@ -1,7 +1,15 @@
 package com.pms.service.hr.impl;
 
 import com.pms.audit.Auditable;
-import com.pms.dto.hr.template.*;
+import com.pms.dto.hr.template.QuestionCreateRequestDTO;
+import com.pms.dto.hr.template.QuestionPatchRequestDTO;
+import com.pms.dto.hr.template.QuestionReorderRequestDTO;
+import com.pms.dto.hr.template.QuestionResponseDTO;
+import com.pms.dto.hr.template.TemplateApplicationRequestDTO;
+import com.pms.dto.hr.template.TemplateCreateRequestDTO;
+import com.pms.dto.hr.template.TemplateListItemDTO;
+import com.pms.dto.hr.template.TemplatePatchRequestDTO;
+import com.pms.dto.hr.template.TemplateResponseDTO;
 import com.pms.entity.AssessmentTemplate;
 import com.pms.entity.TemplateQuestion;
 import com.pms.entity.TemplateVersion;
@@ -80,9 +88,15 @@ public class HrTemplateServiceImpl implements HrTemplateService {
             throw new ConflictException(
                     "STATE_CONFLICT", "Cannot modify a template that is in use by active cycles");
         }
-        if (req.getName() != null) t.setName(req.getName());
-        if (req.getDescription() != null) t.setDescription(req.getDescription());
-        if (req.getJobCategory() != null) t.setJobCategory(req.getJobCategory());
+        if (req.getName() != null) {
+            t.setName(req.getName());
+        }
+        if (req.getDescription() != null) {
+            t.setDescription(req.getDescription());
+        }
+        if (req.getJobCategory() != null) {
+            t.setJobCategory(req.getJobCategory());
+        }
         t.setUpdatedBy(actorId);
         templateRepo.save(t);
         return TemplateResponseDTO.from(t, templateRepo.countCycleUsages(templateId));
@@ -231,11 +245,18 @@ public class HrTemplateServiceImpl implements HrTemplateService {
                                 () ->
                                         new NotFoundException(
                                                 "RESOURCE_NOT_FOUND", "Question not found"));
-        if (req.getQuestionText() != null) q.setQuestionText(req.getQuestionText());
-        if (req.getQuestionType() != null)
+        if (req.getQuestionText() != null) {
+            q.setQuestionText(req.getQuestionText());
+        }
+        if (req.getQuestionType() != null) {
             q.setQuestionType(QuestionType.fromDbValue(req.getQuestionType()));
-        if (req.getRatingScaleMax() != null) q.setRatingScaleMax(req.getRatingScaleMax());
-        if (req.getIsRequired() != null) q.setIsRequired(req.getIsRequired());
+        }
+        if (req.getRatingScaleMax() != null) {
+            q.setRatingScaleMax(req.getRatingScaleMax());
+        }
+        if (req.getIsRequired() != null) {
+            q.setIsRequired(req.getIsRequired());
+        }
         q.setUpdatedBy(actorId);
         questionRepo.save(q);
         return QuestionResponseDTO.from(q);

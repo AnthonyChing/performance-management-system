@@ -49,6 +49,7 @@
 | KPI 管理 | POST | `/users/{user_id}/kpis` | 為部屬設定或審核 KPI |
 | KPI 管理 | PATCH | `/users/{user_id}/kpis/{kpi_id}` | 調整 KPI 評分規則與權重 |
 | KPI 管理 | GET | `/users/{user_id}/kpis` | 查看個別部屬 KPI 列表 |
+| 績效評估 | GET | `/users/{user_id}/evaluations/{evaluation_id}/questionnaire` | 取得主管評核問卷（題目 + 目前已填答案） |
 | 績效評估 | PATCH | `/users/{user_id}/evaluations/{evaluation_id}/questionnaire` | 填寫主管的個人績效問卷評估 |
 | 績效評估 | PATCH | `/users/{user_id}/evaluations/{evaluation_id}/kpis` | 填寫 KPI 評分與總結成績 |
 | 歷史查詢 | GET | `/users/{user_id}/evaluations` | 查看部屬個人歷史考核結果 |
@@ -337,18 +338,45 @@
 
 ## 5. 團隊績效評估與執行
 
-### 5.1 填寫個人績效評分表 - 問卷評估
+### 5.1 取得主管評核問卷（題目與目前答案）
+- **Method**: GET
+- **URL**: `/users/{user_id}/evaluations/{evaluation_id}/questionnaire`
+- **用途**: 主管在填寫評核前，先取得 HR 為該員工群組指派的考核模板題目，以及目前已填的答案。後端根據員工的 `department_id` → `job_category` → `all` 優先順序，找出對應的 `EvaluationTemplate` 並回傳所有題目。
+- **可能錯誤 (HTTP Status)**:
+  - `403 FORBIDDEN`: 非直屬主管。
+  - `404 RESOURCE_NOT_FOUND`: 評核單不存在。
+- **Response 200**:
+  ```json
+  {
+    "review_id": "123e4567-e89b-12d3-a456-426614174060",
+    "questions": [
+      {
+        "question_id": "123e4567-e89b-12d3-a456-426614174090",
+        "question_text": "整體工作表現評分",
+        "question_type": "rating",
+        "rating_scale_max": 5,
+        "is_required": true,
+        "sort_order": 1
+      }
+    ],
+    "responses": [],
+    "updated_at": "2026-06-01T15:00:00+08:00"
+  }
+  ```
+- **備註**: 若該員工所屬群組尚未指派任何考核模板，`questions` 回傳空陣列 `[]`。
+
+### 5.2 填寫個人績效評分表 - 問卷評估
 - **Method**: PATCH
 - **URL**: `/users/{user_id}/evaluations/{evaluation_id}/questionnaire`
-- **用途**: 針對進入評分階段的評估單，主管針對 HR 設定的問卷模板（`TemplateQuestion`）進行逐題作答。
+- **用途**: 針對進入評分階段的評估單，主管根據考核模板題目逐題作答。
 - **欄位說明**:
   - Request: `responses` (Array, 對各 `question_id` 的回答，包含 `question_id`, `rating_value` (如有), `text_value`)。
-  - Response: 更新過後的評量/問卷詳情物件。
+  - Response: 更新後的問卷詳情，包含題目結構與已填答案（與 GET 相同格式）。
 - **可能錯誤 (HTTP Status)**:
   - `400 VALIDATION_ERROR`: 回答必填問題缺失、或是數值超過 `rating_scale_max`。
   - `403 FORBIDDEN`: 非直屬或指定評核主管。
   - `404 RESOURCE_NOT_FOUND`: 表單 `review_id` 不存在。
-  - `409 STATE_CONFLICT`: 現階段不在主管評核期（如：員工仍在自評階段，或是早已發布成績）。
+  - `409 STATE_CONFLICT`: 現階段不在主管評核期（如：早已發布成績）。
 - **Request Body 範例**:
   ```json
   {
@@ -365,6 +393,16 @@
   ```json
   {
     "review_id": "123e4567-e89b-12d3-a456-426614174060",
+    "questions": [
+      {
+        "question_id": "123e4567-e89b-12d3-a456-426614174090",
+        "question_text": "整體工作表現評分",
+        "question_type": "rating",
+        "rating_scale_max": 5,
+        "is_required": true,
+        "sort_order": 1
+      }
+    ],
     "responses": [
       {
         "id": "123e4567-e89b-12d3-a456-426614174095",
@@ -379,7 +417,7 @@
   }
   ```
 
-### 5.2 填寫個人績效評分表 - KPI 與總結
+### 5.3 填寫個人績效評分表 - KPI 與總結
 - **Method**: PATCH
 - **URL**: `/users/{user_id}/evaluations/{evaluation_id}/kpis`
 - **用途**: 針對該員工當期的各項 KPI/目標給予評核給分，並提交最終的綜合評價及狀態修改。
@@ -426,7 +464,7 @@
   }
   ```
 
-### 5.3 查看個人歷史考核結果
+### 5.4 查看個人歷史考核結果
 - **Method**: GET
 - **URL**: `/users/{user_id}/evaluations`
 - **用途**: 查詢部屬過往的考核紀錄。

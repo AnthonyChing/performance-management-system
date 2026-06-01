@@ -94,7 +94,7 @@ export default function DisputeListSidebar({
                             : 'bg-slate-200 text-slate-600'
                         }`}
                       >
-                        {getInitials(appeal.filed_by)}
+                        {getInitials(appeal.filed_by_name)}
                       </div>
                       <div className="min-w-0">
                         <h4
@@ -165,7 +165,7 @@ export default function DisputeListSidebar({
                                     : 'bg-slate-200 text-slate-600'
                                 }`}
                               >
-                                {getInitials(appeal.filed_by)}
+                                {getInitials(appeal.filed_by_name)}
                               </div>
                               <div className="min-w-0">
                                 <h4

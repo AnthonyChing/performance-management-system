@@ -4,16 +4,28 @@ import com.pms.audit.Auditable;
 import com.pms.dto.employee.AvailableActionsDTO;
 import com.pms.dto.employee.CycleSummaryDTO;
 import com.pms.dto.employee.appeal.AppealDTO;
-import com.pms.dto.employee.appeal.AppealResponsesDTO.*;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealResultResponseDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealReviewResultDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealSubmitRequestDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealSubmitResponseDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealsResponseDTO;
 import com.pms.dto.employee.kpi.KpiResultSummaryDTO.DisputePeriodDTO;
-import com.pms.entity.*;
+import com.pms.entity.Appeal;
+import com.pms.entity.AppealResponse;
+import com.pms.entity.PerformanceCycle;
+import com.pms.entity.PerformanceReview;
+import com.pms.entity.User;
 import com.pms.entity.enums.AppealAssignee;
 import com.pms.entity.enums.AppealStatus;
 import com.pms.entity.enums.CycleStatus;
 import com.pms.exception.ConflictException;
 import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
-import com.pms.repository.*;
+import com.pms.repository.AppealRepository;
+import com.pms.repository.AppealResponseRepository;
+import com.pms.repository.PerformanceCycleRepository;
+import com.pms.repository.PerformanceReviewRepository;
+import com.pms.repository.UserRepository;
 import com.pms.service.employee.EmployeeAppealService;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -30,9 +42,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class EmployeeAppealServiceImpl implements EmployeeAppealService {
-
-    private static final UUID HELEN_HO_UUID =
-            UUID.fromString("00000000-0000-0000-0000-0000000000a1");
 
     private final UserRepository userRepository;
     private final PerformanceCycleRepository performanceCycleRepository;
@@ -169,21 +178,22 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         + "-"
                         + String.format("%04d", ThreadLocalRandom.current().nextInt(10000));
 
+        UUID managerId = review.getManagerId();
         Appeal appeal =
                 Appeal.builder()
                         .id(UUID.randomUUID())
                         .reviewId(review.getId())
                         .caseNo(caseNo)
                         .filedBy(userId)
-                        .assignedToType(AppealAssignee.HR)
-                        .assignedTo(HELEN_HO_UUID)
+                        .assignedToType(AppealAssignee.SENIOR_MANAGER)
+                        .assignedTo(managerId)
                         .reason(request.getReason())
                         .status(AppealStatus.SUBMITTED)
                         .filedAt(OffsetDateTime.now())
                         .build();
         appeal = appealRepository.save(appeal);
 
-        User handler = userRepository.findById(HELEN_HO_UUID).orElse(null);
+        User handler = userRepository.findById(managerId).orElse(null);
         AppealDTO appealDTO = buildAppealDTO(appeal, review, cycle, handler, null);
 
         return AppealSubmitResponseDTO.builder()

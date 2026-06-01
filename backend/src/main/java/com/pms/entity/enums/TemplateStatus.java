@@ -15,7 +15,11 @@ public enum TemplateStatus {
     }
 
     public static TemplateStatus fromDbValue(String v) {
-        for (TemplateStatus s : values()) if (s.dbValue.equals(v)) return s;
+        for (TemplateStatus s : values()) {
+            if (s.dbValue.equals(v)) {
+                return s;
+            }
+        }
         throw new IllegalArgumentException("Unknown TemplateStatus: " + v);
     }
 }

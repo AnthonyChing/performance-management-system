@@ -16,7 +16,11 @@ public enum QuestionType {
     }
 
     public static QuestionType fromDbValue(String v) {
-        for (QuestionType t : values()) if (t.dbValue.equals(v)) return t;
+        for (QuestionType t : values()) {
+            if (t.dbValue.equals(v)) {
+                return t;
+            }
+        }
         throw new IllegalArgumentException("Unknown QuestionType: " + v);
     }
 }

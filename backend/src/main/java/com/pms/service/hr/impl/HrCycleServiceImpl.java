@@ -80,15 +80,30 @@ public class HrCycleServiceImpl implements HrCycleService {
                     "STATE_CONFLICT",
                     "Cannot modify a cycle in status: " + cycle.getStatus().getDbValue());
         }
-        if (req.getName() != null) cycle.setName(req.getName());
-        if (req.getTimezone() != null) cycle.setTimezone(req.getTimezone());
-        if (req.getCycleStart() != null) cycle.setCycleStart(req.getCycleStart());
-        if (req.getCycleEnd() != null) cycle.setCycleEnd(req.getCycleEnd());
-        if (req.getManagerEvalStart() != null) cycle.setManagerEvalStart(req.getManagerEvalStart());
-        if (req.getManagerEvalEnd() != null) cycle.setManagerEvalEnd(req.getManagerEvalEnd());
-        if (req.getHrReviewEnd() != null) cycle.setHrReviewEnd(req.getHrReviewEnd());
-        if (req.getAppealDeadlineDays() != null)
+        if (req.getName() != null) {
+            cycle.setName(req.getName());
+        }
+        if (req.getTimezone() != null) {
+            cycle.setTimezone(req.getTimezone());
+        }
+        if (req.getCycleStart() != null) {
+            cycle.setCycleStart(req.getCycleStart());
+        }
+        if (req.getCycleEnd() != null) {
+            cycle.setCycleEnd(req.getCycleEnd());
+        }
+        if (req.getManagerEvalStart() != null) {
+            cycle.setManagerEvalStart(req.getManagerEvalStart());
+        }
+        if (req.getManagerEvalEnd() != null) {
+            cycle.setManagerEvalEnd(req.getManagerEvalEnd());
+        }
+        if (req.getHrReviewEnd() != null) {
+            cycle.setHrReviewEnd(req.getHrReviewEnd());
+        }
+        if (req.getAppealDeadlineDays() != null) {
             cycle.setAppealDeadlineDays(req.getAppealDeadlineDays());
+        }
         cycleRepo.save(cycle);
         return CycleResponseDTO.from(cycle);
     }

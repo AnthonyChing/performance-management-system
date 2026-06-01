@@ -40,6 +40,22 @@ export interface EvaluationQuestion {
   sort_order: number;
 }
 
+interface QuestionnaireQuestionApi {
+  question_id: string;
+  question_text: string;
+  question_type: QuestionType;
+  rating_scale_max: number | null;
+  is_required: boolean;
+  sort_order: number;
+}
+
+interface ManagerQuestionnaireResponse {
+  review_id: string;
+  questions: QuestionnaireQuestionApi[];
+  responses: ReviewResponse[];
+  updated_at: string;
+}
+
 export interface KpiEvaluationItem {
   kpi_id: string;
   manager_score: number | null;
@@ -96,7 +112,6 @@ export interface ReviewResponse {
 export interface AppealResponse {
   id: string;
   responded_by: string;
-  visibility: string;
   response_text: string;
   is_final: boolean;
   responded_at: string;
@@ -107,8 +122,10 @@ export interface Appeal {
   review_id: string;
   case_no: string;
   filed_by: string;
+  filed_by_name: string;
   assigned_to_type: string;
   assigned_to: string;
+  assigned_to_name: string;
   reason: string;
   status: AppealStatus;
   filed_at: string;
@@ -283,12 +300,35 @@ function isReviewResponse(value: unknown): value is ReviewResponse {
   );
 }
 
+function isQuestionnaireQuestionApi(value: unknown): value is QuestionnaireQuestionApi {
+  return (
+    isRecord(value) &&
+    isString(value.question_id) &&
+    isString(value.question_text) &&
+    isString(value.question_type) &&
+    (value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
+    typeof value.is_required === 'boolean' &&
+    isNumber(value.sort_order)
+  );
+}
+
+function isManagerQuestionnaireResponse(value: unknown): value is ManagerQuestionnaireResponse {
+  return (
+    isRecord(value) &&
+    isString(value.review_id) &&
+    Array.isArray(value.questions) &&
+    value.questions.every(isQuestionnaireQuestionApi) &&
+    Array.isArray(value.responses) &&
+    value.responses.every(isReviewResponse) &&
+    isString(value.updated_at)
+  );
+}
+
 function isAppealResponse(value: unknown): value is AppealResponse {
   return (
     isRecord(value) &&
     isString(value.id) &&
     isString(value.responded_by) &&
-    isString(value.visibility) &&
     isString(value.response_text) &&
     typeof value.is_final === 'boolean' &&
     isString(value.responded_at)
@@ -302,8 +342,10 @@ function isAppeal(value: unknown): value is Appeal {
     isString(value.review_id) &&
     isString(value.case_no) &&
     isString(value.filed_by) &&
+    isString(value.filed_by_name) &&
     isString(value.assigned_to_type) &&
     isString(value.assigned_to) &&
+    isString(value.assigned_to_name) &&
     isString(value.reason) &&
     isString(value.status) &&
     isString(value.filed_at) &&
@@ -678,6 +720,30 @@ export function submitQuestionnaireEvaluation(
   );
 }
 
+export function getQuestionnaire(
+  userId: string,
+  evaluationId: string,
+  options?: ManagerApiOptions,
+): Promise<{ review_id: string; questions: EvaluationQuestion[]; responses: ReviewResponse[]; updated_at: string }> {
+  return requestJson(
+    `/users/${userId}/evaluations/${evaluationId}/questionnaire`,
+    'GET',
+    isManagerQuestionnaireResponse,
+    undefined,
+    options,
+  ).then((res) => ({
+    ...res,
+    questions: res.questions.map((question) => ({
+      id: question.question_id,
+      question_text: question.question_text,
+      question_type: question.question_type,
+      rating_scale_max: question.rating_scale_max,
+      is_required: question.is_required,
+      sort_order: question.sort_order,
+    })),
+  }));
+}
+
 export function submitKpiEvaluation(
   userId: string,
   evaluationId: string,
@@ -797,6 +863,7 @@ export function updateAppeal(
   payload: {
     response_text: string;
     is_final: boolean;
+    outcome?: 'approved' | 'rejected';
   },
   options?: ManagerApiOptions,
 ): Promise<Appeal> {

@@ -6,15 +6,20 @@ import com.pms.dto.manager.appeal.ManagerAppealListItemDTO;
 import com.pms.dto.manager.appeal.ManagerAppealPatchRequestDTO;
 import com.pms.entity.Appeal;
 import com.pms.entity.AppealResponse;
+import com.pms.entity.User;
 import com.pms.entity.enums.AppealStatus;
 import com.pms.exception.ConflictException;
 import com.pms.exception.NotFoundException;
 import com.pms.repository.AppealRepository;
 import com.pms.repository.AppealResponseRepository;
+import com.pms.repository.UserRepository;
 import com.pms.service.manager.ManagerAppealService;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,11 +30,26 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
 
     private final AppealRepository appealRepo;
     private final AppealResponseRepository appealResponseRepo;
+    private final UserRepository userRepo;
 
     @Override
     public List<ManagerAppealListItemDTO> listAppeals(UUID teamId, String status) {
-        return appealRepo.findByAssignedToFiltered(teamId, status).stream()
-                .map(ManagerAppealListItemDTO::from)
+        List<Appeal> appeals = appealRepo.findByAssignedToFiltered(teamId, status);
+        List<UUID> userIds =
+                appeals.stream()
+                        .flatMap(a -> Stream.of(a.getFiledBy(), a.getAssignedTo()))
+                        .distinct()
+                        .toList();
+        Map<UUID, String> nameById =
+                userRepo.findAllById(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, User::getFullName));
+        return appeals.stream()
+                .map(
+                        a ->
+                                ManagerAppealListItemDTO.from(
+                                        a,
+                                        nameById.getOrDefault(a.getFiledBy(), ""),
+                                        nameById.getOrDefault(a.getAssignedTo(), "")))
                 .toList();
     }
 
@@ -38,7 +58,14 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
         Appeal appeal = findAppealForTeam(teamId, appealId);
         List<AppealResponse> responses =
                 appealResponseRepo.findByAppealIdOrderByRespondedAtAsc(appealId);
-        return ManagerAppealDetailDTO.from(appeal, responses);
+        Map<UUID, String> nameById =
+                userRepo.findAllById(List.of(appeal.getFiledBy(), appeal.getAssignedTo())).stream()
+                        .collect(Collectors.toMap(User::getId, User::getFullName));
+        return ManagerAppealDetailDTO.from(
+                appeal,
+                responses,
+                nameById.getOrDefault(appeal.getFiledBy(), ""),
+                nameById.getOrDefault(appeal.getAssignedTo(), ""));
     }
 
     @Override
@@ -64,7 +91,13 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
         appealResponseRepo.save(response);
 
         if (isFinal) {
-            appeal.setStatus(AppealStatus.APPROVED);
+            AppealStatus resolved;
+            if ("rejected".equalsIgnoreCase(req.getOutcome())) {
+                resolved = AppealStatus.REJECTED;
+            } else {
+                resolved = AppealStatus.APPROVED;
+            }
+            appeal.setStatus(resolved);
             appeal.setResolvedAt(OffsetDateTime.now());
             appealRepo.save(appeal);
         } else if (appeal.getStatus() == AppealStatus.SUBMITTED) {
@@ -74,7 +107,14 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
 
         List<AppealResponse> responses =
                 appealResponseRepo.findByAppealIdOrderByRespondedAtAsc(appealId);
-        return ManagerAppealDetailDTO.from(appeal, responses);
+        Map<UUID, String> nameById =
+                userRepo.findAllById(List.of(appeal.getFiledBy(), appeal.getAssignedTo())).stream()
+                        .collect(Collectors.toMap(User::getId, User::getFullName));
+        return ManagerAppealDetailDTO.from(
+                appeal,
+                responses,
+                nameById.getOrDefault(appeal.getFiledBy(), ""),
+                nameById.getOrDefault(appeal.getAssignedTo(), ""));
     }
 
     private Appeal findAppealForTeam(UUID teamId, UUID appealId) {

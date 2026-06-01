@@ -135,19 +135,19 @@ export default function Dispute() {
       (a) =>
         a.case_no?.toLowerCase().includes(q) ||
         a.reason.toLowerCase().includes(q) ||
-        a.filed_by.toLowerCase().includes(q) ||
+        a.filed_by_name.toLowerCase().includes(q) ||
         a.id.toLowerCase().includes(q),
     );
   }, [appeals, searchQuery]);
 
   // Handle response submission
-  const handleRespond = async (responseText: string, isFinal: boolean) => {
+  const handleRespond = async (responseText: string, isFinal: boolean, outcome?: 'approved' | 'rejected') => {
     if (!selectedId || !selectedAppeal || !teamId) return;
 
     setIsSubmitting(true);
     clearApiError();
     try {
-      const updated = await respondToAppeal(teamId, selectedId, responseText, isFinal);
+      const updated = await respondToAppeal(teamId, selectedId, responseText, isFinal, outcome);
       setSelectedAppeal(updated);
       // Refresh the list to reflect status changes
       await loadAppeals();
