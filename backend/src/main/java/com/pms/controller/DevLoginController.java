@@ -66,12 +66,13 @@ public class DevLoginController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(AuthResponseDTO.builder()
-                        .accessToken(token)
-                        .tokenType("Bearer")
-                        .expiresIn(expirationMs / 1000)
-                        .userId(user.getId().toString())
-                        .roles(roles)
-                        .build());
+                .body(
+                        AuthResponseDTO.builder()
+                                .accessToken(token)
+                                .tokenType("Bearer")
+                                .expiresIn(expirationMs / 1000)
+                                .userId(user.getId().toString())
+                                .roles(roles)
+                                .build());
     }
 }

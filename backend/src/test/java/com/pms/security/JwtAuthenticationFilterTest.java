@@ -52,7 +52,8 @@ class JwtAuthenticationFilterTest {
         boolean wasCalled = false;
 
         @Override
-        public void doFilter(jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response)
+        public void doFilter(
+                jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response)
                 throws IOException, ServletException {
             wasCalled = true;
         }
@@ -67,10 +68,7 @@ class JwtAuthenticationFilterTest {
     }
 
     private Claims createClaims(String subject, List<String> roles) {
-        return Jwts.claims()
-                .subject(subject)
-                .add("roles", roles)
-                .build();
+        return Jwts.claims().subject(subject).add("roles", roles).build();
     }
 
     @Test
@@ -79,7 +77,8 @@ class JwtAuthenticationFilterTest {
         request.addHeader("Authorization", "Bearer valid.jwt.token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000001", List.of("employee"));
+        jwtUtil.parsedClaims =
+                createClaims("00000000-0000-0000-0000-000000000001", List.of("employee"));
         jwtUtil.rolesToReturn = List.of("employee");
 
         filter.doFilterInternal(request, response, filterChain);
@@ -118,7 +117,8 @@ class JwtAuthenticationFilterTest {
         request.setCookies(new jakarta.servlet.http.Cookie("jwt", "cookie.jwt.token"));
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000003", List.of("manager"));
+        jwtUtil.parsedClaims =
+                createClaims("00000000-0000-0000-0000-000000000003", List.of("manager"));
         jwtUtil.rolesToReturn = List.of("manager");
 
         filter.doFilterInternal(request, response, filterChain);
@@ -184,7 +184,9 @@ class JwtAuthenticationFilterTest {
         request.addHeader("Authorization", "Bearer multi.role.token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        jwtUtil.parsedClaims = createClaims("00000000-0000-0000-0000-000000000004", List.of("employee", "manager"));
+        jwtUtil.parsedClaims =
+                createClaims(
+                        "00000000-0000-0000-0000-000000000004", List.of("employee", "manager"));
         jwtUtil.rolesToReturn = List.of("employee", "manager");
 
         filter.doFilterInternal(request, response, filterChain);

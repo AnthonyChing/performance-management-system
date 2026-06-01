@@ -22,8 +22,6 @@ public class SessionsController {
                         .sameSite("Strict")
                         .build();
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .build();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).build();
     }
 }
