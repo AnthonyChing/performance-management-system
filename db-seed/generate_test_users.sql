@@ -13,7 +13,6 @@ DECLARE
   v_hr_user_id UUID;
   v_manager_user_id UUID;
   v_emp_count INT := 30000;
-  i INT;
 BEGIN
   -- 1. Create a dummy department if not exists
   INSERT INTO departments (name) VALUES ('Load Test Dept') RETURNING id INTO v_dept_id;
@@ -41,15 +40,15 @@ BEGIN
   INSERT INTO users (id, employee_id, email, full_name, english_name, department_id, manager_id, job_title, job_category)
   SELECT
     gen_random_uuid(),
-    'TEST-EMP-' || i,
-    'employee_' || LPAD(i::text, 6, '0') || '@loadtest.com',
-    'Test Employee ' || i,
-    'Test Employee ' || i,
+    'TEST-EMP-' || seq_num,
+    'employee_' || LPAD(seq_num::text, 6, '0') || '@loadtest.com',
+    'Test Employee ' || seq_num,
+    'Test Employee ' || seq_num,
     v_dept_id,
     v_manager_user_id, -- Assign all to the master manager for simple team queries
     'Tester',
     'Engineering'
-  FROM generate_series(3, v_emp_count) AS i;
+  FROM generate_series(3, v_emp_count) AS t(seq_num);
 
   -- Assign the 'employee' role to all newly generated employees
   INSERT INTO user_roles (user_id, role_id, granted_by)
