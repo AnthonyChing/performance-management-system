@@ -48,7 +48,7 @@ class EncryptionUtilTest {
         // This simulates backward compatibility when DB has plain text
         String plainTextInDb = "I am not encrypted";
         String decrypted = EncryptionUtil.decrypt(plainTextInDb);
-        
+
         // Should fall back to returning original text if it's not base64 or valid GCM payload
         assertEquals(plainTextInDb, decrypted);
     }

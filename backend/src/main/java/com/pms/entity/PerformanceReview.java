@@ -1,6 +1,5 @@
 package com.pms.entity;
 
-import com.pms.entity.converter.RatingScaleConverter;
 import com.pms.entity.converter.ReviewStatusConverter;
 import com.pms.entity.enums.RatingScale;
 import com.pms.entity.enums.ReviewStatus;
@@ -64,7 +63,8 @@ public class PerformanceReview {
     @Column(name = "hr_approved_at")
     private OffsetDateTime hrApprovedAt;
 
-    // Note: finalRating encrypts an Enum, which requires the DB column to be VARCHAR, not rating_scale_enum
+    // Note: finalRating encrypts an Enum, which requires the DB column to be VARCHAR, not
+    // rating_scale_enum
     @Convert(converter = com.pms.security.crypto.CryptoConverter.class)
     @Column(name = "final_rating", columnDefinition = "VARCHAR(255)")
     private RatingScale finalRating;
