@@ -9,9 +9,11 @@ import com.pms.dto.manager.evaluation.ManagerQuestionnaireResponseDTO;
 import com.pms.dto.manager.evaluation.ManagerQuestionnaireUpdateRequestDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireAnswerDTO;
 import com.pms.dto.manager.evaluation.QuestionnaireResponseItemDTO;
+import com.pms.entity.KpiAssignment;
 import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
+import com.pms.entity.TemplateQuestion;
 import com.pms.entity.User;
 import com.pms.entity.enums.RatingScale;
 import com.pms.entity.enums.ReviewStatus;
@@ -21,9 +23,15 @@ import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
 import com.pms.repository.*;
 import com.pms.service.manager.ManagerEvaluationService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -43,6 +51,8 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final KpiEvaluationRepository kpiEvalRepo;
     private final UserRepository userRepo;
     private final PerformanceCycleRepository cycleRepo;
+    private final KpiAssignmentRepository kpiAssignmentRepo;
+    private final TemplateQuestionRepository templateQuestionRepo;
 
     @Override
     @Transactional
@@ -98,13 +108,17 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
 
         if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
-        if (req.getFinalRating() != null)
+        if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
-        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        }
+        if (req.getManagerComment() != null) {
+            review.setManagerComment(req.getManagerComment());
+        }
         if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
         }
+        recomputeScoresAndRating(review);
         reviewRepo.save(review);
 
         return ManagerEvaluationResponseDTO.from(
@@ -133,7 +147,6 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
         if (review.getStatus() == ReviewStatus.PENDING_MANAGER_EVAL) {
             review.setStatus(ReviewStatus.MANAGER_EVAL_IN_PROGRESS);
-            reviewRepo.save(review);
         }
 
         for (QuestionnaireAnswerDTO ans : req.getResponses()) {
@@ -161,6 +174,9 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                                 .build());
             }
         }
+
+        recomputeScoresAndRating(review);
+        reviewRepo.save(review);
 
         List<ReviewResponse> saved =
                 reviewResponseRepo.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
@@ -191,14 +207,16 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
         }
 
         if (req.getStatus() != null) review.setStatus(parseReviewStatus(req.getStatus()));
-        if (req.getFinalRating() != null)
+        if (req.getFinalRating() != null) {
             review.setFinalRating(parseRatingScale(req.getFinalRating()));
-        if (req.getManagerComment() != null) review.setManagerComment(req.getManagerComment());
+        }
+        if (req.getManagerComment() != null) {
+            review.setManagerComment(req.getManagerComment());
+        }
         if (review.getStatus() == ReviewStatus.PENDING_HR_REVIEW
                 || review.getStatus() == ReviewStatus.COMPLETED) {
             review.setManagerSubmittedAt(OffsetDateTime.now());
         }
-        reviewRepo.save(review);
 
         if (req.getKpiEvaluations() != null) {
             for (KpiEvaluationItemDTO item : req.getKpiEvaluations()) {
@@ -218,6 +236,9 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                 kpiEvalRepo.save(eval);
             }
         }
+
+        recomputeScoresAndRating(review);
+        reviewRepo.save(review);
 
         return ManagerEvaluationResponseDTO.from(
                 review,
@@ -311,5 +332,123 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid final_rating: " + value);
         }
+    }
+
+    private void recomputeScoresAndRating(PerformanceReview review) {
+        BigDecimal kpiScore = computeKpiScore(review);
+        BigDecimal reviewScore = computeQuestionnaireScore(review.getId());
+        review.setKpiScore(kpiScore);
+        review.setReviewScore(reviewScore);
+
+        if (kpiScore != null || reviewScore != null) {
+            review.setScoreComputedAt(OffsetDateTime.now());
+        }
+        if (kpiScore != null && reviewScore != null) {
+            BigDecimal finalScore =
+                    kpiScore.add(reviewScore)
+                            .divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+            review.setFinalRating(toRatingScale(finalScore));
+        }
+    }
+
+    private BigDecimal computeKpiScore(PerformanceReview review) {
+        List<KpiEvaluation> evaluations =
+                kpiEvalRepo.findByReviewId(review.getId()).stream()
+                        .filter(e -> e.getManagerScore() != null)
+                        .toList();
+        if (evaluations.isEmpty()) {
+            return null;
+        }
+
+        List<UUID> kpiIds = evaluations.stream().map(KpiEvaluation::getKpiId).toList();
+        Map<UUID, BigDecimal> weightByKpiId =
+                kpiAssignmentRepo.findByUserIdAndKpiIdIn(review.getEmployeeId(), kpiIds).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        KpiAssignment::getKpiId, KpiAssignment::getWeight));
+
+        BigDecimal weightedTotal = BigDecimal.ZERO;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal unweightedTotal = BigDecimal.ZERO;
+        int unweightedCount = 0;
+
+        for (KpiEvaluation evaluation : evaluations) {
+            BigDecimal score = evaluation.getManagerScore();
+            BigDecimal weight = weightByKpiId.get(evaluation.getKpiId());
+            if (weight != null && weight.compareTo(BigDecimal.ZERO) > 0) {
+                weightedTotal = weightedTotal.add(score.multiply(weight));
+                totalWeight = totalWeight.add(weight);
+            } else {
+                unweightedTotal = unweightedTotal.add(score);
+                unweightedCount++;
+            }
+        }
+
+        if (totalWeight.compareTo(BigDecimal.ZERO) > 0) {
+            return weightedTotal.divide(totalWeight, 2, RoundingMode.HALF_UP);
+        }
+        return unweightedTotal.divide(BigDecimal.valueOf(unweightedCount), 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal computeQuestionnaireScore(UUID reviewId) {
+        List<ReviewResponse> ratingResponses =
+                reviewResponseRepo
+                        .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                                reviewId, RESPONDENT_TYPE)
+                        .stream()
+                        .filter(r -> r.getRatingValue() != null)
+                        .toList();
+        if (ratingResponses.isEmpty()) {
+            return null;
+        }
+
+        List<UUID> questionIds =
+                ratingResponses.stream().map(ReviewResponse::getQuestionId).toList();
+        Map<UUID, TemplateQuestion> questionById =
+                templateQuestionRepo.findByIdInAndDeletedAtIsNull(questionIds).stream()
+                        .collect(Collectors.toMap(TemplateQuestion::getId, Function.identity()));
+
+        List<BigDecimal> normalizedScores =
+                ratingResponses.stream()
+                        .map(
+                                response -> {
+                                    TemplateQuestion question =
+                                            questionById.get(response.getQuestionId());
+                                    Integer scaleMax =
+                                            question != null ? question.getRatingScaleMax() : null;
+                                    if (scaleMax == null || scaleMax <= 0) {
+                                        return null;
+                                    }
+                                    return BigDecimal.valueOf(response.getRatingValue())
+                                            .multiply(BigDecimal.valueOf(100))
+                                            .divide(
+                                                    BigDecimal.valueOf(scaleMax),
+                                                    2,
+                                                    RoundingMode.HALF_UP);
+                                })
+                        .filter(Objects::nonNull)
+                        .toList();
+        if (normalizedScores.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal total = normalizedScores.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        return total.divide(BigDecimal.valueOf(normalizedScores.size()), 2, RoundingMode.HALF_UP);
+    }
+
+    private RatingScale toRatingScale(BigDecimal score) {
+        if (score.compareTo(BigDecimal.valueOf(90)) >= 0) {
+            return RatingScale.OUTSTANDING;
+        }
+        if (score.compareTo(BigDecimal.valueOf(80)) >= 0) {
+            return RatingScale.EXCEEDS_EXPECTATIONS;
+        }
+        if (score.compareTo(BigDecimal.valueOf(70)) >= 0) {
+            return RatingScale.MEETS_EXPECTATIONS;
+        }
+        if (score.compareTo(BigDecimal.valueOf(60)) >= 0) {
+            return RatingScale.NEEDS_IMPROVEMENT;
+        }
+        return RatingScale.UNACCEPTABLE;
     }
 }

@@ -215,12 +215,63 @@ class ManagerEvaluationControllerTest {
 
     @Test
     @Order(10)
+    void updateQuestionnaire_returnsSavedQuestionnaire() {
+        String body =
+                """
+                {
+                  "responses": [
+                    {
+                      "question_id": "123e4567-e89b-12d3-a456-426614174090",
+                      "rating_value": 3,
+                      "text_value": "表現良好"
+                    }
+                  ]
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .patch("/" + USER_ID + "/evaluations/" + EVALUATION_ID + "/questionnaire")
+                .then()
+                .statusCode(200)
+                .body("responses", notNullValue());
+    }
+
+    @Test
+    @Order(11)
+    void updateKpiEvaluation_returnsUpdatedEvaluation() {
+        String body =
+                """
+                {
+                  "status": "manager_eval_in_progress",
+                  "kpi_evaluations": [
+                    {
+                      "kpi_id": "123e4567-e89b-12d3-a456-426614174030",
+                      "manager_score": 85.0,
+                      "manager_feedback": "達成目標"
+                    }
+                  ]
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .patch("/" + USER_ID + "/evaluations/" + EVALUATION_ID + "/kpis")
+                .then()
+                .statusCode(200)
+                .body("final_rating", equalTo("meets_expectations"));
+    }
+
+    @Test
+    @Order(12)
     void submitEvaluation_returnsCompletedEvaluation() {
         String body =
                 """
                 {
                   "status": "completed",
-                  "final_rating": "exceeds_expectations",
+                  "final_rating": "unacceptable",
                   "manager_comment": "該員工本期表現優異，超乎預期。",
                   "responses": [
                     {
