@@ -36,6 +36,8 @@ export default function EditGoal() {
             </label>
             <input
                type="date"
+               min="1000-01-01"
+               max="9999-12-31"
                className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 text-sm transition-shadow"
             />
           </div>

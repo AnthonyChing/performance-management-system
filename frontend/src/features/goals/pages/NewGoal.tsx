@@ -104,8 +104,15 @@ export default function NewGoal() {
             <input
                id="goal-due-date"
                type="date"
+               min="1000-01-01"
+               max="9999-12-31"
                value={dueDate}
-               onChange={(event) => setDueDate(event.target.value)}
+               onChange={(event) => {
+                 const v = event.target.value;
+                 if (!v || (/^\d{4}-\d{2}-\d{2}$/.test(v) && parseInt(v.slice(5, 7), 10) <= 12 && parseInt(v.slice(8, 10), 10) <= 31)) {
+                   setDueDate(v);
+                 }
+               }}
                className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 text-sm transition-shadow"
             />
           </div>

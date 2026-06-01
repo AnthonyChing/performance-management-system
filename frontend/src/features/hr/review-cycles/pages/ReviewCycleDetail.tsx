@@ -14,6 +14,8 @@ import {
 interface EditFormState {
   name: string;
   timezone: string;
+  cycleStart: string;
+  cycleEnd: string;
   managerEvalStart: string;
   managerEvalEnd: string;
   hrReviewEnd: string;
@@ -93,6 +95,8 @@ function createEditForm(cycle: PerformanceCycle): EditFormState {
   return {
     name: cycle.name,
     timezone: cycle.timezone ?? 'Asia/Taipei',
+    cycleStart: toDateInput(cycle.cycle_start),
+    cycleEnd: toDateInput(cycle.cycle_end),
     managerEvalStart: toDateInput(cycle.manager_eval_start),
     managerEvalEnd: toDateInput(cycle.manager_eval_end),
     hrReviewEnd: toDateInput(cycle.hr_review_end),
@@ -103,6 +107,12 @@ function createEditForm(cycle: PerformanceCycle): EditFormState {
 function validateEditForm(form: EditFormState) {
   if (!form.name.trim()) {
     return '請輸入考核週期名稱。';
+  }
+  if (!form.cycleStart || !form.cycleEnd) {
+    return '請設定考核起始日與考核結束日。';
+  }
+  if (form.cycleStart > form.cycleEnd) {
+    return '考核結束日不可早於起始日。';
   }
   if (!form.managerEvalStart || !form.managerEvalEnd || !form.hrReviewEnd) {
     return '請設定主管評核起訖日與 HR 覆核截止日。';
@@ -122,6 +132,8 @@ function buildUpdatePayload(form: EditFormState): PerformanceCycleUpdatePayload 
   const payload: PerformanceCycleUpdatePayload = {
     name: form.name.trim(),
     timezone: form.timezone.trim() || 'Asia/Taipei',
+    cycle_start: toOffsetDateTime(form.cycleStart, 'start'),
+    cycle_end: toOffsetDateTime(form.cycleEnd, 'end'),
     manager_eval_start: toOffsetDateTime(form.managerEvalStart, 'start'),
     manager_eval_end: toOffsetDateTime(form.managerEvalEnd, 'end'),
     hr_review_end: toOffsetDateTime(form.hrReviewEnd, 'end'),
@@ -351,6 +363,16 @@ export default function ReviewCycleDetail() {
             </div>
 
             <DateRangeFields
+              label="考核期間"
+              startLabel="考核起始日"
+              endLabel="考核結束日"
+              startValue={form.cycleStart}
+              endValue={form.cycleEnd}
+              onStartChange={(value) => updateField('cycleStart', value)}
+              onEndChange={(value) => updateField('cycleEnd', value)}
+            />
+
+            <DateRangeFields
               label="主管評核期間"
               startLabel="主管評核開始日"
               endLabel="主管評核結束日"
@@ -407,6 +429,7 @@ export default function ReviewCycleDetail() {
             <div className="grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
               <InfoItem icon={FileText} label="週期類型" value={cycleTypeLabels[cycle.cycle_type ?? ''] ?? cycle.cycle_type ?? '未設定'} />
               <InfoItem icon={Clock} label="時區" value={cycle.timezone ?? '未設定'} />
+              <InfoItem icon={Calendar} label="考核期間" value={formatDateRange(cycle.cycle_start, cycle.cycle_end)} />
               <InfoItem icon={Calendar} label="主管評核期間" value={formatDateRange(cycle.manager_eval_start, cycle.manager_eval_end)} />
               <InfoItem icon={Calendar} label="HR 覆核截止" value={formatDateTime(cycle.hr_review_end)} />
               <InfoItem icon={Clock} label="申覆期限" value={`${cycle.appeal_deadline_days ?? 7} 天`} />
@@ -481,8 +504,15 @@ function DateInput({ ariaLabel, value, onChange }: DateInputProps) {
       <input
         aria-label={ariaLabel}
         type="date"
+        min="1000-01-01"
+        max="9999-12-31"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          const v = event.target.value;
+          if (!v || (/^\d{4}-\d{2}-\d{2}$/.test(v) && parseInt(v.slice(5, 7), 10) <= 12 && parseInt(v.slice(8, 10), 10) <= 31)) {
+            onChange(v);
+          }
+        }}
         className="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B2544]"
       />
     </div>

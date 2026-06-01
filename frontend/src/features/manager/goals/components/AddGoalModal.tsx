@@ -122,8 +122,15 @@ export default function AddGoalModal({
             <label className="block text-xs font-bold text-slate-600 mb-1.5">截止日期</label>
             <input
               type="date"
+              min="1000-01-01"
+              max="9999-12-31"
               value={newDueDate}
-              onChange={(e) => onDueDateChange(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!v || (/^\d{4}-\d{2}-\d{2}$/.test(v) && parseInt(v.slice(5, 7), 10) <= 12 && parseInt(v.slice(8, 10), 10) <= 31)) {
+                  onDueDateChange(v);
+                }
+              }}
               className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg px-3 py-2 border border-slate-200 outline-none focus:bg-white"
             />
           </div>

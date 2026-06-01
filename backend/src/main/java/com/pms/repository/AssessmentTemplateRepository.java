@@ -18,16 +18,16 @@ public interface AssessmentTemplateRepository extends JpaRepository<AssessmentTe
                     """
             SELECT * FROM assessment_templates
             WHERE deleted_at IS NULL
-              AND (:status IS NULL OR status::text = :status)
-              AND (:jobCategory IS NULL OR job_category = :jobCategory)
+              AND (CAST(:status AS text) IS NULL OR status::text = :status)
+              AND (CAST(:jobCategory AS text) IS NULL OR job_category = :jobCategory)
             ORDER BY created_at DESC
             """,
             countQuery =
                     """
             SELECT count(*) FROM assessment_templates
             WHERE deleted_at IS NULL
-              AND (:status IS NULL OR status::text = :status)
-              AND (:jobCategory IS NULL OR job_category = :jobCategory)
+              AND (CAST(:status AS text) IS NULL OR status::text = :status)
+              AND (CAST(:jobCategory AS text) IS NULL OR job_category = :jobCategory)
             """,
             nativeQuery = true)
     Page<AssessmentTemplate> findAllFiltered(

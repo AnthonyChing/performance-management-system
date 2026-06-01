@@ -19,7 +19,7 @@ public interface AppealRepository extends JpaRepository<Appeal, UUID> {
                     """
             SELECT * FROM appeals
             WHERE assigned_to = :managerId
-              AND (:status IS NULL OR status::text = :status)
+              AND (CAST(:status AS text) IS NULL OR status::text = :status)
             ORDER BY filed_at DESC
             """,
             nativeQuery = true)

@@ -89,8 +89,8 @@ export interface PerformanceCycle {
   cycle_type?: CycleType | string;
   status: CycleStatus;
   timezone?: string;
-  self_eval_start?: string;
-  self_eval_end?: string;
+  cycle_start?: string;
+  cycle_end?: string;
   manager_eval_start?: string;
   manager_eval_end?: string;
   hr_review_end?: string;
@@ -111,6 +111,8 @@ export interface PerformanceCycleCreatePayload {
   name: string;
   cycle_type: CycleType | string;
   timezone?: string;
+  cycle_start: string;
+  cycle_end: string;
   manager_eval_start: string;
   manager_eval_end: string;
   hr_review_end: string;
@@ -120,6 +122,8 @@ export interface PerformanceCycleCreatePayload {
 export interface PerformanceCycleUpdatePayload {
   name?: string;
   timezone?: string;
+  cycle_start?: string;
+  cycle_end?: string;
   manager_eval_start?: string;
   manager_eval_end?: string;
   hr_review_end?: string;
@@ -387,8 +391,8 @@ function isPerformanceCycle(value: unknown): value is PerformanceCycle {
     cycleStatuses.has(value.status as CycleStatus) &&
     (value.cycle_type === undefined || isString(value.cycle_type)) &&
     (value.timezone === undefined || isString(value.timezone)) &&
-    (value.self_eval_start === undefined || isString(value.self_eval_start)) &&
-    (value.self_eval_end === undefined || isString(value.self_eval_end)) &&
+    (value.cycle_start === undefined || isString(value.cycle_start)) &&
+    (value.cycle_end === undefined || isString(value.cycle_end)) &&
     (value.manager_eval_start === undefined || isString(value.manager_eval_start)) &&
     (value.manager_eval_end === undefined || isString(value.manager_eval_end)) &&
     (value.hr_review_end === undefined || isString(value.hr_review_end)) &&

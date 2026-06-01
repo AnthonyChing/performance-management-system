@@ -12,6 +12,8 @@ interface CycleFormState {
   name: string;
   cycleType: CycleType;
   timezone: string;
+  cycleStart: string;
+  cycleEnd: string;
   managerEvalStart: string;
   managerEvalEnd: string;
   hrReviewEnd: string;
@@ -22,6 +24,8 @@ const initialFormState: CycleFormState = {
   name: '',
   cycleType: 'annual',
   timezone: 'Asia/Taipei',
+  cycleStart: '',
+  cycleEnd: '',
   managerEvalStart: '',
   managerEvalEnd: '',
   hrReviewEnd: '',
@@ -59,6 +63,8 @@ function buildPayload(form: CycleFormState): PerformanceCycleCreatePayload {
     name: form.name.trim(),
     cycle_type: form.cycleType,
     timezone: form.timezone.trim() || 'Asia/Taipei',
+    cycle_start: toOffsetDateTime(form.cycleStart, 'start'),
+    cycle_end: toOffsetDateTime(form.cycleEnd, 'end'),
     manager_eval_start: toOffsetDateTime(form.managerEvalStart, 'start'),
     manager_eval_end: toOffsetDateTime(form.managerEvalEnd, 'end'),
     hr_review_end: toOffsetDateTime(form.hrReviewEnd, 'end'),
@@ -71,6 +77,12 @@ function buildPayload(form: CycleFormState): PerformanceCycleCreatePayload {
 function validateForm(form: CycleFormState) {
   if (!form.name.trim()) {
     return '請輸入考核週期名稱。';
+  }
+  if (!form.cycleStart || !form.cycleEnd) {
+    return '請設定考核起始日與考核結束日。';
+  }
+  if (form.cycleStart > form.cycleEnd) {
+    return '考核結束日不可早於起始日。';
   }
   if (!form.managerEvalStart || !form.managerEvalEnd || !form.hrReviewEnd) {
     return '請設定主管評核起訖日與 HR 覆核截止日。';
@@ -190,6 +202,25 @@ export default function CreateReviewCycle() {
                   value={form.timezone}
                   onChange={(event) => updateField('timezone', event.target.value)}
                   className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#0B2544] xl:py-2.5"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
+                考核期間
+              </label>
+              <div className="flex items-center gap-2">
+                <DateInput
+                  ariaLabel="考核起始日"
+                  value={form.cycleStart}
+                  onChange={(value) => updateField('cycleStart', value)}
+                />
+                <span className="text-sm font-medium text-slate-400">至</span>
+                <DateInput
+                  ariaLabel="考核結束日"
+                  value={form.cycleEnd}
+                  onChange={(value) => updateField('cycleEnd', value)}
                 />
               </div>
             </div>
@@ -320,8 +351,15 @@ function DateInput({ ariaLabel, value, onChange }: DateInputProps) {
       <input
         aria-label={ariaLabel}
         type="date"
+        min="1000-01-01"
+        max="9999-12-31"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          const v = event.target.value;
+          if (!v || (/^\d{4}-\d{2}-\d{2}$/.test(v) && parseInt(v.slice(5, 7), 10) <= 12 && parseInt(v.slice(8, 10), 10) <= 31)) {
+            onChange(v);
+          }
+        }}
         className="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0B2544] xl:py-2.5"
       />
     </div>
