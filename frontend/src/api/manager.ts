@@ -228,8 +228,8 @@ function isKpiAssignment(value: unknown): value is KpiAssignment {
     isRecord(value) &&
     isNumber(value.weight) &&
     isNumber(value.target_value) &&
-    (value.current_value === null || isNumber(value.current_value)) &&
-    isNullableString(value.last_updated_at)
+    (value.current_value === undefined || value.current_value === null || isNumber(value.current_value)) &&
+    (value.last_updated_at === undefined || isNullableString(value.last_updated_at))
   );
 }
 
@@ -242,9 +242,9 @@ function isSubordinateGoal(value: unknown): value is SubordinateGoal {
     isString(value.set_by) &&
     isString(value.goal_type) &&
     isString(value.title) &&
-    isNullableString(value.description) &&
+    (value.description === undefined || isNullableString(value.description)) &&
     typeof value.progress_percent === 'number' &&
-    isNullableString(value.due_date) &&
+    (value.due_date === undefined || isNullableString(value.due_date)) &&
     isString(value.status) &&
     goalStatuses.has(value.status as GoalStatus) &&
     (value.published_at === undefined || isNullableString(value.published_at))
@@ -259,14 +259,14 @@ function isSubordinateKpi(value: unknown): value is SubordinateKpi {
     isString(value.created_by) &&
     isString(value.kpi_type) &&
     isString(value.title) &&
-    isNullableString(value.description) &&
-    isNullableString(value.unit) &&
+    (value.description === undefined || isNullableString(value.description)) &&
+    (value.unit === undefined || isNullableString(value.unit)) &&
     (value.target_operator === undefined || isNullableString(value.target_operator)) &&
     (value.target_value === undefined || value.target_value === null || isNumber(value.target_value)) &&
     (value.target_unit === undefined || isNullableString(value.target_unit)) &&
     (value.target_display_text === undefined || isNullableString(value.target_display_text)) &&
     isKpiAssignment(value.assignment) &&
-    isNullableString(value.published_at)
+    (value.published_at === undefined || isNullableString(value.published_at))
   );
 }
 
@@ -277,7 +277,7 @@ function isReviewResponse(value: unknown): value is ReviewResponse {
     isString(value.question_id) &&
     isString(value.respondent_type) &&
     (value.rating_value === null || isNumber(value.rating_value)) &&
-    isNullableString(value.text_value) &&
+    (value.text_value === undefined || isNullableString(value.text_value)) &&
     (value.boolean_value === null || typeof value.boolean_value === 'boolean') &&
     isString(value.responded_at)
   );
@@ -307,7 +307,7 @@ function isAppeal(value: unknown): value is Appeal {
     isString(value.reason) &&
     isString(value.status) &&
     isString(value.filed_at) &&
-    isNullableString(value.resolved_at) &&
+    (value.resolved_at === undefined || isNullableString(value.resolved_at)) &&
     (value.responses === undefined ||
       (Array.isArray(value.responses) && value.responses.every(isAppealResponse)))
   );
@@ -318,7 +318,7 @@ function isKpiEvaluationItem(value: unknown): value is KpiEvaluationItem {
     isRecord(value) &&
     isString(value.kpi_id) &&
     (value.manager_score === null || isNumber(value.manager_score)) &&
-    isNullableString(value.manager_feedback)
+    (value.manager_feedback === undefined || isNullableString(value.manager_feedback))
   );
 }
 
