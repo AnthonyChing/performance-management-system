@@ -42,6 +42,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final ReviewResponseRepository reviewResponseRepo;
     private final KpiEvaluationRepository kpiEvalRepo;
     private final UserRepository userRepo;
+    private final PerformanceCycleRepository cycleRepo;
 
     @Override
     @Transactional
@@ -240,15 +241,24 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
             UUID cid = UUID.fromString(cycleId);
             reviews = reviews.stream().filter(r -> r.getCycleId().equals(cid)).toList();
         }
+
+        List<UUID> cycleIds =
+                reviews.stream().map(PerformanceReview::getCycleId).distinct().toList();
+        java.util.Map<UUID, String> cycleMap = new java.util.HashMap<>();
+        cycleRepo.findAllById(cycleIds).forEach(c -> cycleMap.put(c.getId(), c.getName()));
+
         return reviews.stream()
                 .map(
-                        r ->
-                                ManagerEvaluationResponseDTO.from(
-                                        r,
-                                        reviewResponseRepo
-                                                .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
-                                                        r.getId(), RESPONDENT_TYPE),
-                                        kpiEvalRepo.findByReviewId(r.getId())))
+                        r -> {
+                            String cycleName = cycleMap.get(r.getCycleId());
+                            return ManagerEvaluationResponseDTO.from(
+                                    r,
+                                    cycleName,
+                                    reviewResponseRepo
+                                            .findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                                                    r.getId(), RESPONDENT_TYPE),
+                                    kpiEvalRepo.findByReviewId(r.getId()));
+                        })
                 .toList();
     }
 

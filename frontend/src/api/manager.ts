@@ -119,6 +119,7 @@ export interface EvaluationHistoryItem {
   manager_id: string;
   status: ReviewStatus;
   final_rating: RatingScale | null;
+  cycle_name?: string | null;
   manager_comment: string | null;
   kpi_score?: number | null;
   review_score?: number | null;
@@ -335,7 +336,8 @@ function isEvaluationHistoryItem(value: unknown): value is EvaluationHistoryItem
     isString(value.status) &&
     reviewStatuses.has(value.status as ReviewStatus) &&
     (value.final_rating === null || isString(value.final_rating)) &&
-    isNullableString(value.manager_comment) &&
+    (value.cycle_name === undefined || value.cycle_name === null || isString(value.cycle_name)) &&
+    (value.manager_comment === undefined || isNullableString(value.manager_comment)) &&
     (value.kpi_score === undefined || value.kpi_score === null || isNumber(value.kpi_score)) &&
     (value.review_score === undefined || value.review_score === null || isNumber(value.review_score)) &&
     (value.score_computed_at === undefined || isNullableString(value.score_computed_at)) &&

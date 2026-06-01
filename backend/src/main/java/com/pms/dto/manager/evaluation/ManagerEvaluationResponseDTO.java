@@ -14,6 +14,7 @@ import lombok.Getter;
 public class ManagerEvaluationResponseDTO {
     private UUID id;
     private UUID cycleId;
+    private String cycleName;
     private UUID employeeId;
     private UUID managerId;
     private String status;
@@ -28,9 +29,18 @@ public class ManagerEvaluationResponseDTO {
             PerformanceReview review,
             List<ReviewResponse> responses,
             List<KpiEvaluation> kpiEvals) {
+        return from(review, null, responses, kpiEvals);
+    }
+
+    public static ManagerEvaluationResponseDTO from(
+            PerformanceReview review,
+            String cycleName,
+            List<ReviewResponse> responses,
+            List<KpiEvaluation> kpiEvals) {
         return ManagerEvaluationResponseDTO.builder()
                 .id(review.getId())
                 .cycleId(review.getCycleId())
+                .cycleName(cycleName)
                 .employeeId(review.getEmployeeId())
                 .managerId(review.getManagerId())
                 .status(review.getStatus() != null ? review.getStatus().getDbValue() : null)
