@@ -30,15 +30,15 @@ export default function AuditLogs() {
       // Map to frontend AuditLogItem format
       const formatted: AuditLogItem[] = rawLogs.map(item => ({
         id: item.id,
-        actorId: item.actorId,
-        actorName: item.actorName,
+        actorId: item.actor_id || item.actorId,
+        actorName: item.actor_name || item.actorName,
         action: item.action,
         resource: item.resource,
-        resourceId: item.resourceId,
-        oldValue: item.oldValue,
-        newValue: item.newValue,
-        ipAddress: item.ipAddress,
-        createdAt: item.createdAt,
+        resourceId: item.resource_id || item.resourceId,
+        oldValue: item.old_value || item.oldValue,
+        newValue: item.new_value || item.newValue,
+        ipAddress: item.ip_address || item.ipAddress,
+        createdAt: item.created_at || item.createdAt,
       }));
 
       setLogs(formatted);
