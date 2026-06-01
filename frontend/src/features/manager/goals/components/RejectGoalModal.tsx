@@ -5,9 +5,7 @@ import type { ReviewItem } from '../types';
 interface RejectGoalModalProps {
   goal: ReviewItem;
   rejectReason: string;
-  rejectChanges: string;
   onReasonChange: (value: string) => void;
-  onChangesChange: (value: string) => void;
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
@@ -15,9 +13,7 @@ interface RejectGoalModalProps {
 export default function RejectGoalModal({
   goal,
   rejectReason,
-  rejectChanges,
   onReasonChange,
-  onChangesChange,
   onClose,
   onSubmit,
 }: RejectGoalModalProps) {
@@ -42,19 +38,6 @@ export default function RejectGoalModal({
               placeholder="例如：此目標範疇過大，需切分至下個季度..."
               value={rejectReason}
               onChange={(e) => onReasonChange(e.target.value)}
-              className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg p-3 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-rose-100 h-24 shadow-inner"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5">
-              需要更改的部分 <span className="text-rose-500">*</span>
-            </label>
-            <textarea
-              required
-              placeholder="請列出明確需要調整的三項內容，以便同仁修改後重新提交..."
-              value={rejectChanges}
-              onChange={(e) => onChangesChange(e.target.value)}
               className="w-full bg-slate-50 text-xs text-slate-700 rounded-lg p-3 border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-rose-100 h-24 shadow-inner"
             />
           </div>
