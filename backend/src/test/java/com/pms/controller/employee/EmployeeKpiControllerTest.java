@@ -35,8 +35,11 @@ class EmployeeKpiControllerTest {
             "00000000-0000-0000-0000-000000020001"; // active, no confirmation
     private static final String REVIEW_ID_CONFIRMED =
             "00000000-0000-0000-0000-000000020002"; // already confirmed
+    private static final String REVIEW_ID_DISPUTED =
+            "00000000-0000-0000-0000-000000020003"; // has an appeal
     private static final String CYCLE_ID = "00000000-0000-0000-0000-000000010001";
     private static final String CYCLE_ID_COMPLETED = "00000000-0000-0000-0000-000000010002";
+    private static final String CYCLE_ID_IN_PROGRESS = "00000000-0000-0000-0000-000000010001";
     private static final String USER_ID = "00000000-0000-0000-0000-0000000000c1";
 
     @Autowired JdbcTemplate jdbc;
@@ -207,6 +210,30 @@ class EmployeeKpiControllerTest {
 
     @Test
     @Order(9)
+    void getKpiResult_whenNotPublished_returnsNotPublishedStatus() {
+        jdbc.update(
+                "UPDATE performance_cycles SET results_published_at = NULL WHERE id = ?::uuid",
+                CYCLE_ID);
+        try {
+            given().when()
+                    .get("/kpis/result")
+                    .then()
+                    .statusCode(200)
+                    .body("result.status", equalTo("not_published"))
+                    .body("result.available_actions.can_confirm", equalTo(false))
+                    .body(
+                            "result.available_actions.confirm_unavailable_reason",
+                            equalTo("result_not_published"));
+        } finally {
+            jdbc.update(
+                    "UPDATE performance_cycles SET results_published_at = NOW() - INTERVAL '2 days'"
+                            + " WHERE id = ?::uuid",
+                    CYCLE_ID);
+        }
+    }
+
+    @Test
+    @Order(10)
     void confirmKpiResult_returnsConfirmation() {
         String requestBody =
                 """
@@ -230,5 +257,110 @@ class EmployeeKpiControllerTest {
                 .body(
                         "result.available_actions.confirm_unavailable_reason",
                         equalTo("already_confirmed"));
+    }
+
+    @Test
+    @Order(11)
+    void getKpiResult_afterConfirmation_returnsConfirmedWithConfirmationDto() {
+        // After order 10 created a confirmation, getKpiResult should include confirmation DTO
+        given().when()
+                .get("/kpis/result")
+                .then()
+                .statusCode(200)
+                .body("result.status", equalTo("confirmed"))
+                .body("result.confirmation", notNullValue())
+                .body("result.confirmation.result_id", equalTo(REVIEW_ID));
+    }
+
+    @Test
+    @Order(12)
+    void confirmKpiResult_whenAlreadyDisputed_returns409() {
+        String requestBody =
+                """
+                {
+                  "result_id": "%s",
+                  "confirmed": true
+                }
+                """
+                        .formatted(REVIEW_ID_DISPUTED);
+
+        given().contentType("application/json")
+                .body(requestBody)
+                .when()
+                .post("/kpis/result-confirmations")
+                .then()
+                .statusCode(409)
+                .body("error.code", equalTo("KPI_RESULT_ALREADY_DISPUTED"));
+    }
+
+    @Test
+    @Order(13)
+    void confirmKpiResult_whenStatusInvalid_returns409() {
+        // Set results_published_at = NULL so status becomes "not_published" →
+        // INVALID_KPI_RESULT_STATUS
+        jdbc.update(
+                "UPDATE performance_cycles SET results_published_at = NULL WHERE id = ?::uuid",
+                "00000000-0000-0000-0000-000000010003");
+        try {
+            String requestBody =
+                    """
+                    {
+                      "result_id": "%s",
+                      "confirmed": true
+                    }
+                    """
+                            .formatted(REVIEW_ID_DISPUTED);
+
+            given().contentType("application/json")
+                    .body(requestBody)
+                    .when()
+                    .post("/kpis/result-confirmations")
+                    .then()
+                    .statusCode(409)
+                    .body("error.code", equalTo("INVALID_KPI_RESULT_STATUS"));
+        } finally {
+            jdbc.update(
+                    "UPDATE performance_cycles SET results_published_at = NOW() - INTERVAL '2 days'"
+                            + " WHERE id = ?::uuid",
+                    "00000000-0000-0000-0000-000000010003");
+        }
+    }
+
+    @Test
+    @Order(14)
+    void getHistoricalKpiResults_withQFilter_returnsFiltered() {
+        given().queryParam("status", "historical")
+                .queryParam("q", "2025")
+                .when()
+                .get("/kpis/result")
+                .then()
+                .statusCode(200)
+                .body("mode", equalTo("historical_results"))
+                .body("results.size()", greaterThanOrEqualTo(1));
+    }
+
+    @Test
+    @Order(15)
+    void getHistoricalKpiResults_withQFilterNoMatch_returnsEmpty() {
+        given().queryParam("status", "historical")
+                .queryParam("q", "NONEXISTENT_CYCLE_XYZ")
+                .when()
+                .get("/kpis/result")
+                .then()
+                .statusCode(200)
+                .body("mode", equalTo("historical_results"))
+                .body("results.size()", equalTo(0));
+    }
+
+    @Test
+    @Order(16)
+    void getHistoricalKpiResults_withInProgressCycleId_returns404() {
+        given().queryParam("status", "historical")
+                .queryParam("cycleId", CYCLE_ID_IN_PROGRESS)
+                .when()
+                .get("/kpis/result")
+                .then()
+                .statusCode(404)
+                .body("error.code", equalTo("CYCLE_NOT_FOUND"));
     }
 }
