@@ -36,9 +36,11 @@ public class User {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Convert(converter = com.pms.security.crypto.CryptoConverter.class)
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
+    @Convert(converter = com.pms.security.crypto.CryptoConverter.class)
     @Column(name = "english_name")
     private String englishName;
 
