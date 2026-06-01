@@ -1,6 +1,9 @@
 package com.pms.service.employee;
 
-import com.pms.dto.employee.appeal.AppealResponsesDTO.*;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealResultResponseDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealSubmitRequestDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealSubmitResponseDTO;
+import com.pms.dto.employee.appeal.AppealResponsesDTO.AppealsResponseDTO;
 import java.util.UUID;
 
 public interface EmployeeAppealService {

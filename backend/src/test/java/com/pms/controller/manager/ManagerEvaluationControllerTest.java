@@ -261,7 +261,7 @@ class ManagerEvaluationControllerTest {
                 .patch("/" + USER_ID + "/evaluations/" + EVALUATION_ID + "/kpis")
                 .then()
                 .statusCode(200)
-                .body("final_rating", equalTo("meets_expectations"));
+                .body("status", equalTo("manager_eval_in_progress"));
     }
 
     @Test
@@ -271,7 +271,7 @@ class ManagerEvaluationControllerTest {
                 """
                 {
                   "status": "completed",
-                  "final_rating": "unacceptable",
+                  "final_rating": "exceeds_expectations",
                   "manager_comment": "該員工本期表現優異，超乎預期。",
                   "responses": [
                     {
