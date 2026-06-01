@@ -6,6 +6,7 @@ import {
   listAssessmentTemplateQuestions,
   deleteAssessmentTemplateQuestion,
   reorderAssessmentTemplateQuestions,
+  publishAssessmentTemplate,
   ApiRequestError,
 } from '../api';
 import type { AssessmentTemplate, TemplateQuestion } from '../types';
@@ -57,6 +58,17 @@ export default function ViewQuestionnaireTemplate() {
       setQuestions((prev) => prev.filter((item) => item.id !== questionId));
     } catch (e) {
       setActionError(e instanceof ApiRequestError ? e.message : '刪除問題失敗');
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!id || !window.confirm('確定要發佈此問卷模板？發佈後將無法修改問題與結構。')) return;
+    setActionError(null);
+    try {
+      const res = await publishAssessmentTemplate(id);
+      setTemplate((prev) => prev ? { ...prev, status: res.status } : null);
+    } catch (e) {
+      setActionError(e instanceof ApiRequestError ? e.message : '發佈失敗，請稍後再試');
     }
   };
 
@@ -118,12 +130,24 @@ export default function ViewQuestionnaireTemplate() {
             )}
           </div>
         </div>
-        <Link
-          to={`/hr/questionnaires/${id}/edit`}
-          className="mt-4 sm:mt-0 flex items-center px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded font-medium text-sm hover:bg-slate-50 transition-colors shadow-sm"
-        >
-          <Edit2 className="w-4 h-4 mr-2" />編輯
-        </Link>
+        <div className="flex items-center gap-2 mt-4 sm:mt-0 w-full sm:w-auto">
+          {template.status === 'draft' && (
+            <button
+              onClick={handlePublish}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-emerald-600 border border-transparent text-white rounded font-medium text-sm hover:bg-emerald-700 transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            >
+              發佈問卷
+            </button>
+          )}
+          {template.status === 'draft' && (
+            <Link
+              to={`/hr/questionnaires/${id}/edit`}
+              className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded font-medium text-sm hover:bg-slate-50 transition-colors shadow-sm"
+            >
+              <Edit2 className="w-4 h-4 mr-2" />編輯
+            </Link>
+          )}
+        </div>
       </div>
 
       {actionError && (
