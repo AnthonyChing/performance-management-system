@@ -48,4 +48,11 @@ public class ManagerKpiController {
                         "data",
                         kpiService.listKpis(SecurityUtils.currentUserId(), userId, cycleId)));
     }
+
+    @DeleteMapping("/{kpiId}")
+    public ResponseEntity<Void> deleteKpi(
+            @PathVariable UUID userId, @PathVariable UUID kpiId) {
+        kpiService.deleteKpi(SecurityUtils.currentUserId(), userId, kpiId);
+        return ResponseEntity.noContent().build();
+    }
 }

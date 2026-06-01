@@ -15,4 +15,6 @@ public interface ManagerKpiService {
             UUID managerId, UUID subordinateId, UUID kpiId, ManagerKpiPatchRequestDTO request);
 
     List<ManagerKpiResponseDTO> listKpis(UUID managerId, UUID subordinateId, String cycleId);
+
+    void deleteKpi(UUID managerId, UUID subordinateId, UUID kpiId);
 }

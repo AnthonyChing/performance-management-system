@@ -21,6 +21,7 @@ import com.pms.repository.PerformanceCycleRepository;
 import com.pms.repository.UserRepository;
 import com.pms.service.manager.ManagerKpiService;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
 
     @Override
     @Transactional
-    @Auditable(action = "CREATE_KPI", resource = "kpi", resourceIdFrom = "return.kpiId")
+    @Auditable(action = "CREATE_KPI", resource = "kpi", resourceIdFrom = "return.id")
     public ManagerKpiResponseDTO createKpi(
             UUID managerId, UUID subordinateId, ManagerKpiCreateRequestDTO req) {
         assertDirectSubordinate(managerId, subordinateId);
@@ -58,14 +59,19 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
                         .title(req.getTitle())
                         .description(req.getDescription())
                         .unit(req.getUnit())
+                        .targetOperator(req.getTargetOperator())
+                        .targetValue(req.getTargetValue())
+                        .targetUnit(req.getTargetUnit())
+                        .targetDisplayText(req.getTargetDisplayText())
                         .build();
         kpiRepo.save(kpi);
 
+        BigDecimal weight = req.getWeight() != null ? req.getWeight() : BigDecimal.ZERO;
         KpiAssignment assignment =
                 KpiAssignment.builder()
                         .kpiId(kpi.getId())
                         .userId(subordinateId)
-                        .weight(BigDecimal.ZERO)
+                        .weight(weight)
                         .targetValue(req.getTargetValue())
                         .build();
         kpiAssignmentRepo.save(assignment);
@@ -103,9 +109,17 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
 
         if (req.getTitle() != null) kpi.setTitle(req.getTitle());
         if (req.getDescription() != null) kpi.setDescription(req.getDescription());
+        if (req.getUnit() != null) kpi.setUnit(req.getUnit());
+        if (req.getKpiType() != null) kpi.setKpiType(parseGoalType(req.getKpiType()));
+        if (req.getTargetOperator() != null) kpi.setTargetOperator(req.getTargetOperator());
+        if (req.getTargetValue() != null) kpi.setTargetValue(req.getTargetValue());
+        if (req.getTargetUnit() != null) kpi.setTargetUnit(req.getTargetUnit());
+        if (req.getTargetDisplayText() != null)
+            kpi.setTargetDisplayText(req.getTargetDisplayText());
         kpiRepo.save(kpi);
 
         if (req.getTargetValue() != null) assignment.setTargetValue(req.getTargetValue());
+        if (req.getWeight() != null) assignment.setWeight(req.getWeight());
         kpiAssignmentRepo.save(assignment);
 
         return ManagerKpiResponseDTO.from(kpi, assignment);
@@ -127,6 +141,29 @@ public class ManagerKpiServiceImpl implements ManagerKpiService {
                             return ManagerKpiResponseDTO.from(kpi, assignment);
                         })
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    @Auditable(action = "DELETE_KPI", resource = "kpi", resourceIdFrom = "kpiId")
+    public void deleteKpi(UUID managerId, UUID subordinateId, UUID kpiId) {
+        assertDirectSubordinate(managerId, subordinateId);
+        Kpi kpi =
+                kpiRepo.findById(kpiId)
+                        .filter(k -> k.getDeletedAt() == null)
+                        .orElseThrow(
+                                () -> new NotFoundException("RESOURCE_NOT_FOUND", "KPI not found"));
+        PerformanceCycle cycle =
+                cycleRepo
+                        .findById(kpi.getCycleId())
+                        .orElseThrow(
+                                () ->
+                                        new NotFoundException(
+                                                "RESOURCE_NOT_FOUND", "Cycle not found"));
+        assertNotLocked(cycle);
+
+        kpi.setDeletedAt(OffsetDateTime.now());
+        kpiRepo.save(kpi);
     }
 
     private void assertDirectSubordinate(UUID managerId, UUID subordinateId) {

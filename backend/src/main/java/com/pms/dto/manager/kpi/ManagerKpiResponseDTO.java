@@ -11,19 +11,24 @@ import lombok.Getter;
 @Getter
 @Builder
 public class ManagerKpiResponseDTO {
-    private UUID kpiId;
+    private UUID id;
     private UUID cycleId;
     private UUID createdBy;
     private String kpiType;
     private String title;
     private String description;
     private String unit;
+    private String targetOperator;
+    private BigDecimal targetValue;
+    private String targetUnit;
+    private String targetDisplayText;
     private AssignmentDTO assignment;
     private OffsetDateTime publishedAt;
 
     @Getter
     @Builder
     public static class AssignmentDTO {
+        private BigDecimal weight;
         private BigDecimal targetValue;
         private BigDecimal currentValue;
         private OffsetDateTime lastUpdatedAt;
@@ -34,18 +39,23 @@ public class ManagerKpiResponseDTO {
                 assignment == null
                         ? null
                         : AssignmentDTO.builder()
+                                .weight(assignment.getWeight())
                                 .targetValue(assignment.getTargetValue())
                                 .currentValue(assignment.getCurrentValue())
                                 .lastUpdatedAt(assignment.getLastUpdatedAt())
                                 .build();
         return ManagerKpiResponseDTO.builder()
-                .kpiId(kpi.getId())
+                .id(kpi.getId())
                 .cycleId(kpi.getCycleId())
                 .createdBy(kpi.getCreatedBy())
                 .kpiType(kpi.getKpiType() != null ? kpi.getKpiType().getDbValue() : null)
                 .title(kpi.getTitle())
                 .description(kpi.getDescription())
                 .unit(kpi.getUnit())
+                .targetOperator(kpi.getTargetOperator())
+                .targetValue(kpi.getTargetValue())
+                .targetUnit(kpi.getTargetUnit())
+                .targetDisplayText(kpi.getTargetDisplayText())
                 .assignment(assignmentDTO)
                 .publishedAt(kpi.getPublishedAt())
                 .build();

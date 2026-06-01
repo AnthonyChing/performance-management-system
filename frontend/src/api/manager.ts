@@ -75,6 +75,10 @@ export interface SubordinateKpi {
   title: string;
   description: string | null;
   unit: string | null;
+  target_operator: string | null;
+  target_value: number | null;
+  target_unit: string | null;
+  target_display_text: string | null;
   assignment: KpiAssignment;
   published_at: string | null;
 }
@@ -257,6 +261,10 @@ function isSubordinateKpi(value: unknown): value is SubordinateKpi {
     isString(value.title) &&
     isNullableString(value.description) &&
     isNullableString(value.unit) &&
+    (value.target_operator === undefined || isNullableString(value.target_operator)) &&
+    (value.target_value === undefined || value.target_value === null || isNumber(value.target_value)) &&
+    (value.target_unit === undefined || isNullableString(value.target_unit)) &&
+    (value.target_display_text === undefined || isNullableString(value.target_display_text)) &&
     isKpiAssignment(value.assignment) &&
     isNullableString(value.published_at)
   );
@@ -414,7 +422,7 @@ function resolveAuthToken(authToken: string | null | undefined) {
 
 async function requestJson<T>(
   path: string,
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   validate: (value: unknown) => value is T,
   body?: unknown,
   options: ManagerApiOptions = {},
@@ -544,6 +552,9 @@ export function createKpi(
     unit?: string;
     weight: number;
     target_value: number;
+    target_operator?: string;
+    target_unit?: string;
+    target_display_text?: string;
   },
   options?: ManagerApiOptions,
 ): Promise<{ data: SubordinateKpi[] }> {
@@ -564,6 +575,11 @@ export function updateKpi(
     weight?: number;
     title?: string;
     description?: string;
+    unit?: string;
+    kpi_type?: KpiType;
+    target_operator?: string;
+    target_unit?: string;
+    target_display_text?: string;
   },
   options?: ManagerApiOptions,
 ): Promise<SubordinateKpi> {
@@ -574,6 +590,43 @@ export function updateKpi(
     payload,
     options,
   );
+}
+
+export function deleteKpi(
+  userId: string,
+  kpiId: string,
+  options?: ManagerApiOptions,
+): Promise<null> {
+  const fetcher = options?.fetcher ?? fetch;
+  const authToken = resolveAuthToken(options?.authToken);
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (authToken) {
+    headers.Authorization = toAuthorizationHeader(authToken);
+  }
+
+  return fetcher(resolveManagerApiUrl(`/users/${userId}/kpis/${kpiId}`), {
+    method: 'DELETE',
+    credentials: options?.credentials ?? DEFAULT_REQUEST_CREDENTIALS,
+    signal: options?.signal,
+    headers,
+  }).then((response) => {
+    handleUnauthorized(response);
+    if (!response.ok) {
+      return parseJsonBody(response).then((body) => {
+        if (isApiErrorBody(body)) {
+          throw new ApiRequestError(response.status, body);
+        }
+        throw new ApiRequestError(response.status, {
+          error: { code: 'HTTP_ERROR', message: `HTTP ${response.status}` },
+        });
+      });
+    }
+    return null;
+  });
 }
 
 export function listKpis(

@@ -16,4 +16,8 @@ public class ManagerKpiCreateRequestDTO {
     private String kpiType;
     private String unit;
     @NotNull private BigDecimal targetValue;
+    private BigDecimal weight;
+    private String targetOperator;
+    private String targetUnit;
+    private String targetDisplayText;
 }
