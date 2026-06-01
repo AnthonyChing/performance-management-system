@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, Briefcase, MapPin, CalendarDays } from 'lucide-react';
+import { Mail, Briefcase, CalendarDays } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ApiRequestError,
@@ -244,18 +244,12 @@ export function ProfileView({
               </span>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-start text-sm text-slate-600">
                 <Briefcase className="w-4 h-4 mr-2 text-slate-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-slate-700">{profile.job_title}</p>
                   <p className="text-slate-500 text-xs mt-0.5">{profile.department.name}</p>
-                </div>
-              </div>
-              <div className="flex items-start text-sm text-slate-600">
-                <MapPin className="w-4 h-4 mr-2 text-slate-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-slate-700">{profile.location ?? '未設定'}</p>
                 </div>
               </div>
               <div className="flex items-start text-sm text-slate-600">

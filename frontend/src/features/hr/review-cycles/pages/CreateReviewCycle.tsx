@@ -153,12 +153,6 @@ export default function CreateReviewCycle() {
       >
         <div className="p-8">
           <div className="space-y-6">
-            {(validationError || submitError) && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-                {validationError ?? submitError}
-              </div>
-            )}
-
             <div>
               <label htmlFor="cycle-name" className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
                 考核週期名稱
@@ -279,6 +273,12 @@ export default function CreateReviewCycle() {
             </div>
           </div>
         </div>
+
+        {(validationError || submitError) && (
+          <div className="mx-8 mb-6 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {validationError ?? submitError}
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 p-6">
           <button

@@ -23,6 +23,18 @@ function isUnauthorizedError(error: unknown) {
   );
 }
 
+function isNoCurrentKpiDataError(error: unknown) {
+  return (
+    error instanceof ApiRequestError &&
+    error.status === 404 &&
+    (
+      error.code === 'CURRENT_KPI_CYCLE_NOT_FOUND' ||
+      error.code === 'KPI_REVIEW_NOT_FOUND' ||
+      error.code === 'CYCLE_NOT_FOUND'
+    )
+  );
+}
+
 function getApiErrorMessage(error: unknown) {
   if (error instanceof ApiRequestError) {
     if (error.status === 401 && error.code === 'UNAUTHORIZED') {
@@ -37,18 +49,6 @@ function getApiErrorMessage(error: unknown) {
   }
 
   return 'KPI 標準載入失敗。';
-}
-
-function formatKpiTarget(target: KpiStandard['target']) {
-  if (target.display_text) {
-    return target.display_text;
-  }
-
-  const value = target.value ?? '-';
-  const unit = target.unit ? ` ${target.unit}` : '';
-  const operator = target.operator ? `${target.operator} ` : '';
-
-  return `${operator}${value}${unit}`;
 }
 
 function formatValue(value: number | null | undefined, suffix = '') {
@@ -105,6 +105,12 @@ export default function CurrentKPI() {
           return;
         }
 
+        if (isNoCurrentKpiDataError(error)) {
+          setStandardsData(null);
+          setStandardsErrorMessage(null);
+          return;
+        }
+
         setStandardsErrorMessage(getApiErrorMessage(error));
       } finally {
         if (isMounted) {
@@ -125,6 +131,12 @@ export default function CurrentKPI() {
 
         if (isUnauthorizedError(error)) {
           redirectToLogin();
+          return;
+        }
+
+        if (isNoCurrentKpiDataError(error)) {
+          setResultData(null);
+          setResultErrorMessage(null);
           return;
         }
 
@@ -212,28 +224,26 @@ export default function CurrentKPI() {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-0 overflow-hidden">
-        {activeTab === 'standards' && (
-          <CurrentKpiStandardsContent
-            isLoading={isStandardsLoading}
-            errorMessage={standardsErrorMessage}
-            standards={standardsData?.standards ?? []}
-          />
-        )}
+      {activeTab === 'standards' && (
+        <CurrentKpiStandardsContent
+          isLoading={isStandardsLoading}
+          errorMessage={standardsErrorMessage}
+          standards={standardsData?.standards ?? []}
+        />
+      )}
 
-        {activeTab === 'results' && (
-          <CurrentKpiResultsContent
-            isLoading={isResultLoading}
-            errorMessage={resultErrorMessage}
-            result={resultData}
-            onConfirm={() => {
-              setConfirmErrorMessage(null);
-              setIsConfirmModalOpen(true);
-            }}
-            onDispute={() => navigate('/dispute', { state: { view: 'submit' } })}
-          />
-        )}
-      </div>
+      {activeTab === 'results' && (
+        <CurrentKpiResultsContent
+          isLoading={isResultLoading}
+          errorMessage={resultErrorMessage}
+          result={resultData}
+          onConfirm={() => {
+            setConfirmErrorMessage(null);
+            setIsConfirmModalOpen(true);
+          }}
+          onDispute={() => navigate('/dispute', { state: { view: 'submit' } })}
+        />
+      )}
 
       {/* Confirmation Modal */}
       {isConfirmModalOpen && (
@@ -300,15 +310,19 @@ export function CurrentKpiResultsContent({
   onDispute: () => void;
 }) {
   if (isLoading) {
-    return <div className="p-6 text-sm text-slate-500">載入 KPI 考核結果中...</div>;
+    return <div className="text-sm text-slate-500">載入 KPI 考核結果中...</div>;
   }
 
   if (errorMessage) {
-    return <div className="p-6 text-sm text-red-700">{errorMessage}</div>;
+    return <div className="text-sm text-red-700">{errorMessage}</div>;
   }
 
   if (!result) {
-    return <div className="p-6 text-sm text-slate-500">目前沒有可顯示的 KPI 考核結果。</div>;
+    return (
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
+        目前沒有可顯示的 KPI 考核結果。
+      </div>
+    );
   }
 
   const scoreSummary = result.score_summary;
@@ -320,13 +334,14 @@ export function CurrentKpiResultsContent({
 
   if (result.status === 'not_published') {
     return (
-      <div className="p-6 text-sm text-slate-500">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
         本期 KPI 考核結果尚未公佈。
       </div>
     );
   }
 
   return (
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
     <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ResultSummaryCard
@@ -431,6 +446,7 @@ export function CurrentKpiResultsContent({
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -477,25 +493,29 @@ export function CurrentKpiStandardsContent({
   standards: KpiStandard[];
 }) {
   if (isLoading) {
-    return <div className="p-6 text-sm text-slate-500">載入 KPI 標準中...</div>;
+    return <div className="text-sm text-slate-500">載入 KPI 標準中...</div>;
   }
 
   if (errorMessage) {
-    return <div className="p-6 text-sm text-red-700">{errorMessage}</div>;
+    return <div className="text-sm text-red-700">{errorMessage}</div>;
   }
 
   if (standards.length === 0) {
-    return <div className="p-6 text-sm text-slate-500">目前尚未設定 KPI 標準。</div>;
+    return (
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 text-sm text-slate-500">
+        目前尚未設定 KPI 標準。
+      </div>
+    );
   }
 
   return (
-    <table className="w-full text-left text-sm text-slate-600">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+    <table className="w-full table-fixed text-left text-sm text-slate-600">
       <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-xs uppercase font-semibold">
         <tr>
-          <th className="px-6 py-4">KPI 名稱</th>
-          <th className="px-6 py-4">說明</th>
-          <th className="px-6 py-4 w-24">權重</th>
-          <th className="px-6 py-4">目標值</th>
+          <th className="w-1/3 px-6 py-4">KPI 名稱</th>
+          <th className="w-1/3 px-6 py-4">說明</th>
+          <th className="w-1/3 px-6 py-4">權重</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-slate-100">
@@ -506,10 +526,10 @@ export function CurrentKpiStandardsContent({
             <td className="px-6 py-4 font-medium text-slate-800">
               {standard.weight_percent}%
             </td>
-            <td className="px-6 py-4 text-slate-500">{formatKpiTarget(standard.target)}</td>
           </tr>
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

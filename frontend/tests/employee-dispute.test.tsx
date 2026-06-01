@@ -85,7 +85,7 @@ describe('employee performance dispute page', () => {
     expect(screen.getByText('載入績效異議資料中...')).toBeInTheDocument();
   });
 
-  it('renders a backend error message when appeal state cannot be loaded', async () => {
+  it('renders an empty state when appeal data is not available for the employee', async () => {
     const fetcher = vi.fn(async () =>
       jsonResponse(
         {
@@ -105,8 +105,9 @@ describe('employee performance dispute page', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('找不到目前登入者在本期的考核資料。'))
+    expect(await screen.findByText('目前沒有可提出績效異議的考核資料。'))
       .toBeInTheDocument();
+    expect(screen.queryByText('找不到目前登入者在本期的考核資料。')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '發起異議' })).toBeDisabled();
   });
 
