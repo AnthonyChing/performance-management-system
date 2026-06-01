@@ -40,7 +40,6 @@ export default function Goals() {
   // Reject State
   const [rejectingGoal, setRejectingGoal] = useState<ReviewItem | null>(null);
   const [rejectReason, setRejectReason] = useState<string>('');
-  const [rejectChanges, setRejectChanges] = useState<string>('');
 
   // Sync state if initialTeam router query parameter changes
   useEffect(() => {
@@ -87,7 +86,6 @@ export default function Goals() {
 
     setRejectingGoal(null);
     setRejectReason('');
-    setRejectChanges('');
   };
 
   const handleReset = async (id: string) => {
@@ -263,7 +261,6 @@ export default function Goals() {
                   onReject={(target) => {
                     setRejectingGoal(target);
                     setRejectReason('');
-                    setRejectChanges('');
                   }}
                   onEvaluate={(target) => {
                     setEvaluatingGoal(target);
@@ -293,7 +290,6 @@ export default function Goals() {
                   onReject={(target) => {
                     setRejectingGoal(target);
                     setRejectReason('');
-                    setRejectChanges('');
                   }}
                   onEvaluate={(target) => {
                     setEvaluatingGoal(target);
@@ -356,9 +352,7 @@ export default function Goals() {
         <RejectGoalModal
           goal={rejectingGoal}
           rejectReason={rejectReason}
-          rejectChanges={rejectChanges}
           onReasonChange={setRejectReason}
-          onChangesChange={setRejectChanges}
           onClose={() => setRejectingGoal(null)}
           onSubmit={handleRejectSubmit}
         />
