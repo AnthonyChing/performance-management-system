@@ -66,8 +66,8 @@
       "title": "4. Saturation (DB Pending Conn)",
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 18,
+        "w": 8,
+        "x": 8,
         "y": 1
       },
       "targets": [
@@ -76,6 +76,46 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors (Infra/Log Errors)",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 1
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(logback_events_total{level=\"error\", application=~\"$application\"}[2m]))",
+          "legendFormat": "Log Errors/sec",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
     },
     {
       "type": "row",
@@ -164,8 +204,8 @@
           "refId": "A"
         },
         {
-          "expr": "avg({__name__=~\"jvm_memory_used|jvm_memory_used_bytes\", application=~\"$application\"} / {__name__=~\"jvm_memory_max|jvm_memory_max_bytes\", application=~\"$application\"})",
-          "legendFormat": "JVM Memory Usage (avg)",
+          "expr": "sum({__name__=~\"jvm_memory_used|jvm_memory_used_bytes\", application=~\"$application\", area=\"heap\"})",
+          "legendFormat": "JVM Heap Memory Used",
           "refId": "B"
         }
       ]
