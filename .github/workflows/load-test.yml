@@ -33,7 +33,7 @@ jobs:
         run: k6 run ${{ github.event.inputs.test_type }}
         env:
           BASE_URL: ${{ github.event.inputs.target_env }}
-          
+          TZ: Asia/Taipei
       - name: Upload HTML Report
         uses: actions/upload-artifact@v4
         if: always()

@@ -16,15 +16,15 @@ export const options = {
         { target: 300,  duration: '2m' },
         { target: 500,  duration: '2m' },
         { target: 800,  duration: '2m' },
-        { target: 1000, duration: '2m' }, // CI ?æ??®æ?
-        { target: 1200, duration: '2m' }, // è¶…è??€
-        { target: 1500, duration: '2m' }, // ?¾å´©æ½°é?
+        { target: 1000, duration: '2m' }, // CI ????
+        { target: 1200, duration: '2m' }, // ??
+        { target: 1500, duration: '2m' }, // ??
         { target: 0,    duration: '5m' },
       ],
       exec: 'employeeFlow',
     },
   },
-  // Stress Test ä¸è¨­ thresholdï¼Œç›®?„æ˜¯è§€å¯Ÿï?ä¸æ˜¯?šé?/å¤±æ?
+  // Stress Test  threshold????/?
 };
 
 const BASE_URL = __ENV.BASE_URL || 'https://backend-staging-1078971769535.asia-east1.run.app';
@@ -36,13 +36,13 @@ function getHeaders(token) {
   };
 }
 
-// ?¢ç??¨æ???Employee Email (3001 ~ 30000)
+// ??????Employee Email (3001 ~ 30000)
 function getRandomEmployeeEmail() {
   const id = Math.floor(Math.random() * 27000) + 3001;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;
 }
 
-// ?¢ç??¨æ???Manager Email (3 ~ 3000)
+// ??????Manager Email (3 ~ 3000)
 function getRandomManagerEmail() {
   const id = Math.floor(Math.random() * 2998) + 3;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;

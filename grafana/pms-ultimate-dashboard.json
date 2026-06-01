@@ -24,14 +24,14 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\"}[2m]))",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\"}[2m]))",
           "refId": "A"
         }
       ]
     },
     {
       "type": "stat",
-      "title": "2. Latency (P95)",
+      "title": "2. Latency (Avg)",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -40,7 +40,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate({__name__=~\"http_server_requests_bucket|http_server_requests_seconds_bucket\", application=~\"$application\"}[2m])) by (le))",
+          "expr": "sum(rate(http_server_requests_milliseconds_sum{application=~\"$application\"}[$__rate_interval])) / sum(rate(http_server_requests_milliseconds_count{application=~\"$application\"}[$__rate_interval]))",
           "refId": "A"
         }
       ]
@@ -56,7 +56,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\", status=~\"5..\"}[2m])) / sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\"}[2m]))",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\", status=~\"5..\"}[2m])) / sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\"}[2m]))",
           "refId": "A"
         }
       ]
@@ -98,7 +98,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\"}[2m])) by (uri)",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\"}[2m])) by (uri)",
           "legendFormat": "{{uri}}",
           "refId": "A"
         }
@@ -115,7 +115,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\", application=~\"$application\", status=~\"4..|5..\"}[2m])) by (uri, status)",
+          "expr": "sum(rate({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\", application=~\"$application\", status=~\"4..|5..\"}[2m])) by (uri, status)",
           "legendFormat": "{{status}} - {{uri}}",
           "refId": "A"
         }
@@ -123,7 +123,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Duration (P95 Latency per API)",
+      "title": "Duration (Avg Latency per API)",
       "gridPos": {
         "h": 8,
         "w": 8,
@@ -132,7 +132,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate({__name__=~\"http_server_requests_bucket|http_server_requests_seconds_bucket\", application=~\"$application\"}[2m])) by (le, uri))",
+          "expr": "sum by (uri) (rate(http_server_requests_milliseconds_sum{application=~\"$application\"}[$__rate_interval])) / sum by (uri) (rate(http_server_requests_milliseconds_count{application=~\"$application\"}[$__rate_interval]))",
           "legendFormat": "P95 {{uri}}",
           "refId": "A"
         }
@@ -164,8 +164,8 @@
           "refId": "A"
         },
         {
-          "expr": "avg({__name__=~\"jvm_memory_used|jvm_memory_used_bytes\", application=~\"$application\"} / {__name__=~\"jvm_memory_max|jvm_memory_max_bytes\", application=~\"$application\"})",
-          "legendFormat": "JVM Memory Usage (avg)",
+          "expr": "sum({__name__=~\"jvm_memory_used|jvm_memory_used_bytes\", application=~\"$application\"})",
+          "legendFormat": "JVM Heap Memory Used",
           "refId": "B"
         }
       ]
@@ -191,6 +191,44 @@
           "refId": "B"
         }
       ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors (DB Conn Timeouts)",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(hikaricp_connections_timeout_total{application=~\"$application\"}[$__rate_interval]))",
+          "legendFormat": "DB Timeouts/sec",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "left",
+            "drawStyle": "line",
+            "lineWidth": 2
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     }
   ],
   "templating": {
@@ -209,7 +247,7 @@
         "hide": 0,
         "includeAll": true,
         "name": "application",
-        "query": "label_values({__name__=~\"http_server_requests_count|http_server_requests_seconds_count\"}, application)",
+        "query": "label_values({__name__=~\"http_server_requests_milliseconds_count|http_server_requests_milliseconds_count\"}, application)",
         "type": "query"
       }
     ]

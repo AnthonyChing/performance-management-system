@@ -12,17 +12,17 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { target: 100,  duration: '2m'  }, // 正常低流量
-        { target: 1000, duration: '10s' }, // 10 秒內暴衝到 1000 人 (CI 極限)
-        { target: 1000, duration: '3m'  }, // 維持高壓
-        { target: 100,  duration: '2m'  }, // 退潮
+        { target: 100,  duration: '2m'  }, // 
+        { target: 1000, duration: '10s' }, // 10  1000  (CI )
+        { target: 1000, duration: '3m'  }, // 
+        { target: 100,  duration: '2m'  }, // 
         { target: 0,    duration: '1m'  },
       ],
       exec: 'employeeFlow', // Focus the spike primarily on employee logins
     },
   },
   thresholds: {
-    'http_req_duration{endpoint:login}':  ['p(95)<5000'], // 放寬冷啟動限制
+    'http_req_duration{endpoint:login}':  ['p(95)<5000'], // 
     'http_req_failed':                    ['rate<0.05'],
   },
 };
@@ -36,13 +36,13 @@ function getHeaders(token) {
   };
 }
 
-// 產生隨機的 Employee Email (3001 ~ 30000)
+//  Employee Email (3001 ~ 30000)
 function getRandomEmployeeEmail() {
   const id = Math.floor(Math.random() * 27000) + 3001;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;
 }
 
-// 產生隨機的 Manager Email (3 ~ 3000)
+//  Manager Email (3 ~ 3000)
 function getRandomManagerEmail() {
   const id = Math.floor(Math.random() * 2998) + 3;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;

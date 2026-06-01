@@ -12,10 +12,10 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { target: 100, duration: '1m' }, // 暖機
-        { target: 900, duration: '3m' }, // 爬升 (900 VUs)
-        { target: 900, duration: '3m' }, // 維持尖峰
-        { target: 0,   duration: '1m' }, // 冷卻
+        { target: 100, duration: '1m' }, // 
+        { target: 900, duration: '3m' }, //  (900 VUs)
+        { target: 900, duration: '3m' }, // 
+        { target: 0,   duration: '1m' }, // 
       ],
       exec: 'employeeFlow',
     },
@@ -24,7 +24,7 @@ export const options = {
       startVUs: 0,
       stages: [
         { target: 10, duration: '1m' },
-        { target: 80, duration: '3m' }, // 爬升 (80 VUs)
+        { target: 80, duration: '3m' }, //  (80 VUs)
         { target: 80, duration: '3m' },
         { target: 0,  duration: '1m' },
       ],
@@ -54,13 +54,13 @@ function getHeaders(token) {
   };
 }
 
-// 產生隨機的 Employee Email (3001 ~ 30000)
+//  Employee Email (3001 ~ 30000)
 function getRandomEmployeeEmail() {
   const id = Math.floor(Math.random() * 27000) + 3001;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;
 }
 
-// 產生隨機的 Manager Email (3 ~ 3000)
+//  Manager Email (3 ~ 3000)
 function getRandomManagerEmail() {
   const id = Math.floor(Math.random() * 2998) + 3;
   return `employee_${String(id).padStart(6, '0')}@loadtest.com`;
