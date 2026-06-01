@@ -215,7 +215,7 @@ export default function Layout() {
 
     // Manager
     if (path.startsWith('/manager/overview')) return <BreadcrumbList items={['主管專區', '總覽']} />;
-    if (path.startsWith('/manager/goals')) return <BreadcrumbList items={['主管專區', '目標 / KPI 管理']} />;
+    if (path.startsWith('/manager/goals')) return <BreadcrumbList items={['主管專區', '目標審核與管理']} />;
     if (path.startsWith('/manager/kpis')) return <BreadcrumbList items={['主管專區', 'KPI 準則設定']} />;
     if (path.startsWith('/manager/evaluations')) return <BreadcrumbList items={['主管專區', '團隊績效評估']} />;
     if (path.startsWith('/manager/history')) return <BreadcrumbList items={['主管專區', '歷史紀錄']} />;
@@ -267,7 +267,7 @@ export default function Layout() {
           {isManager && (
             <SidebarGroup icon={ClipboardList} label="主管專區" basePath="/manager" isSidebarOpen={isSidebarOpen}>
               <SidebarSubItem to="/manager/overview" label="總覽" />
-              <SidebarSubItem to="/manager/goals" label="目標 / KPI 管理" />
+              <SidebarSubItem to="/manager/goals" label="目標審核與管理" />
               <SidebarSubItem to="/manager/kpis" label="KPI 準則設定" />
               <SidebarSubItem to="/manager/evaluations" label="團隊績效評估" />
               <SidebarSubItem to="/manager/history" label="歷史紀錄" />

@@ -170,9 +170,9 @@ export default function Goals() {
       {/* Title Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">目標 / KPI 審查管理</h1>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">目標審核與管理</h1>
           <p className="text-slate-500 text-sm mt-1">
-            設定並核准或修正直屬同仁提出的本期目標與指標。可按組別過濾快速批閱。
+            設定並核准或修正直屬同仁提出的本期目標。可按組別過濾快速批閱。
           </p>
         </div>
       </div>

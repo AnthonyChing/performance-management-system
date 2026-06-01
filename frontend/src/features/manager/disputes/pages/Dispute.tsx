@@ -193,7 +193,7 @@ export default function Dispute() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">績效異議與申覆處理</h1>
           <p className="text-slate-500 text-sm mt-1">
-            審查部屬提交的績效異議申請，回覆處理意見或做出最終裁決。
+            審核部屬提交的績效異議申請，回覆處理意見或做出最終裁決。
           </p>
         </div>
         <button

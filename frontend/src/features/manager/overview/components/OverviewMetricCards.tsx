@@ -11,7 +11,6 @@ interface OverviewMetricCardsProps {
 
 export default function OverviewMetricCards({ goals, disputes, members }: OverviewMetricCardsProps) {
   const pendingGoals = goals.filter((g) => g.status === '待審核' && g.type === '目標');
-  const pendingKPIs = goals.filter((g) => g.status === '待審核' && g.type === 'KPI');
 
   const activeDisputes = disputes.filter((d) => d.status === '待處理');
   const latestDispute = disputes.find((d) => d.status === '待處理') || disputes[0];
@@ -29,7 +28,7 @@ export default function OverviewMetricCards({ goals, disputes, members }: Overvi
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Card 1: 目標 / KPI 審核 */}
+      {/* Card 1: 目標審核 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -41,7 +40,7 @@ export default function OverviewMetricCards({ goals, disputes, members }: Overvi
             </span>
           </div>
 
-          <h3 className="text-lg font-bold text-slate-800">目標 / KPI 審核</h3>
+          <h3 className="text-lg font-bold text-slate-800">目標審核</h3>
           <p className="text-slate-400 text-xs mt-1">本期員工自主擬定之發展計畫</p>
 
           <div className="mt-5 space-y-3">
@@ -49,12 +48,6 @@ export default function OverviewMetricCards({ goals, disputes, members }: Overvi
               <span className="text-sm text-slate-600 font-medium">待審核目標</span>
               <span className="text-base font-bold text-amber-600 font-mono">
                 {pendingGoals.length} <span className="text-xs text-slate-500 font-normal">個</span>
-              </span>
-            </div>
-            <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-              <span className="text-sm text-slate-600 font-medium">待審核 KPI</span>
-              <span className="text-base font-bold text-amber-600 font-mono">
-                {pendingKPIs.length} <span className="text-xs text-slate-500 font-normal">個</span>
               </span>
             </div>
           </div>
@@ -65,7 +58,7 @@ export default function OverviewMetricCards({ goals, disputes, members }: Overvi
             to="/manager/goals"
             className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
           >
-            前往目標管理 <ArrowRight className="w-4 h-4" />
+            前往目標管理與審核 <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>
