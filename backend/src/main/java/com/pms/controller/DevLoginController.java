@@ -11,7 +11,9 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,13 +55,24 @@ public class DevLoginController {
         List<String> roles = userRepository.findRoleNamesByUserId(user.getId());
         String token = jwtUtil.generateToken(user.getId(), roles);
 
-        return ResponseEntity.ok(
-                AuthResponseDTO.builder()
-                        .accessToken(token)
-                        .tokenType("Bearer")
-                        .expiresIn(expirationMs / 1000)
-                        .userId(user.getId().toString())
-                        .roles(roles)
-                        .build());
+        ResponseCookie cookie =
+                ResponseCookie.from("jwt", token)
+                        .httpOnly(true)
+                        .secure(true) // Set to true to match production/Google config
+                        .path("/")
+                        .maxAge(expirationMs / 1000)
+                        .sameSite("Strict")
+                        .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(
+                        AuthResponseDTO.builder()
+                                .accessToken(token)
+                                .tokenType("Bearer")
+                                .expiresIn(expirationMs / 1000)
+                                .userId(user.getId().toString())
+                                .roles(roles)
+                                .build());
     }
 }

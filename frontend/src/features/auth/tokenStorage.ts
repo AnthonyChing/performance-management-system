@@ -104,3 +104,4 @@ export function getUserRole(): string | null {
   const roles = getUserRoles();
   return roles.length > 0 ? roles[0] : null;
 }
+
