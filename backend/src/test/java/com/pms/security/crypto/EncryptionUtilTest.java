@@ -14,7 +14,6 @@ class EncryptionUtilTest {
     static void setUp() {
         encryptionUtil = new EncryptionUtil();
         encryptionUtil.setSecretKeyString("my-super-secret-test-key-must-be-32-bytes");
-        encryptionUtil.init();
     }
 
     @Test
