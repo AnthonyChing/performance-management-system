@@ -13,9 +13,6 @@ public interface EvaluationTemplateRepository extends JpaRepository<EvaluationTe
 
     Optional<EvaluationTemplate> findByIdAndDeletedAtIsNull(UUID id);
 
-    java.util.List<EvaluationTemplate> findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(
-            UUID cycleId);
-
     boolean
             existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
                     UUID cycleId, String employeeGroupType, String employeeGroupRef);

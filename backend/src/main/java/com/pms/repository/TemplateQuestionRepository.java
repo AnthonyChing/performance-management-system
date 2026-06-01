@@ -10,8 +10,6 @@ public interface TemplateQuestionRepository extends JpaRepository<TemplateQuesti
 
     List<TemplateQuestion> findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc(UUID templateId);
 
-    List<TemplateQuestion> findByIdInAndDeletedAtIsNull(List<UUID> ids);
-
     Optional<TemplateQuestion> findByIdAndTemplateIdAndDeletedAtIsNull(UUID id, UUID templateId);
 
     long countByTemplateIdAndDeletedAtIsNull(UUID templateId);
