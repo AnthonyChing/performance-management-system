@@ -19,6 +19,8 @@ public class CycleSummaryDTO {
     private String reviewType;
     private LocalDate startDate;
     private LocalDate endDate;
+    private OffsetDateTime managerEvalStart;
+    private OffsetDateTime managerEvalEnd;
     private String timezone;
     private String status;
     private Boolean isLocked;

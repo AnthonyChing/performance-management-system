@@ -51,6 +51,8 @@ export interface PerformanceCycleSummary {
   period_label: string;
   start_date: string;
   end_date: string;
+  manager_eval_start?: string;
+  manager_eval_end?: string;
   timezone: string;
   status: PerformanceCycleStatus;
   is_locked: boolean;
@@ -585,6 +587,8 @@ function isPerformanceCycleSummary(value: unknown): value is PerformanceCycleSum
     isString(value.period_label) &&
     isString(value.start_date) &&
     isString(value.end_date) &&
+    (value.manager_eval_start === undefined || value.manager_eval_start === null || isString(value.manager_eval_start)) &&
+    (value.manager_eval_end === undefined || value.manager_eval_end === null || isString(value.manager_eval_end)) &&
     isString(value.timezone) &&
     isString(value.status) &&
     cycleStatuses.has(value.status as PerformanceCycleStatus) &&

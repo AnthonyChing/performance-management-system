@@ -19,14 +19,10 @@ export default function GoalCard({ goal, teamName, onApprove, onReject, onEvalua
   return (
     <div
       key={goal.id}
-      className={`bg-white rounded-xl border p-6 shadow-sm transition-all hover:border-slate-300 flex flex-col justify-between gap-6 ${isPending ? 'border-amber-200 bg-amber-50/10' : ''}`}
+      className={`bg-white rounded-xl border p-6 shadow-sm transition-all hover:border-black flex flex-col justify-between gap-6 ${isPending ? 'border-amber-200 bg-amber-50/10' : isActive ? 'border-gray-400' : 'border-slate-200'}`}
     >
       <div className="flex-1 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${goal.type === 'KPI' ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'}`}>
-            {goal.type}
-          </span>
-
           {isPending && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1">
               <Clock className="w-3 h-3" /> 待審核
@@ -34,7 +30,7 @@ export default function GoalCard({ goal, teamName, onApprove, onReject, onEvalua
           )}
           {isActive && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
-              <CheckCircle className="w-3 h-3" /> 待評分
+              <CheckCircle className="w-3 h-3" /> 已核准
             </span>
           )}
           {isEvaluated && (
@@ -54,10 +50,14 @@ export default function GoalCard({ goal, teamName, onApprove, onReject, onEvalua
 
         <h3 className="text-base font-bold text-slate-800 leading-tight">{goal.title}</h3>
 
+        {goal.description && (
+          <p className="text-sm text-slate-500 line-clamp-2">{goal.description}</p>
+        )}
+
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold text-slate-700">組員：{goal.memberName}</span>
           <span className="text-slate-300 text-xs">|</span>
-          <span className="text-xs text-slate-500 font-medium">所屬：{teamName}</span>
+          <span className="text-xs text-slate-500 font-medium">員工編號：{goal.employeeId}</span>
         </div>
 
         {goal.type === 'KPI' && (
@@ -89,45 +89,38 @@ export default function GoalCard({ goal, teamName, onApprove, onReject, onEvalua
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-        {isPending && (
-          <>
-            <button
-              onClick={() => onReject(goal)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold rounded-md shadow-sm transition-colors"
-            >
-              <XCircle className="w-4 h-4" />
-              否決退回
-            </button>
+      {(isPending || isRejected) && (
+        <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+          {isPending && (
+            <>
+              <button
+                onClick={() => onReject(goal)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-bold rounded-md shadow-sm transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+                否決退回
+              </button>
 
+              <button
+                onClick={() => onApprove(goal.id)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md shadow-sm transition-colors"
+              >
+                <CheckCircle className="w-4 h-4" />
+                同意核准
+              </button>
+            </>
+          )}
+          {isRejected && (
             <button
-              onClick={() => onApprove(goal.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md shadow-sm transition-colors"
+              onClick={() => onReset(goal.id)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-md transition-colors"
             >
-              <CheckCircle className="w-4 h-4" />
-              同意核准
+              <RefreshCw className="w-3.5 h-3.5" />
+              重置為待審核
             </button>
-          </>
-        )}
-        {isActive && (
-          <button
-            onClick={() => onEvaluate(goal)}
-            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-md shadow-sm transition-colors"
-          >
-            <FileCheck className="w-4 h-4" />
-            進行期末考核評分
-          </button>
-        )}
-        {isRejected && (
-          <button
-            onClick={() => onReset(goal.id)}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 text-xs font-bold rounded-md transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            重置為待審核
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

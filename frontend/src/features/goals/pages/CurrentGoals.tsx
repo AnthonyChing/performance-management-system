@@ -149,11 +149,8 @@ export default function CurrentGoals() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">本期目標</h1>
           {goalsData?.cycle.period_label && (
-            <p className="mt-1 text-sm text-slate-500">{goalsData.cycle.period_label}</p>
+            <p className="mt-1 text-sm text-slate-500">瀏覽本期的目標：{goalsData.cycle.period_label}</p>
           )}
-          <div className="text-sm text-slate-500 mt-1 flex px-1 breadcrumbs">
-             主控台 <ChevronRight className="w-3 h-3 mx-1 mt-1" /> 目前目標頁面
-          </div>
         </div>
         {canCreateGoal ? (
           <Link to="/goals/new" className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">
@@ -215,7 +212,7 @@ export function CurrentGoalsContent({
         const progressWidth = `${Math.min(Math.max(progress, 0), 100)}%`;
 
         return (
-          <div key={goal.goal_id} className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex items-center justify-between hover:border-slate-300 transition-colors">
+          <div key={goal.goal_id} className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex items-center justify-between hover:border-black transition-colors">
             <div className="flex-1">
               <div className="flex items-center mb-2">
                 <h3 className="text-base font-bold text-slate-800">{goal.title}</h3>

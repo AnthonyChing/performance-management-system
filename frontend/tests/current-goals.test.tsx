@@ -74,7 +74,7 @@ describe('CurrentGoals', () => {
     );
 
     expect(await screen.findByText('完成推薦系統重構')).toBeInTheDocument();
-    expect(screen.getByText('2024-07-01~2024-09-30')).toBeInTheDocument();
+    expect(screen.getByText('瀏覽本期的目標：2024-07-01~2024-09-30')).toBeInTheDocument();
     expect(screen.getByText('完成核心服務拆分與壓測。')).toBeInTheDocument();
     expect(screen.getByText('進行中')).toBeInTheDocument();
     expect(screen.getByText('待審核')).toBeInTheDocument();

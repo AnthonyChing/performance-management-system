@@ -11,5 +11,12 @@ import lombok.Setter;
 public class ManagerKpiPatchRequestDTO {
     private String title;
     private String description;
+    private String kpiType;
+    private String unit;
     private BigDecimal targetValue;
+    private BigDecimal weight;
+    private String targetOperator;
+    private String targetUnit;
+    private String targetDisplayText;
+    private BigDecimal currentValue;
 }

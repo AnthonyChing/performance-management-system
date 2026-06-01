@@ -44,6 +44,10 @@ public class ManagerDashboardController {
                                 u ->
                                         Map.of(
                                                 "id", u.getId().toString(),
+                                                "employee_id",
+                                                        u.getEmployeeId() != null
+                                                                ? u.getEmployeeId()
+                                                                : "",
                                                 "name", u.getFullName(),
                                                 "email", u.getEmail() != null ? u.getEmail() : "",
                                                 "department",

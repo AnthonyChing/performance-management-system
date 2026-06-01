@@ -213,7 +213,7 @@ class ManagerKpiControllerTest {
                 .patch("/" + USER_ID + "/kpis/" + KPI_ID)
                 .then()
                 .statusCode(200)
-                .body("kpi_id", equalTo(KPI_ID))
+                .body("id", equalTo(KPI_ID))
                 .body("assignment.target_value", equalTo(1200000.0f))
                 .body("description", equalTo("追加業績目標調升"));
     }
@@ -239,9 +239,15 @@ class ManagerKpiControllerTest {
                 .then()
                 .statusCode(201)
                 .contentType("application/json")
-                .body("data[0].kpi_id", notNullValue())
+                .body("data[0].id", notNullValue())
                 .body("data[0].title", equalTo("季營收達成率"))
                 .body("data[0].kpi_type", equalTo("individual"))
                 .body("data[0].assignment.target_value", equalTo(1000000.0f));
+    }
+
+    @Test
+    @Order(12)
+    void deleteKpi_returnsNoContent() {
+        given().when().delete("/" + USER_ID + "/kpis/" + KPI_ID).then().statusCode(204);
     }
 }

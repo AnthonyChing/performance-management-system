@@ -95,7 +95,7 @@ export default function OverviewPage() {
             <div className="text-xs text-indigo-900 space-y-1">
               <p className="font-bold">✨ 主管工作引導秘笈</p>
               <p>
-                點擊「設定」可以為該組別同仁設定／審查本期的新目標與 KPI。點擊「歷史」則可查詢該組在往昔考核週期中積累的歷史紀錄。有任何問題可多加利用
+                點擊「設定」可以為該組別同仁設定／審核本期的新目標與 KPI。點擊「歷史」則可查詢該組在往昔考核週期中積累的歷史紀錄。有任何問題可多加利用
                 「異議處理」以增進團隊的協商配合度。
               </p>
             </div>

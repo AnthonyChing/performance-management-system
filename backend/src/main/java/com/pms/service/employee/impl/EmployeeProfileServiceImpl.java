@@ -183,6 +183,8 @@ public class EmployeeProfileServiceImpl implements EmployeeProfileService {
                 .periodLabel(periodLabel)
                 .startDate(startDate)
                 .endDate(endDate)
+                .managerEvalStart(cycle.getManagerEvalStart())
+                .managerEvalEnd(cycle.getManagerEvalEnd())
                 .timezone(cycle.getTimezone())
                 .status(cycle.getStatus() != null ? cycle.getStatus().getDbValue() : null)
                 .isLocked(cycle.getIsLocked())
