@@ -16,8 +16,7 @@ class IdentityProviderTest {
 
     @Test
     void fromDbValue_unknownValue_throwsIllegalArgumentException() {
-        assertThrows(
-                IllegalArgumentException.class, () -> IdentityProvider.fromDbValue("unknown"));
+        assertThrows(IllegalArgumentException.class, () -> IdentityProvider.fromDbValue("unknown"));
     }
 
     @Test

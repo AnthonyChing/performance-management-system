@@ -81,10 +81,6 @@ class ManagerDashboardControllerTest {
 
     @Test
     void listSubordinates_withoutToken_returns401() {
-        given().port(port)
-                .when()
-                .get("/api/v1/manager/subordinates")
-                .then()
-                .statusCode(401);
+        given().port(port).when().get("/api/v1/manager/subordinates").then().statusCode(401);
     }
 }

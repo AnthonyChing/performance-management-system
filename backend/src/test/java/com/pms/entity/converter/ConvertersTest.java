@@ -46,7 +46,8 @@ class ConvertersTest {
 
     @Test
     void employmentStatus_convertToDatabaseColumn_returnsDbValue() {
-        assertEquals("active", employmentConverter.convertToDatabaseColumn(EmploymentStatus.ACTIVE));
+        assertEquals(
+                "active", employmentConverter.convertToDatabaseColumn(EmploymentStatus.ACTIVE));
         assertEquals(
                 "on_leave", employmentConverter.convertToDatabaseColumn(EmploymentStatus.ON_LEAVE));
         assertEquals(

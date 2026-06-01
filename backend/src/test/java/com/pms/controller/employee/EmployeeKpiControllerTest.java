@@ -296,7 +296,8 @@ class EmployeeKpiControllerTest {
     @Test
     @Order(13)
     void confirmKpiResult_whenStatusInvalid_returns409() {
-        // Set results_published_at = NULL so status becomes "not_published" → INVALID_KPI_RESULT_STATUS
+        // Set results_published_at = NULL so status becomes "not_published" →
+        // INVALID_KPI_RESULT_STATUS
         jdbc.update(
                 "UPDATE performance_cycles SET results_published_at = NULL WHERE id = ?::uuid",
                 "00000000-0000-0000-0000-000000010003");
