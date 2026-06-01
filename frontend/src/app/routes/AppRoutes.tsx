@@ -38,17 +38,21 @@ import ManagerEvaluations from '../../features/manager/evaluations/pages/Evaluat
 import ManagerHistory from '../../features/manager/history/pages/History';
 import ManagerDispute from '../../features/manager/disputes/pages/Dispute';
 
-import { getUserRole } from '../../features/auth';
+import { getUserRoles } from '../../features/auth';
 
 function RequireRole({ allowedRoles }: { allowedRoles: string[] }) {
   const token = localStorage.getItem('token');
-  const role = getUserRole();
+  const roles = getUserRoles();
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!role || !allowedRoles.includes(role)) {
+  const hasAccess = allowedRoles.some((allowed) =>
+    roles.some((role) => role.toLowerCase() === allowed.toLowerCase())
+  );
+
+  if (!hasAccess) {
     return <Navigate to="/" replace />;
   }
 

@@ -6,4 +6,5 @@ export {
   saveAuthToken,
   toAuthorizationHeader,
   getUserRole,
+  getUserRoles,
 } from './tokenStorage';
