@@ -28,7 +28,17 @@ class AuthControllerTest {
 
     @MockBean AuthService authService;
 
-    @MockBean JwtUtil jwtUtil;
+    @org.springframework.boot.test.context.TestConfiguration
+    static class TestConfig {
+        @org.springframework.context.annotation.Bean
+        public JwtUtil jwtUtil() {
+            return new JwtUtil(
+                    "my-super-secret-key-that-is-at-least-256-bits-long-for-hmac-sha-256",
+                    3600000L);
+        }
+    }
+
+    @Autowired JwtUtil jwtUtil;
 
     @Test
     void googleLogin_returnsAuthResponse() throws Exception {

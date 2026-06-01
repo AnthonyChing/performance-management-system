@@ -22,21 +22,35 @@ public class ManagerEvaluationResponseDTO {
     private String managerComment;
     private List<QuestionnaireResponseItemDTO> responses;
     private List<KpiEvaluationItemDTO> kpiEvaluations;
+    private List<EvaluationQuestionDTO> questions;
     private OffsetDateTime managerSubmittedAt;
     private OffsetDateTime updatedAt;
+
+    @Getter
+    @Builder
+    public static class EvaluationQuestionDTO {
+        private UUID id;
+        private String question_text;
+        private String question_type;
+        private Integer rating_scale_max;
+        private boolean is_required;
+        private Integer sort_order;
+    }
 
     public static ManagerEvaluationResponseDTO from(
             PerformanceReview review,
             List<ReviewResponse> responses,
-            List<KpiEvaluation> kpiEvals) {
-        return from(review, null, responses, kpiEvals);
+            List<KpiEvaluation> kpiEvals,
+            List<com.pms.entity.TemplateQuestion> questions) {
+        return from(review, null, responses, kpiEvals, questions);
     }
 
     public static ManagerEvaluationResponseDTO from(
             PerformanceReview review,
             String cycleName,
             List<ReviewResponse> responses,
-            List<KpiEvaluation> kpiEvals) {
+            List<KpiEvaluation> kpiEvals,
+            List<com.pms.entity.TemplateQuestion> questions) {
         return ManagerEvaluationResponseDTO.builder()
                 .id(review.getId())
                 .cycleId(review.getCycleId())
@@ -61,6 +75,29 @@ public class ManagerEvaluationResponseDTO {
                                             return d;
                                         })
                                 .toList())
+                .questions(
+                        questions != null
+                                ? questions.stream()
+                                        .map(
+                                                q ->
+                                                        EvaluationQuestionDTO.builder()
+                                                                .id(q.getId())
+                                                                .question_text(q.getQuestionText())
+                                                                .question_type(
+                                                                        q.getQuestionType() != null
+                                                                                ? q.getQuestionType()
+                                                                                        .getDbValue()
+                                                                                : null)
+                                                                .rating_scale_max(
+                                                                        q.getRatingScaleMax())
+                                                                .is_required(
+                                                                        q.getIsRequired() != null
+                                                                                ? q.getIsRequired()
+                                                                                : false)
+                                                                .sort_order(q.getSortOrder())
+                                                                .build())
+                                        .toList()
+                                : java.util.Collections.emptyList())
                 .managerSubmittedAt(review.getManagerSubmittedAt())
                 .updatedAt(review.getUpdatedAt())
                 .build();
