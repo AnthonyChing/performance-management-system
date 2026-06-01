@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Layout from '../../shared/layout/Layout';
 import { Login } from '../../features/auth';
 import Profile from '../../features/profile/pages/Profile';
@@ -38,6 +38,21 @@ import ManagerEvaluations from '../../features/manager/evaluations/pages/Evaluat
 import ManagerHistory from '../../features/manager/history/pages/History';
 import ManagerDispute from '../../features/manager/disputes/pages/Dispute';
 
+function RequireRole({ allowedRoles }: { allowedRoles: string[] }) {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!role || !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -61,14 +76,18 @@ export default function App() {
             <Route path="new" element={<NewGoal />} />
             <Route path="edit/:id" element={<EditGoal />} />
           </Route>
-          <Route path="manager">
+          
+          {/* Manager routes - role protected */}
+          <Route path="manager" element={<RequireRole allowedRoles={['manager']} />}>
             <Route path="overview" element={<ManagerOverview />} />
             <Route path="goals" element={<ManagerGoals />} />
             <Route path="evaluations" element={<ManagerEvaluations />} />
             <Route path="history" element={<ManagerHistory />} />
             <Route path="dispute" element={<ManagerDispute />} />
           </Route>
-          <Route path="hr">
+          
+          {/* HR routes - role protected */}
+          <Route path="hr" element={<RequireRole allowedRoles={['hr']} />}>
             <Route path="cycles" element={<ReviewCycles />} />
             <Route path="cycles/new" element={<CreateReviewCycle />} />
             <Route path="cycles/:id" element={<ReviewCycleDetail />} />
@@ -82,6 +101,7 @@ export default function App() {
             <Route path="publish" element={<PublishResults />} />
             <Route path="audit" element={<AuditLogs />} />
           </Route>
+          
           {/* Catch-all redirect to profile */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

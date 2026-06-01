@@ -123,6 +123,8 @@ export default function Layout() {
   const [currentUser, setCurrentUser] = useState<EmployeeProfile | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
+  const role = localStorage.getItem('role');
+
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
@@ -258,21 +260,25 @@ export default function Layout() {
             <SidebarSubItem to="/goals/history" label="歷史目標" />
           </SidebarGroup>
 
-          <SidebarGroup icon={ClipboardList} label="主管專區" basePath="/manager" isSidebarOpen={isSidebarOpen}>
-            <SidebarSubItem to="/manager/overview" label="總覽" />
-            <SidebarSubItem to="/manager/goals" label="目標 / KPI 管理" />
-            <SidebarSubItem to="/manager/evaluations" label="團隊績效評估" />
-            <SidebarSubItem to="/manager/history" label="歷史紀錄" />
-            <SidebarSubItem to="/manager/dispute" label="績效異議" />
-          </SidebarGroup>
+          {role === 'manager' && (
+            <SidebarGroup icon={ClipboardList} label="主管專區" basePath="/manager" isSidebarOpen={isSidebarOpen}>
+              <SidebarSubItem to="/manager/overview" label="總覽" />
+              <SidebarSubItem to="/manager/goals" label="目標 / KPI 管理" />
+              <SidebarSubItem to="/manager/evaluations" label="團隊績效評估" />
+              <SidebarSubItem to="/manager/history" label="歷史紀錄" />
+              <SidebarSubItem to="/manager/dispute" label="績效異議" />
+            </SidebarGroup>
+          )}
 
-          <SidebarGroup icon={Users} label="HR 專區" basePath="/hr" isSidebarOpen={isSidebarOpen}>
-            <SidebarSubItem to="/hr/cycles" label="考核週期" />
-            <SidebarSubItem to="/hr/questionnaires" label="問卷模板" />
-            <SidebarSubItem to="/hr/templates" label="考核模板" />
-            <SidebarSubItem to="/hr/publish" label="發佈考核結果" />
-            <SidebarSubItem to="/hr/audit" label="查詢稽核紀錄" />
-          </SidebarGroup>
+          {role === 'hr' && (
+            <SidebarGroup icon={Users} label="HR 專區" basePath="/hr" isSidebarOpen={isSidebarOpen}>
+              <SidebarSubItem to="/hr/cycles" label="考核週期" />
+              <SidebarSubItem to="/hr/questionnaires" label="問卷模板" />
+              <SidebarSubItem to="/hr/templates" label="考核模板" />
+              <SidebarSubItem to="/hr/publish" label="發佈考核結果" />
+              <SidebarSubItem to="/hr/audit" label="查詢稽核紀錄" />
+            </SidebarGroup>
+          )}
         </nav>
 
         <div className="p-4 mt-auto border-t border-slate-100 flex flex-col space-y-2 shrink-0">
