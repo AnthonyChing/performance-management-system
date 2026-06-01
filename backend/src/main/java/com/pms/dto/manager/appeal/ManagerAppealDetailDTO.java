@@ -30,10 +30,7 @@ public class ManagerAppealDetailDTO {
     private List<ManagerAppealResponseItemDTO> responses;
 
     public static ManagerAppealDetailDTO from(
-            Appeal a,
-            List<AppealResponse> responses,
-            String filedByName,
-            String assignedToName) {
+            Appeal a, List<AppealResponse> responses, String filedByName, String assignedToName) {
         return ManagerAppealDetailDTO.builder()
                 .id(a.getId())
                 .reviewId(a.getReviewId())

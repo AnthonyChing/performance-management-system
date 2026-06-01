@@ -59,9 +59,7 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
         List<AppealResponse> responses =
                 appealResponseRepo.findByAppealIdOrderByRespondedAtAsc(appealId);
         Map<UUID, String> nameById =
-                userRepo
-                        .findAllById(List.of(appeal.getFiledBy(), appeal.getAssignedTo()))
-                        .stream()
+                userRepo.findAllById(List.of(appeal.getFiledBy(), appeal.getAssignedTo())).stream()
                         .collect(Collectors.toMap(User::getId, User::getFullName));
         return ManagerAppealDetailDTO.from(
                 appeal,
@@ -110,9 +108,7 @@ public class ManagerAppealServiceImpl implements ManagerAppealService {
         List<AppealResponse> responses =
                 appealResponseRepo.findByAppealIdOrderByRespondedAtAsc(appealId);
         Map<UUID, String> nameById =
-                userRepo
-                        .findAllById(List.of(appeal.getFiledBy(), appeal.getAssignedTo()))
-                        .stream()
+                userRepo.findAllById(List.of(appeal.getFiledBy(), appeal.getAssignedTo())).stream()
                         .collect(Collectors.toMap(User::getId, User::getFullName));
         return ManagerAppealDetailDTO.from(
                 appeal,
