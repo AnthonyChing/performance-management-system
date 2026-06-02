@@ -234,4 +234,90 @@ class HrPerformanceCycleControllerTest {
                 .statusCode(400)
                 .body("error.code", equalTo("VALIDATION_ERROR"));
     }
+
+    @Test
+    void changeCycleStatus_toResultsPublished_setsResultsPublishedAt() {
+        String body =
+                """
+                {
+                  "status": "results_published"
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .patch("/" + CYCLE_ID + "/status")
+                .then()
+                .statusCode(200)
+                .body("status", equalTo("results_published"))
+                .body("results_published_at", notNullValue());
+    }
+
+    @Test
+    void changeCycleStatus_toLocked_setsIsLocked() {
+        String body =
+                """
+                {
+                  "status": "locked"
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .patch("/" + CYCLE_ID + "/status")
+                .then()
+                .statusCode(200)
+                .body("status", equalTo("locked"))
+                .body("is_locked", equalTo(true));
+    }
+
+    @Test
+    void createCycle_withInvalidType_returns400() {
+        String body =
+                """
+                {
+                  "name": "Invalid Type Cycle",
+                  "cycle_type": "invalid_type",
+                  "cycle_start": "2026-07-01T00:00:00+08:00",
+                  "cycle_end": "2026-07-31T23:59:59+08:00",
+                  "manager_eval_start": "2026-08-01T00:00:00+08:00",
+                  "manager_eval_end": "2026-08-31T23:59:59+08:00",
+                  "hr_review_end": "2026-09-15T23:59:59+08:00"
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .post()
+                .then()
+                .statusCode(400)
+                .body("error.code", equalTo("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void updateCycle_withMultipleFields_updatesAll() {
+        String body =
+                """
+                {
+                  "timezone": "UTC",
+                  "cycle_start": "2026-02-01T00:00:00Z",
+                  "cycle_end": "2026-02-28T23:59:59Z",
+                  "manager_eval_start": "2026-03-01T00:00:00Z",
+                  "hr_review_end": "2026-04-01T23:59:59Z",
+                  "appeal_deadline_days": 14
+                }
+                """;
+
+        given().contentType("application/json")
+                .body(body)
+                .when()
+                .patch("/" + CYCLE_ID)
+                .then()
+                .statusCode(200)
+                .body("timezone", equalTo("UTC"))
+                .body("appeal_deadline_days", equalTo(14));
+    }
 }
