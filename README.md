@@ -1,13 +1,29 @@
-# Performance Management System (績效管理系統)
-This is the repository of the final project of Cloud Native Application Development (雲原生應用程式開發) of team 11 at National Taiwan Univeristy (NTU).
+# 🚀 Performance Management System (績效管理系統)
+
+<div align="center">
+
+[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=AnthonyChing_performance-management-system&metric=alert_status)](https://sonarcloud.io/project/overview?id=AnthonyChing_performance-management-system)
+[![Presentation](https://img.shields.io/badge/Canva-Presentation-00C4CC?style=flat&logo=canva&logoColor=white)](https://canva.link/xlio0v5jzqgs9ag)
+[![Grafana](https://img.shields.io/badge/Grafana-Dashboards-F46800?style=flat&logo=grafana&logoColor=white)](https://fredlin100.grafana.net/dashboards)
+[![Live Demo](https://img.shields.io/badge/Demo-ntu--pms.ddns.net-brightgreen?style=flat&logo=googlechrome&logoColor=white)](http://ntu-pms.ddns.net)
+
+This is the repository for the final project of **Cloud Native Application Development** (雲原生應用程式開發) by Team 11 at National Taiwan University (NTU).
+
+*⚠️ Note: The live demo is hosted temporarily and will be taken down after the evaluation period.*
+
+<br />
+<img src="./assets/home.png" alt="Performance Management System Home Page" width="100%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+
+</div>
+
+---
+
 
 ## How to set up frontend environment
 
 ### Development
 
-*For example*:
-
-Use Node.js v25.4.0.
+Use Node.js 22
 
 After cloning the repository, run the following commands to setup the development environment:
 ```
@@ -47,7 +63,7 @@ To build and test the production-ready assets locally:
 
 ### Development
 
-Backend is now Spring Boot (Java). Run from repository root:
+Backend uses Spring Boot (Java). Run from repository root:
 
 ```bash
 docker compose up --build -d backend
