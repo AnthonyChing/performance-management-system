@@ -12,14 +12,14 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { target: 100,  duration: '2m' },
-        { target: 300,  duration: '2m' },
         { target: 500,  duration: '2m' },
-        { target: 800,  duration: '2m' },
-        { target: 1000, duration: '2m' }, // CI ????
-        { target: 1200, duration: '2m' }, // ??
-        { target: 1500, duration: '2m' }, // ??
-        { target: 0,    duration: '5m' },
+        { target: 1000, duration: '2m' },
+        { target: 1500, duration: '2m' }, 
+        { target: 2000, duration: '2m' }, // Continue ramping up
+        { target: 3000, duration: '3m' }, // Sustain at 3000
+        { target: 5000, duration: '3m' }, // Target extreme load
+        { target: 7000, duration: '3m' }, // The final boss
+        { target: 0,    duration: '3m' }, // Cool down
       ],
       exec: 'employeeFlow',
     },
