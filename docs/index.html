@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMS Sequence Diagrams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f9fafb;
+    --surface: #ffffff;
+    --surface2: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --accent: #4f46e5;
+    --accent-soft: rgba(79, 70, 229, 0.12);
+    --lifeline: #d1d5db;
+    --arrow: #4f46e5;
+    --arrow-return: #10b981;
+    --self: #f59e0b;
+    --node-bg: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    --employee: #4f46e5;
+    --manager: #d97706;
+    --hr: #be185d;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    position: relative;
+  }
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .page-header p {
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  /* ── Navigation Tabs ── */
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 24px 24px 0;
+    flex-wrap: wrap;
+  }
+  .nav-tab {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: var(--surface);
+    color: var(--text-muted);
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .nav-tab:hover {
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .nav-tab.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: rgba(108,140,255,0.3);
+  }
+
+  /* ── Role badge ── */
+  .role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-right: 8px;
+  }
+  .role-badge.employee { background: rgba(108,140,255,0.15); color: var(--employee); }
+  .role-badge.manager  { background: rgba(232,168,72,0.15);  color: var(--manager); }
+  .role-badge.hr       { background: rgba(232,108,140,0.15); color: var(--hr); }
+
+  /* ── Diagram container ── */
+  .diagrams-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .diagram-section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .diagram-section.visible { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .diagram-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .diagram-title {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+  .diagram-title h3 {
+    font-size: 17px;
+    font-weight: 600;
+  }
+  
+  .diagram-actions {
+    margin-left: auto;
+  }
+  .download-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .download-btn:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+    background: var(--surface2);
+  }
+
+  /* ── SVG Sequence Diagram ── */
+  .diagram-body {
+    padding: 24px;
+    overflow-x: auto;
+  }
+  .diagram-body svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* ── Loading / Error ── */
+  .status-box {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--text-muted);
+  }
+  .status-box .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Sequence Diagrams</h1>
+  <p>Performance Management System — interaction flows</p>
+</div>
+
+<div class="nav-tabs" id="navTabs"></div>
+
+<div class="diagrams-wrapper" id="diagramsWrapper">
+  <div class="status-box" id="loading">
+    <div class="spinner"></div>
+    <div>Loading sequence-diagram.md …</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// 1. Parse the custom markdown format
+// ─────────────────────────────────────────────
+function parseMd(text) {
+  const lines = text.split('\n');
+  const nodes = [];
+  const actions = [];
+  let currentRole = null;
+  let currentAction = null;
+  let inNodes = false;
+
+  for (const raw of lines) {
+    const line = raw.replace(/\t/g, '  ');
+    const trimmed = line.trim();
+
+    if (trimmed === '## Nodes') { inNodes = true; continue; }
+    if (trimmed.startsWith('## ') && trimmed !== '## Nodes') { inNodes = false; }
+
+    if (inNodes && trimmed.startsWith('- ')) {
+      nodes.push(trimmed.slice(2).trim());
+      continue;
+    }
+
+    // Role headers: *Employee*, *Manager*, *HR*
+    const roleMatch = trimmed.match(/^\*(\w+)\*$/);
+    if (roleMatch) {
+      currentRole = roleMatch[1];
+      continue;
+    }
+
+    // Action headers: ### Name
+    if (trimmed.startsWith('### ')) {
+      currentAction = { name: trimmed.slice(4).trim(), role: currentRole, steps: [] };
+      actions.push(currentAction);
+      continue;
+    }
+
+    // Step: - from: X
+    if (trimmed.startsWith('- from:') && currentAction) {
+      currentAction.steps.push({ from: trimmed.slice(7).trim(), to: '', desc: '' });
+      continue;
+    }
+    if (trimmed.startsWith('- to:') && currentAction && currentAction.steps.length) {
+      currentAction.steps[currentAction.steps.length - 1].to = trimmed.slice(5).trim();
+      continue;
+    }
+    if (trimmed.startsWith('- desc:') && currentAction && currentAction.steps.length) {
+      currentAction.steps[currentAction.steps.length - 1].desc = trimmed.slice(7).trim();
+      continue;
+    }
+  }
+
+  return { nodes, actions };
+}
+
+// ─────────────────────────────────────────────
+// 2. Render a single action as an SVG diagram
+// ─────────────────────────────────────────────
+function renderDiagram(nodes, action) {
+  // Only keep nodes that appear in this action
+  const usedSet = new Set();
+  action.steps.forEach(s => { usedSet.add(s.from); usedSet.add(s.to); });
+  const usedNodes = nodes.filter(n => usedSet.has(n));
+  const nodeIdx = {};
+  usedNodes.forEach((n, i) => nodeIdx[n] = i);
+
+  const COL_W = 160;
+  const ROW_H = 52;
+  const HEAD_H = 60;
+  const PAD_X = 48;
+  const PAD_Y = 16;
+  const FONT = "'Inter', sans-serif";
+  const MONO = "'JetBrains Mono', monospace";
+
+  const totalW = usedNodes.length * COL_W + PAD_X * 2;
+  const totalH = HEAD_H + action.steps.length * ROW_H + PAD_Y * 2 + 24;
+
+  const colX = (i) => PAD_X + i * COL_W + COL_W / 2;
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">`;
+
+  // Defs: arrowheads
+  svg += `<defs>
+    <marker id="ah-${action.name.replace(/\s/g,'')}" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3.5 L0,7" fill="#4f46e5"/>
+    </marker>
+    <marker id="ah-ret-${action.name.replace(/\s/g,'')}" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3.5 L0,7" fill="#10b981"/>
+    </marker>
+    <marker id="ah-self-${action.name.replace(/\s/g,'')}" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3.5 L0,7" fill="#f59e0b"/>
+    </marker>
+  </defs>`;
+
+  // Background
+  svg += `<rect width="${totalW}" height="${totalH}" fill="none" rx="8"/>`;
+
+  // Node headers
+  usedNodes.forEach((n, i) => {
+    const x = colX(i);
+    svg += `<rect x="${x - 54}" y="${PAD_Y}" width="108" height="34" rx="8" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1"/>`;
+    svg += `<text x="${x}" y="${PAD_Y + 21}" text-anchor="middle" fill="#374151" font-family="${FONT}" font-size="12" font-weight="600">${escHtml(n)}</text>`;
+  });
+
+  // Lifelines
+  const lineStartY = PAD_Y + 42;
+  const lineEndY = totalH - 8;
+  usedNodes.forEach((n, i) => {
+    const x = colX(i);
+    svg += `<line x1="${x}" y1="${lineStartY}" x2="${x}" y2="${lineEndY}" stroke="#d1d5db" stroke-width="1" stroke-dasharray="5,4"/>`;
+  });
+
+  // Steps
+  action.steps.forEach((step, si) => {
+    const fi = nodeIdx[step.from];
+    const ti = nodeIdx[step.to];
+    if (fi === undefined || ti === undefined) return;
+
+    const y = HEAD_H + PAD_Y + si * ROW_H + 20;
+    const x1 = colX(fi);
+    const x2 = colX(ti);
+
+    if (fi === ti) {
+      // Self-call
+      const loopW = 32;
+      const loopH = 20;
+      const markerId = `ah-self-${action.name.replace(/\s/g,'')}`;
+      svg += `<path d="M${x1},${y} h${loopW} v${loopH} h-${loopW}" fill="none" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#${markerId})"/>`;
+      svg += `<text x="${x1 + loopW + 6}" y="${y + loopH / 2 + 4}" fill="#4b5563" font-family="${MONO}" font-size="10">${escHtml(truncate(step.desc, 80))}</text>`;
+    } else {
+      // Determine direction and if it's a "return" arrow
+      const isReturn = step.desc.startsWith('Return') || step.desc.startsWith('Confirm') || step.desc.startsWith('200 ') || step.desc.startsWith('201 ') || step.desc.startsWith('SecurityContext');
+      const color = isReturn ? '#10b981' : '#4f46e5';
+      const dash = isReturn ? ' stroke-dasharray="6,3"' : '';
+      const markerId = isReturn
+        ? `ah-ret-${action.name.replace(/\s/g,'')}`
+        : `ah-${action.name.replace(/\s/g,'')}`;
+
+      const dir = fi < ti ? 1 : -1;
+      const gap = 12 * dir;
+
+      svg += `<line x1="${x1 + gap}" y1="${y}" x2="${x2 - gap}" y2="${y}" stroke="${color}" stroke-width="1.5"${dash} marker-end="url(#${markerId})"/>`;
+
+      // Label
+      const midX = (x1 + x2) / 2;
+      const maxLen = Math.max(Math.abs(ti - fi) * 20, 30);
+      svg += `<text x="${midX}" y="${y - 7}" text-anchor="middle" fill="#4b5563" font-family="${MONO}" font-size="10">${escHtml(truncate(step.desc, maxLen))}</text>`;
+    }
+  });
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function truncate(s, maxChars) {
+  if (!maxChars || maxChars < 10) maxChars = 50;
+  return s.length > maxChars ? s.slice(0, maxChars - 1) + '…' : s;
+}
+
+// ─────────────────────────────────────────────
+// 3. Build the page
+// ─────────────────────────────────────────────
+function downloadSVGAsPNG(svgElement, filename) {
+  const svgData = new XMLSerializer().serializeToString(svgElement);
+  const canvas = document.createElement("canvas");
+  
+  const img = new Image();
+  img.onload = function() {
+    canvas.width = svgElement.width.baseVal.value;
+    canvas.height = svgElement.height.baseVal.value;
+    const ctx = canvas.getContext("2d");
+    
+    // fill background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.download = filename + ".png";
+    a.href = url;
+    a.click();
+  };
+  img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+}
+
+async function main() {
+  const loadingEl = document.getElementById('loading');
+  const wrapperEl = document.getElementById('diagramsWrapper');
+  const navEl     = document.getElementById('navTabs');
+
+  try {
+    const resp = await fetch('sequence-diagram.md');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const { nodes, actions } = parseMd(text);
+
+    loadingEl.remove();
+
+    // Group actions by role
+    const roles = [];
+    const roleMap = {};
+    actions.forEach(a => {
+      if (!roleMap[a.role]) { roleMap[a.role] = []; roles.push(a.role); }
+      roleMap[a.role].push(a);
+    });
+
+    // Build tabs ("All" + each action)
+    const allTab = document.createElement('div');
+    allTab.className = 'nav-tab active';
+    allTab.textContent = 'All';
+    allTab.dataset.target = 'all';
+    navEl.appendChild(allTab);
+
+    actions.forEach((a, i) => {
+      const tab = document.createElement('div');
+      tab.className = 'nav-tab';
+      tab.textContent = a.name;
+      tab.dataset.target = `action-${i}`;
+      navEl.appendChild(tab);
+    });
+
+    // Build diagram cards
+    actions.forEach((a, i) => {
+      const section = document.createElement('div');
+      section.className = 'diagram-section visible';
+      section.id = `action-${i}`;
+
+      const roleClass = (a.role || '').toLowerCase();
+
+      section.innerHTML = `
+        <div class="diagram-card">
+          <div class="diagram-title">
+            <span class="role-badge ${roleClass}">${escHtml(a.role || '')}</span>
+            <h3>${escHtml(a.name)}</h3>
+            <div class="diagram-actions">
+              <button class="download-btn" onclick="downloadSVGAsPNG(this.closest('.diagram-card').querySelector('svg'), '${escHtml(a.name).replace(/\s+/g, '_')}')">Download PNG</button>
+            </div>
+          </div>
+          <div class="diagram-body">${renderDiagram(nodes, a)}</div>
+        </div>`;
+
+      wrapperEl.appendChild(section);
+    });
+
+    // Tab switching
+    navEl.addEventListener('click', e => {
+      const tab = e.target.closest('.nav-tab');
+      if (!tab) return;
+      navEl.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const target = tab.dataset.target;
+      wrapperEl.querySelectorAll('.diagram-section').forEach(s => {
+        s.classList.toggle('visible', target === 'all' || s.id === target);
+      });
+    });
+
+  } catch (err) {
+    loadingEl.innerHTML = `<div style="color:#e86c6c">Failed to load: ${escHtml(err.message)}</div>
+      <div style="margin-top:12px;color:var(--text-muted);font-size:13px">
+        Make sure <code>sequence-diagram.md</code> is in the same directory and served over HTTP.
+      </div>`;
+  }
+}
+
+main();
+</script>
+</body>
+</html>
