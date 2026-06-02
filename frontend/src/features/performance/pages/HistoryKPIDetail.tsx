@@ -7,6 +7,7 @@ import {
   type KpiResultSummary,
   type KpiStandard,
 } from '../api';
+import { formatRatingScale } from '../ratingScale';
 import { CurrentKpiStandardsContent } from './CurrentKPI';
 
 function isAbortError(error: unknown) {
@@ -220,7 +221,7 @@ export function HistoryKpiResultsContent({
           label="績效總分"
           value={formatValue(scoreSummary?.performance_score ?? result.performance_score)}
           subLabel="績效等級"
-          subValue={result.final_grade ?? '-'}
+          subValue={formatRatingScale(result.final_grade)}
           accent
         />
         <ResultSummaryCard
@@ -230,7 +231,7 @@ export function HistoryKpiResultsContent({
           subValue={formatValue(result.weighted_score)}
         />
         <ResultSummaryCard
-          label="主管評核"
+          label="問卷分數"
           value={formatValue(scoreSummary?.manager_review_score ?? result.review_score)}
           subLabel="主管評語"
           subValue={result.manager_evaluation?.comment ?? '-'}

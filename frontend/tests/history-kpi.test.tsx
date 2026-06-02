@@ -39,7 +39,7 @@ const result: KpiResultSummary = {
   },
   weighted_score: 61.9,
   review_score: 92,
-  final_grade: 'A',
+  final_grade: 'meets_expectations',
   manager_evaluation: {
     score: 92,
     comment: '整體表現優異。',
@@ -128,7 +128,7 @@ describe('employee historical KPI pages', () => {
     expect(await screen.findByText('2024 Q4 年度終考')).toBeInTheDocument();
     expect(screen.getByText('考核區間：2024-10-01 至 2024-12-31')).toBeInTheDocument();
     expect(screen.getByText('94.5')).toBeInTheDocument();
-    expect(screen.getByText('A')).toBeInTheDocument();
+    expect(screen.getByText('符合預期')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /查看詳情/i })).toHaveAttribute(
       'href',
       '/performance/history/cycle_2024_q4',
@@ -220,6 +220,8 @@ describe('employee historical KPI pages', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '考核結果' }));
     expect(await screen.findByText('94.5')).toBeInTheDocument();
+    expect(screen.getByText('符合預期')).toBeInTheDocument();
+    expect(screen.getByText('問卷分數')).toBeInTheDocument();
     expect(screen.getAllByText('103.2%')).toHaveLength(2);
     expect(screen.getByText('(實際值: 98% / 目標值: 95%)')).toBeInTheDocument();
     expect(screen.getByText('已完成驗收並達成品質門檻。')).toBeInTheDocument();

@@ -42,7 +42,7 @@ const result: KpiResultSummary = {
   },
   weighted_score: 50,
   review_score: 88,
-  final_grade: 'A',
+  final_grade: 'exceeds_expectations',
   manager_evaluation: {
     score: 88,
     comment: '技術執行力強。',
@@ -151,6 +151,8 @@ describe('CurrentKpiStandardsContent', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '考核結果' }));
     expect(await screen.findByText('94.5')).toBeInTheDocument();
+    expect(screen.getByText('超出預期')).toBeInTheDocument();
+    expect(screen.getByText('問卷分數')).toBeInTheDocument();
   });
 
   it('renders empty KPI states when the current KPI cycle is missing', async () => {
@@ -234,6 +236,8 @@ describe('CurrentKpiStandardsContent', () => {
     );
 
     expect(screen.getByText('94.5')).toBeInTheDocument();
+    expect(screen.getByText('超出預期')).toBeInTheDocument();
+    expect(screen.getByText('問卷分數')).toBeInTheDocument();
     expect(screen.getAllByText('125%')).toHaveLength(2);
     expect(screen.getByText('核心產品開發進度')).toBeInTheDocument();
     expect(screen.getByText('(實際值: 5 / 目標值: 4)')).toBeInTheDocument();

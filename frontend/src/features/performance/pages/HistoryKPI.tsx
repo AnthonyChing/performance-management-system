@@ -7,6 +7,7 @@ import {
   type EmployeePagination,
   type KpiResultSummary,
 } from '../api';
+import { formatRatingScale, getRatingScaleClass } from '../ratingScale';
 
 const PAGE_SIZE = 10;
 
@@ -46,14 +47,6 @@ function formatDateRange(start: string | null | undefined, end: string | null | 
 function formatScore(value: number | null | undefined) {
   if (value === null || value === undefined) return '-';
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
-
-function getGradeClass(grade: string | null | undefined) {
-  if (!grade) return 'bg-slate-100 text-slate-600';
-  if (grade.startsWith('A')) return 'bg-green-100 text-green-700';
-  if (grade.startsWith('B')) return 'bg-indigo-100 text-indigo-700';
-  if (grade.startsWith('C')) return 'bg-orange-100 text-orange-700';
-  return 'bg-slate-100 text-slate-600';
 }
 
 export default function HistoryKPI() {
@@ -188,9 +181,9 @@ export function HistoryKpiContent({
                 <div className="text-center">
                   <p className="text-xs text-slate-500 font-medium mb-1">最終等級</p>
                   <span
-                    className={`inline-flex items-center justify-center px-4 py-1 rounded-full text-lg font-bold ${getGradeClass(item.final_grade)}`}
+                    className={`inline-flex items-center justify-center px-4 py-1 rounded-full text-lg font-bold ${getRatingScaleClass(item.final_grade)}`}
                   >
-                    {item.final_grade ?? '-'}
+                    {formatRatingScale(item.final_grade)}
                   </span>
                 </div>
 
