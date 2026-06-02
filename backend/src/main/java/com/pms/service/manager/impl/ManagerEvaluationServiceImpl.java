@@ -16,6 +16,7 @@ import com.pms.entity.KpiEvaluation;
 import com.pms.entity.PerformanceReview;
 import com.pms.entity.ReviewResponse;
 import com.pms.entity.TemplateQuestion;
+import com.pms.entity.TemplateVersion;
 import com.pms.entity.User;
 import com.pms.entity.enums.RatingScale;
 import com.pms.entity.enums.ReviewStatus;
@@ -30,6 +31,7 @@ import com.pms.repository.PerformanceCycleRepository;
 import com.pms.repository.PerformanceReviewRepository;
 import com.pms.repository.ReviewResponseRepository;
 import com.pms.repository.TemplateQuestionRepository;
+import com.pms.repository.TemplateVersionRepository;
 import com.pms.repository.UserRepository;
 import com.pms.service.manager.ManagerEvaluationService;
 import java.time.OffsetDateTime;
@@ -59,6 +61,7 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     private final EvaluationTemplateRepository evalTemplateRepo;
     private final EvaluationTemplateComponentRepository componentRepo;
     private final TemplateQuestionRepository templateQuestionRepo;
+    private final TemplateVersionRepository templateVersionRepo;
 
     @Override
     @Transactional
@@ -313,50 +316,19 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
     }
 
     private List<TemplateQuestion> resolveQuestionsForReview(PerformanceReview review) {
+        if (review.getTemplateVersionId() != null) {
+            List<TemplateQuestion> assignedQuestions = resolveQuestionsFromAssignedVersion(review);
+            if (!assignedQuestions.isEmpty()) {
+                return assignedQuestions;
+            }
+        }
+
         User employee = userRepo.findById(review.getEmployeeId()).orElse(null);
         if (employee == null) {
             return Collections.emptyList();
         }
 
-        List<EvaluationTemplate> templates =
-                evalTemplateRepo.findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(
-                        review.getCycleId());
-
-        EvaluationTemplate matched = null;
-
-        if (employee.getDepartmentId() != null) {
-            String deptRef = employee.getDepartmentId().toString();
-            matched =
-                    templates.stream()
-                            .filter(
-                                    t ->
-                                            "department".equals(t.getEmployeeGroupType())
-                                                    && deptRef.equalsIgnoreCase(
-                                                            t.getEmployeeGroupRef()))
-                            .findFirst()
-                            .orElse(null);
-        }
-
-        if (matched == null && employee.getJobCategory() != null) {
-            matched =
-                    templates.stream()
-                            .filter(
-                                    t ->
-                                            "job_category".equals(t.getEmployeeGroupType())
-                                                    && employee.getJobCategory()
-                                                            .equalsIgnoreCase(
-                                                                    t.getEmployeeGroupRef()))
-                            .findFirst()
-                            .orElse(null);
-        }
-
-        if (matched == null) {
-            matched =
-                    templates.stream()
-                            .filter(t -> "all".equals(t.getEmployeeGroupType()))
-                            .findFirst()
-                            .orElse(null);
-        }
+        EvaluationTemplate matched = resolveEvaluationTemplate(review, employee);
 
         if (matched == null) {
             return Collections.emptyList();
@@ -371,6 +343,42 @@ public class ManagerEvaluationServiceImpl implements ManagerEvaluationService {
                             comp.getAssessmentTemplateId()));
         }
         return questions;
+    }
+
+    private List<TemplateQuestion> resolveQuestionsFromAssignedVersion(PerformanceReview review) {
+        return templateVersionRepo
+                .findById(review.getTemplateVersionId())
+                .map(TemplateVersion::getTemplateId)
+                .map(templateQuestionRepo::findByTemplateIdAndDeletedAtIsNullOrderBySortOrderAsc)
+                .orElseGet(Collections::emptyList);
+    }
+
+    private EvaluationTemplate resolveEvaluationTemplate(PerformanceReview review, User employee) {
+        if (employee.getDepartmentId() != null) {
+            EvaluationTemplate matched =
+                    evalTemplateRepo
+                            .findActivePublishedForGroup(
+                                    review.getCycleId(),
+                                    "department",
+                                    employee.getDepartmentId().toString())
+                            .orElse(null);
+            if (matched != null) {
+                return matched;
+            }
+        }
+
+        if (employee.getJobCategory() != null) {
+            EvaluationTemplate matched =
+                    evalTemplateRepo
+                            .findActivePublishedForGroup(
+                                    review.getCycleId(), "job_category", employee.getJobCategory())
+                            .orElse(null);
+            if (matched != null) {
+                return matched;
+            }
+        }
+
+        return evalTemplateRepo.findActivePublishedForAll(review.getCycleId()).orElse(null);
     }
 
     private PerformanceReview getReviewAndValidate(

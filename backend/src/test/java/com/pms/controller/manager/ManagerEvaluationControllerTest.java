@@ -95,6 +95,14 @@ class ManagerEvaluationControllerTest {
                 EVAL_TEMPLATE_ID,
                 ASSESSMENT_TEMPLATE_ID,
                 TEMPLATE_VERSION_ID);
+        jdbc.update(
+                """
+                UPDATE performance_reviews
+                SET template_version_id = ?::uuid
+                WHERE id = ?::uuid
+                """,
+                TEMPLATE_VERSION_ID,
+                EVALUATION_ID_WRONG_STAGE);
     }
 
     @BeforeEach
@@ -125,6 +133,18 @@ class ManagerEvaluationControllerTest {
 
     @Test
     @Order(2)
+    void getQuestionnaire_usesTemplateVersionAssignedToReview() {
+        given().when()
+                .get("/" + USER_ID + "/evaluations/" + EVALUATION_ID_WRONG_STAGE + "/questionnaire")
+                .then()
+                .statusCode(200)
+                .body("review_id", equalTo(EVALUATION_ID_WRONG_STAGE))
+                .body("questions.size()", equalTo(1))
+                .body("questions[0].question_id", equalTo(QUESTION_ID));
+    }
+
+    @Test
+    @Order(3)
     void getQuestionnaire_forNonSubordinate_returns403() {
         given().when()
                 .get(
@@ -139,7 +159,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void submitEvaluation_whenNotAuthorized_returns403() {
         String body =
                 """
@@ -159,7 +179,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void submitEvaluation_whenEvaluationNotFound_returns404() {
         String body =
                 """
@@ -179,7 +199,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     void getEvaluationHistory_returnsHistoricalEvaluations() {
         given().when()
                 .get("/" + USER_ID + "/evaluations")
@@ -190,7 +210,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     void getEvaluationHistory_withCycleIdFilter_returnsFilteredHistory() {
         given().queryParam("cycle_id", "123e4567-e89b-12d3-a456-426614174001")
                 .when()
@@ -201,7 +221,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(7)
+    @Order(8)
     void getEvaluationHistory_forNonSubordinate_returns403() {
         given().when()
                 .get("/" + NON_SUBORDINATE_USER_ID + "/evaluations")
@@ -211,7 +231,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(8)
+    @Order(9)
     void getEvaluationHistory_forNonExistentUser_returns404() {
         given().when()
                 .get("/00000000-0000-0000-0000-000000000000/evaluations")
@@ -221,7 +241,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(9)
+    @Order(10)
     void submitEvaluation_withMissingRequiredResponse_returns400() {
         String body =
                 """
@@ -242,7 +262,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     void submitEvaluation_whenNotInEvalStage_returns409() {
         String body =
                 """
@@ -262,7 +282,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(11)
+    @Order(12)
     void saveInProgressEvaluation_returnsInProgressStatus() {
         String body =
                 """
@@ -287,7 +307,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(12)
+    @Order(13)
     void updateQuestionnaire_returnsSavedQuestionnaire() {
         String body =
                 """
@@ -314,7 +334,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(13)
+    @Order(14)
     void updateKpiEvaluation_returnsUpdatedEvaluation() {
         String body =
                 """
@@ -340,7 +360,7 @@ class ManagerEvaluationControllerTest {
     }
 
     @Test
-    @Order(14)
+    @Order(15)
     void submitEvaluation_returnsCompletedEvaluation() {
         String body =
                 """

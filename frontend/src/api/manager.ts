@@ -35,7 +35,7 @@ export interface EvaluationQuestion {
   id: string;
   question_text: string;
   question_type: QuestionType;
-  rating_scale_max: number | null;
+  rating_scale_max?: number | null;
   is_required: boolean;
   sort_order: number;
 }
@@ -44,7 +44,7 @@ interface QuestionnaireQuestionApi {
   question_id: string;
   question_text: string;
   question_type: QuestionType;
-  rating_scale_max: number | null;
+  rating_scale_max?: number | null;
   is_required: boolean;
   sort_order: number;
 }
@@ -58,8 +58,8 @@ interface ManagerQuestionnaireResponse {
 
 export interface KpiEvaluationItem {
   kpi_id: string;
-  manager_score: number | null;
-  manager_feedback: string | null;
+  manager_score?: number | null;
+  manager_feedback?: string | null;
 }
 
 export interface SubordinateGoal {
@@ -103,9 +103,9 @@ export interface ReviewResponse {
   id: string;
   question_id: string;
   respondent_type: string;
-  rating_value: number | null;
-  text_value: string | null;
-  boolean_value: boolean | null;
+  rating_value?: number | null;
+  text_value?: string | null;
+  boolean_value?: boolean | null;
   responded_at: string;
 }
 
@@ -139,9 +139,9 @@ export interface EvaluationHistoryItem {
   employee_id: string;
   manager_id: string;
   status: ReviewStatus;
-  final_rating: RatingScale | null;
+  final_rating?: RatingScale | null;
   cycle_name?: string | null;
-  manager_comment: string | null;
+  manager_comment?: string | null;
   kpi_score?: number | null;
   review_score?: number | null;
   score_computed_at?: string | null;
@@ -240,6 +240,18 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || isString(value);
 }
 
+function isOptionalNullableNumber(value: unknown): value is number | null | undefined {
+  return value === undefined || value === null || isNumber(value);
+}
+
+function isOptionalNullableString(value: unknown): value is string | null | undefined {
+  return value === undefined || value === null || isString(value);
+}
+
+function isOptionalNullableBoolean(value: unknown): value is boolean | null | undefined {
+  return value === undefined || value === null || typeof value === 'boolean';
+}
+
 function isKpiAssignment(value: unknown): value is KpiAssignment {
   return (
     isRecord(value) &&
@@ -293,9 +305,9 @@ function isReviewResponse(value: unknown): value is ReviewResponse {
     isString(value.id) &&
     isString(value.question_id) &&
     isString(value.respondent_type) &&
-    (value.rating_value === null || isNumber(value.rating_value)) &&
-    (value.text_value === undefined || isNullableString(value.text_value)) &&
-    (value.boolean_value === null || typeof value.boolean_value === 'boolean') &&
+    isOptionalNullableNumber(value.rating_value) &&
+    isOptionalNullableString(value.text_value) &&
+    isOptionalNullableBoolean(value.boolean_value) &&
     isString(value.responded_at)
   );
 }
@@ -306,7 +318,7 @@ function isQuestionnaireQuestionApi(value: unknown): value is QuestionnaireQuest
     isString(value.question_id) &&
     isString(value.question_text) &&
     isString(value.question_type) &&
-    (value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
+    isOptionalNullableNumber(value.rating_scale_max) &&
     typeof value.is_required === 'boolean' &&
     isNumber(value.sort_order)
   );
@@ -359,8 +371,8 @@ function isKpiEvaluationItem(value: unknown): value is KpiEvaluationItem {
   return (
     isRecord(value) &&
     isString(value.kpi_id) &&
-    (value.manager_score === null || isNumber(value.manager_score)) &&
-    (value.manager_feedback === undefined || isNullableString(value.manager_feedback))
+    isOptionalNullableNumber(value.manager_score) &&
+    isOptionalNullableString(value.manager_feedback)
   );
 }
 
@@ -370,7 +382,7 @@ function isEvaluationQuestion(value: unknown): value is EvaluationQuestion {
     isString(value.id) &&
     isString(value.question_text) &&
     isString(value.question_type) &&
-    (value.rating_scale_max === null || isNumber(value.rating_scale_max)) &&
+    isOptionalNullableNumber(value.rating_scale_max) &&
     typeof value.is_required === 'boolean' &&
     isNumber(value.sort_order)
   );
@@ -385,9 +397,9 @@ function isEvaluationHistoryItem(value: unknown): value is EvaluationHistoryItem
     isString(value.manager_id) &&
     isString(value.status) &&
     reviewStatuses.has(value.status as ReviewStatus) &&
-    (value.final_rating === null || isString(value.final_rating)) &&
+    (value.final_rating === undefined || value.final_rating === null || isString(value.final_rating)) &&
     (value.cycle_name === undefined || value.cycle_name === null || isString(value.cycle_name)) &&
-    (value.manager_comment === undefined || isNullableString(value.manager_comment)) &&
+    isOptionalNullableString(value.manager_comment) &&
     (value.kpi_score === undefined || value.kpi_score === null || isNumber(value.kpi_score)) &&
     (value.review_score === undefined || value.review_score === null || isNumber(value.review_score)) &&
     (value.score_computed_at === undefined || isNullableString(value.score_computed_at)) &&
@@ -737,7 +749,7 @@ export function getQuestionnaire(
       id: question.question_id,
       question_text: question.question_text,
       question_type: question.question_type,
-      rating_scale_max: question.rating_scale_max,
+      rating_scale_max: question.rating_scale_max ?? null,
       is_required: question.is_required,
       sort_order: question.sort_order,
     })),
