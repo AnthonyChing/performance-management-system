@@ -559,6 +559,7 @@ export function updateGoal(
     title?: string;
     description?: string;
     due_date?: string | null;
+    manager_comment?: string;
   },
   options?: ManagerApiOptions,
 ): Promise<SubordinateGoal> {
