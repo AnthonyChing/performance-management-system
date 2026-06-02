@@ -68,8 +68,7 @@ class HrEvaluationTemplateControllerTest {
 
     private void cleanUp() {
         jdbc.update(
-                "DELETE FROM performance_reviews WHERE cycle_id = ?::uuid",
-                NOT_STARTED_CYCLE_ID);
+                "DELETE FROM performance_reviews WHERE cycle_id = ?::uuid", NOT_STARTED_CYCLE_ID);
         // Delete components first (FK child), then templates
         jdbc.update(
                 """

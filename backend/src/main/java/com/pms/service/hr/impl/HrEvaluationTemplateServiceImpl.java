@@ -419,8 +419,7 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
 
         for (User employee : employees) {
             reviewRepo
-                    .findByCycleIdAndEmployeeId(
-                            evaluationTemplate.getCycleId(), employee.getId())
+                    .findByCycleIdAndEmployeeId(evaluationTemplate.getCycleId(), employee.getId())
                     .ifPresentOrElse(
                             review -> moveToPendingManagerEvalIfStillBeforeManagerPhase(review),
                             () ->
