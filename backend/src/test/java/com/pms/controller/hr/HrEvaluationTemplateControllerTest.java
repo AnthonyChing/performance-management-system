@@ -297,7 +297,8 @@ class HrEvaluationTemplateControllerTest {
 
     @Test
     void createEvaluationTemplate_existingReviewInSelfEval_movesToPendingManagerEval() {
-        // c1 has pending_self_eval → should be advanced; c2 has manager_eval_in_progress → unchanged
+        // c1 has pending_self_eval → should be advanced; c2 has manager_eval_in_progress →
+        // unchanged
         String c1 = "00000000-0000-0000-0000-0000000000c1";
         String c2 = "00000000-0000-0000-0000-0000000000c2";
         String managerId = "00000000-0000-0000-0000-0000000000b1";
