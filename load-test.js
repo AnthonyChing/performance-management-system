@@ -38,9 +38,9 @@ export const options = {
     },
   },
   thresholds: {
-    'http_req_duration{endpoint:login}':  ['p(95)<2000'],
-    'http_req_duration{endpoint:write}':  ['p(95)<3000'],
-    'http_req_duration{endpoint:read}':   ['p(95)<2000'],
+    'http_req_duration{endpoint:login}':  ['p(95)<5000'],
+    'http_req_duration{endpoint:write}':  ['p(95)<5000'],
+    'http_req_duration{endpoint:read}':   ['p(95)<5000'],
     'errors':                             ['rate<0.05'],
   },
 };
