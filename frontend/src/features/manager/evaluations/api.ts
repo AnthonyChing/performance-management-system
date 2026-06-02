@@ -113,15 +113,14 @@ export async function loadMemberEvaluationWorkspace(
   teamName: string,
   cycleId?: string,
 ): Promise<MemberEvaluationWorkspace | null> {
-  const [{ data: evaluations }, { data: kpis }] = await Promise.all([
-    listEvaluations(member.id, cycleId ? { cycle_id: cycleId } : {}),
-    listKpis(member.id, cycleId ? { cycle_id: cycleId } : {}),
-  ]);
+  const { data: evaluations } = await listEvaluations(member.id, cycleId ? { cycle_id: cycleId } : {});
 
   const evaluation = pickCurrentEvaluation(evaluations);
   if (!evaluation) {
     return null;
   }
+
+  const { data: kpis } = await listKpis(member.id, { cycle_id: evaluation.cycle_id });
 
   let questionnaireQuestions: EvaluationHistoryItem['questions'] = evaluation.questions;
   try {

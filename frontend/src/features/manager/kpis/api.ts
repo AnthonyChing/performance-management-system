@@ -6,6 +6,7 @@ import {
   deleteKpi,
 } from '../../../api/manager';
 import type { SubordinateKpi } from '../../../api/manager';
+import { getCurrentPerformanceCycle } from '../../../api/employee';
 
 export interface Subordinate {
   id: string;
@@ -71,8 +72,25 @@ export async function loadSubordinates(): Promise<Subordinate[]> {
 
 export async function loadKpisForEmployee(userId: string): Promise<KpiCriterion[]> {
   try {
-    const res = await listKpis(userId);
-    return res.data.map(mapKpi);
+    // Use the current active cycle so we never load KPIs from locked old cycles
+    let cycleId: string | undefined;
+    try {
+      const { cycle } = await getCurrentPerformanceCycle();
+      cycleId = cycle.cycle_id;
+    } catch {
+      // No active cycle or network error; fall through to unfiltered load
+    }
+
+    const res = await listKpis(userId, cycleId ? { cycle_id: cycleId } : {});
+    const kpis = res.data.map(mapKpi);
+
+    // Fallback: no active cycle found, keep only the most recent cycle's KPIs
+    if (!cycleId && kpis.length > 0) {
+      const latestCycleId = kpis[0].cycleId;
+      return kpis.filter((k) => k.cycleId === latestCycleId);
+    }
+
+    return kpis;
   } catch {
     console.error('Failed to load KPIs for', userId);
     return [];
