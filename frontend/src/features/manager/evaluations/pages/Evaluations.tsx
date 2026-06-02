@@ -10,6 +10,7 @@ import {
   loadTeamEvaluationStatuses,
   submitKpiEvaluation,
   submitQuestionnaireEvaluation,
+  updateKpi,
 } from '../api';
 import type {
   KpiEvaluationDraft,
@@ -195,6 +196,18 @@ export default function Evaluations() {
     );
   };
 
+  const saveKpiCurrentValues = async (memberId: string) => {
+    await Promise.all(
+      kpiDrafts
+        .filter((draft) => draft.current_value !== '')
+        .map((draft) =>
+          updateKpi(memberId, draft.kpi_id, {
+            current_value: Number(draft.current_value),
+          }),
+        ),
+    );
+  };
+
   const handleSaveQuestionnaire = async () => {
     if (!workspace || !workspace.editable) return;
 
@@ -233,23 +246,21 @@ export default function Evaluations() {
     setActionMessage(null);
 
     try {
+      await saveKpiCurrentValues(workspace.member.id);
       await submitKpiEvaluation(workspace.member.id, workspace.evaluation.id, {
         status: 'manager_eval_in_progress',
         manager_comment: managerComment || undefined,
-        kpi_evaluations: kpiDrafts
-          .filter((draft) => draft.manager_score !== '')
-          .map((draft) => ({
-            kpi_id: draft.kpi_id,
-            manager_score: Number(draft.manager_score),
-            manager_feedback: draft.manager_feedback || undefined,
-          })),
+        kpi_evaluations: kpiDrafts.map((draft) => ({
+          kpi_id: draft.kpi_id,
+          manager_feedback: draft.manager_feedback || undefined,
+        })),
       });
-      setActionMessage('KPI 評分已暫存。');
+      setActionMessage('KPI 目前數值已暫存。');
       await refreshWorkspace(workspace.member.id);
       await refreshStatuses();
     } catch (error) {
       if (error instanceof ApiRequestError && error.code === 'STATE_CONFLICT') {
-        setActionError('目前不在主管評核階段，無法儲存 KPI 評分。');
+        setActionError('目前不在主管評核階段，無法儲存 KPI 目前數值。');
       } else {
         setActionError(error instanceof ApiRequestError ? error.message : 'KPI 暫存失敗');
       }
@@ -282,10 +293,10 @@ export default function Evaluations() {
       return;
     }
 
-    const incompleteKpis = kpiDrafts.filter((draft) => draft.manager_score === '');
+    const incompleteKpis = kpiDrafts.filter((draft) => draft.current_value === '');
     if (workspace.kpis.length > 0 && incompleteKpis.length > 0) {
       setActiveTab('kpis');
-      setActionError('提交前請完成所有 KPI 評分。');
+      setActionError('提交前請完成所有 KPI 目前數值。');
       return;
     }
 
@@ -297,13 +308,13 @@ export default function Evaluations() {
       await submitQuestionnaireEvaluation(workspace.member.id, workspace.evaluation.id, {
         responses: toQuestionnairePayload(questionnaireDraft),
       });
+      await saveKpiCurrentValues(workspace.member.id);
       await submitKpiEvaluation(workspace.member.id, workspace.evaluation.id, {
         status: 'completed',
         final_rating: finalRating,
         manager_comment: managerComment || undefined,
         kpi_evaluations: kpiDrafts.map((draft) => ({
           kpi_id: draft.kpi_id,
-          manager_score: Number(draft.manager_score),
           manager_feedback: draft.manager_feedback || undefined,
         })),
       });
@@ -328,7 +339,7 @@ export default function Evaluations() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">團隊績效評估</h1>
         <p className="text-slate-500 text-sm mt-1">
-          檢視部屬考核進度，完成問卷評估與 KPI 評分，並遵守各階段鎖定規則。
+          檢視部屬考核進度，完成問卷評估與 KPI 目前數值，並遵守各階段鎖定規則。
         </p>
       </div>
 
@@ -445,7 +456,7 @@ export default function Evaluations() {
                 <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-200">
                   {[
                     { id: 'questionnaire' as const, label: '問卷評估' },
-                    { id: 'kpis' as const, label: 'KPI 評分與總結' },
+                    { id: 'kpis' as const, label: 'KPI 數值與總結' },
                   ].map((tab) => (
                     <button
                       key={tab.id}

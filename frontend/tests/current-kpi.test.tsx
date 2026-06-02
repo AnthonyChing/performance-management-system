@@ -150,8 +150,8 @@ describe('CurrentKpiStandardsContent', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '考核結果' }));
-    expect(await screen.findByText('94.5')).toBeInTheDocument();
-    expect(screen.getByText('超出預期')).toBeInTheDocument();
+    expect(await screen.findByText('超出預期')).toBeInTheDocument();
+    expect(screen.queryByText('94.5')).not.toBeInTheDocument();
     expect(screen.getByText('問卷分數')).toBeInTheDocument();
   });
 
@@ -235,7 +235,7 @@ describe('CurrentKpiStandardsContent', () => {
       />,
     );
 
-    expect(screen.getByText('94.5')).toBeInTheDocument();
+    expect(screen.queryByText('94.5')).not.toBeInTheDocument();
     expect(screen.getByText('超出預期')).toBeInTheDocument();
     expect(screen.getByText('問卷分數')).toBeInTheDocument();
     expect(screen.getAllByText('125%')).toHaveLength(2);

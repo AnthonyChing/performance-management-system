@@ -44,11 +44,6 @@ function formatDateRange(start: string | null | undefined, end: string | null | 
   return start ?? end ?? '-';
 }
 
-function formatScore(value: number | null | undefined) {
-  if (value === null || value === undefined) return '-';
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
-
 export default function HistoryKPI() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -153,7 +148,6 @@ export function HistoryKpiContent({
         {results.map((item, index) => {
           const cycle = item.cycle;
           const cycleId = cycle?.cycle_id;
-          const score = item.score_summary?.performance_score ?? item.performance_score;
 
           return (
             <div
@@ -172,12 +166,7 @@ export function HistoryKpiContent({
                 )}
               </div>
 
-              <div className="flex items-center space-x-12">
-                <div className="text-center">
-                  <p className="text-xs text-slate-500 font-medium mb-1">總分</p>
-                  <p className="text-2xl font-bold text-slate-800">{formatScore(score)}</p>
-                </div>
-                <div className="w-px h-12 bg-slate-200"></div>
+              <div className="flex items-center space-x-8">
                 <div className="text-center">
                   <p className="text-xs text-slate-500 font-medium mb-1">最終等級</p>
                   <span

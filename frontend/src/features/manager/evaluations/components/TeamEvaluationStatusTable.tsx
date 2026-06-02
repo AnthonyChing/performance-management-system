@@ -18,7 +18,7 @@ export default function TeamEvaluationStatusTable({
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-slate-100">
         <h2 className="text-sm font-bold text-slate-800">團隊考核狀態</h2>
-        <p className="text-xs text-slate-400 mt-1">點選部屬以進入問卷評估與 KPI 評分</p>
+        <p className="text-xs text-slate-400 mt-1">點選部屬以進入問卷評估與 KPI 數值</p>
       </div>
 
       <div className="divide-y divide-slate-100 max-h-[640px] overflow-y-auto">
