@@ -212,20 +212,24 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                 buildConfirmationDTO(confirmationOpt, review.getId().toString());
 
         OffsetDateTime publishedAt = cycle.getResultsPublishedAt();
+        Double weightedScore = round(totalWeightedScore);
         return KpiResultResponseDTO.builder()
                 .result(
-                        KpiResultSummaryDTO.builder()
-                                .resultId(review.getId().toString())
-                                .cycle(buildCycleSummaryDTO(cycle))
-                                .employee(employeeDTO)
-                                .status(resultStatus)
-                                .publishedAt(publishedAt)
-                                .weightedScore(round(totalWeightedScore))
-                                .kpiResults(kpiResults)
-                                .availableActions(availableActions)
-                                .confirmation(confirmationDTO)
-                                .disputePeriod(disputePeriod)
-                                .updatedAt(review.getUpdatedAt())
+                        addReviewResultFields(
+                                        KpiResultSummaryDTO.builder()
+                                                .resultId(review.getId().toString())
+                                                .cycle(buildCycleSummaryDTO(cycle))
+                                                .employee(employeeDTO)
+                                                .status(resultStatus)
+                                                .publishedAt(publishedAt)
+                                                .weightedScore(weightedScore)
+                                                .kpiResults(kpiResults)
+                                                .availableActions(availableActions)
+                                                .confirmation(confirmationDTO)
+                                                .disputePeriod(disputePeriod)
+                                                .updatedAt(review.getUpdatedAt()),
+                                        review,
+                                        weightedScore)
                                 .build())
                 .build();
     }
@@ -343,42 +347,6 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                 .confirmedBy(
                         buildEmployeeSummaryDTO(
                                 userRepository.findById(conf.getConfirmedBy()).orElse(null)))
-
-        return KpiResultResponseDTO.builder()
-                .result(
-                        addReviewResultFields(
-                                        KpiResultSummaryDTO.builder()
-                                                .resultId(review.getId().toString())
-                                                .cycle(buildCycleSummaryDTO(cycle))
-                                                .employee(employeeDTO)
-                                                .status(resultStatus)
-                                                .publishedAt(publishedAt)
-                                                .weightedScore(round(totalWeightedScore))
-                                                .kpiResults(kpiResults)
-                                                .availableActions(
-                                                        AvailableActionsDTO.builder()
-                                                                .canConfirm(canConfirm)
-                                                                .confirmUnavailableReason(
-                                                                        canConfirm
-                                                                                ? null
-                                                                                : "already_"
-                                                                                        + resultStatus)
-                                                                .canDispute(canDispute)
-                                                                .disputeUnavailableReason(
-                                                                        canDispute
-                                                                                ? null
-                                                                                : disputeStatus
-                                                                                                .equals(
-                                                                                                        "open")
-                                                                                        ? null
-                                                                                        : disputeStatus)
-                                                                .build())
-                                                .confirmation(confirmationDTO)
-                                                .disputePeriod(disputePeriod)
-                                                .updatedAt(review.getUpdatedAt()),
-                                        review,
-                                        round(totalWeightedScore))
-                                .build())
                 .build();
     }
 
