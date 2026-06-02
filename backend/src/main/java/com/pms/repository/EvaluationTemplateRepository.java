@@ -16,6 +16,43 @@ public interface EvaluationTemplateRepository extends JpaRepository<EvaluationTe
 
     List<EvaluationTemplate> findByCycleIdAndDeletedAtIsNullAndArchivedAtIsNull(UUID cycleId);
 
+    @Query(
+            value =
+                    """
+            SELECT * FROM evaluation_templates
+            WHERE cycle_id = :cycleId
+              AND employee_group_type = :employeeGroupType
+              AND employee_group_ref = :employeeGroupRef
+              AND status = 'published'
+              AND is_active = true
+              AND deleted_at IS NULL
+              AND archived_at IS NULL
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """,
+            nativeQuery = true)
+    Optional<EvaluationTemplate> findActivePublishedForGroup(
+            @Param("cycleId") UUID cycleId,
+            @Param("employeeGroupType") String employeeGroupType,
+            @Param("employeeGroupRef") String employeeGroupRef);
+
+    @Query(
+            value =
+                    """
+            SELECT * FROM evaluation_templates
+            WHERE cycle_id = :cycleId
+              AND employee_group_type = 'all'
+              AND employee_group_ref IS NULL
+              AND status = 'published'
+              AND is_active = true
+              AND deleted_at IS NULL
+              AND archived_at IS NULL
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """,
+            nativeQuery = true)
+    Optional<EvaluationTemplate> findActivePublishedForAll(@Param("cycleId") UUID cycleId);
+
     boolean
             existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
                     UUID cycleId, String employeeGroupType, String employeeGroupRef);
