@@ -1,0 +1,339 @@
+# Sequence Diagram
+
+## Nodes
+- User
+- CDN
+- API Gateway
+- IAM
+- Goal Management
+- Review
+- Evaluation
+- Audit
+- DB
+
+## Actions
+
+*Employee*
+
+### Open Page
+- from: User
+	- to: CDN
+	- desc: GET / (request SPA bundle)
+- from: CDN
+	- to: User
+	- desc: Return index.html + JS/CSS assets
+
+### Login
+- from: User
+	- to: API Gateway
+	- desc: POST /api/v1/auth/google { id_token }
+- from: API Gateway
+	- to: IAM
+	- desc: Verify Google ID token via GoogleIdTokenVerifier
+- from: IAM
+	- to: DB
+	- desc: Lookup user_identities by provider + subject; lookup users by email if first login (auto-link)
+- from: DB
+	- to: IAM
+	- desc: Return UserIdentity + User record
+- from: IAM
+	- to: IAM
+	- desc: Generate JWT (userId, roles, expiration)
+- from: IAM
+	- to: Audit
+	- desc: Log LOGIN_GOOGLE action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: IAM
+	- to: API Gateway
+	- desc: Return { access_token, token_type, expires_in, user_id, roles }
+- from: API Gateway
+	- to: User
+	- desc: 200 OK + Set-Cookie: jwt (HttpOnly, Secure, SameSite=Strict)
+
+### View Goals
+- from: User
+	- to: API Gateway
+	- desc: GET /api/v1/me/goals (Authorization: Bearer {jwt})
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token, extracts userId + roles
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with authenticated principal
+- from: API Gateway
+	- to: Goal Management
+	- desc: getGoals(userId, status, q)
+- from: Goal Management
+	- to: DB
+	- desc: Query performance_cycles (find current cycle), goals (by employee + cycle), goal_progress_updates
+- from: DB
+	- to: Goal Management
+	- desc: Return current cycle + goals list with progress
+- from: Goal Management
+	- to: API Gateway
+	- desc: Return CurrentGoalsResponse { cycle, available_actions, summary, goals[] }
+- from: API Gateway
+	- to: User
+	- desc: 200 OK with goals data
+
+### View KPIs
+- from: User
+	- to: API Gateway
+	- desc: GET /api/v1/me/kpis/standards (Authorization: Bearer {jwt})
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set
+- from: API Gateway
+	- to: Review
+	- desc: getKpiStandards(userId)
+- from: Review
+	- to: DB
+	- desc: Query performance_cycles (current), performance_reviews, kpis, kpi_assignments (by user + cycle)
+- from: DB
+	- to: Review
+	- desc: Return cycle + review + KPI standards with assignments
+- from: Review
+	- to: API Gateway
+	- desc: Return KpiStandardsResponseDTO { cycle, employee, standards[] }
+- from: API Gateway
+	- to: User
+	- desc: 200 OK with KPI standards
+
+*Manager*
+
+### Set KPI Standards
+- from: User
+	- to: API Gateway
+	- desc: POST /api/v1/users/{userId}/kpis { title, kpi_type, unit, target_value, ... }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('MANAGER')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_MANAGER
+- from: API Gateway
+	- to: Review
+	- desc: createKpi(managerId, subordinateId, req)
+- from: Review
+	- to: DB
+	- desc: Verify subordinate (users.manager_id = managerId); find current cycle; check cycle not locked
+- from: DB
+	- to: Review
+	- desc: Return user + cycle
+- from: Review
+	- to: DB
+	- desc: INSERT INTO kpis; INSERT INTO kpi_assignments (kpi_id, user_id, weight, target_value)
+- from: DB
+	- to: Review
+	- desc: Confirm saved
+- from: Review
+	- to: Audit
+	- desc: @Auditable(action = "CREATE_KPI") → log action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: Review
+	- to: API Gateway
+	- desc: Return ManagerKpiResponseDTO { id, title, assignment, ... }
+- from: API Gateway
+	- to: User
+	- desc: 201 Created with KPI data
+
+### Review Goals
+- from: User
+	- to: API Gateway
+	- desc: PATCH /api/v1/users/{userId}/goals/{goalId} { status, score, comment }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('MANAGER')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_MANAGER
+- from: API Gateway
+	- to: Goal Management
+	- desc: patchGoal(managerId, subordinateId, goalId, req)
+- from: Goal Management
+	- to: DB
+	- desc: Verify subordinate; find goal; check cycle not locked; update goal fields (status, score, comment)
+- from: DB
+	- to: Goal Management
+	- desc: Return updated goal
+- from: Goal Management
+	- to: Audit
+	- desc: @Auditable(action = "UPDATE_GOAL") → log action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: Goal Management
+	- to: API Gateway
+	- desc: Return ManagerGoalResponseDTO
+- from: API Gateway
+	- to: User
+	- desc: 200 OK with updated goal
+
+### Set KPI Values
+- from: User
+	- to: API Gateway
+	- desc: PATCH /api/v1/users/{userId}/kpis/{kpiId} { current_value }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('MANAGER')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_MANAGER
+- from: API Gateway
+	- to: Review
+	- desc: patchKpi(managerId, subordinateId, kpiId, req)
+- from: Review
+	- to: DB
+	- desc: Verify subordinate; find KPI + cycle; check cycle not locked; find kpi_assignment
+- from: DB
+	- to: Review
+	- desc: Return KPI + assignment
+- from: Review
+	- to: DB
+	- desc: UPDATE kpi_assignments SET current_value = ?; save KPI
+- from: DB
+	- to: Review
+	- desc: Confirm saved
+- from: Review
+	- to: Audit
+	- desc: @Auditable(action = "UPDATE_KPI") → log action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: Review
+	- to: API Gateway
+	- desc: Return ManagerKpiResponseDTO with updated current_value
+- from: API Gateway
+	- to: User
+	- desc: 200 OK with updated KPI
+
+*HR*
+
+### Create Cycle
+- from: User
+	- to: API Gateway
+	- desc: POST /api/v1/hr/performance-cycles { name, cycle_type, cycle_start, cycle_end, manager_eval_start, manager_eval_end, ... }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('HR')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_HR
+- from: API Gateway
+	- to: Evaluation
+	- desc: createCycle(actorId, req)
+- from: Evaluation
+	- to: DB
+	- desc: INSERT INTO performance_cycles (id, name, cycle_type, status='not_started', timezone, cycle_start, cycle_end, manager_eval_start, manager_eval_end, appeal_deadline_days, is_locked=false)
+- from: DB
+	- to: Evaluation
+	- desc: Confirm saved
+- from: Evaluation
+	- to: Audit
+	- desc: @Auditable(action = "CREATE_CYCLE") → log action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: Evaluation
+	- to: API Gateway
+	- desc: Return CycleResponseDTO
+- from: API Gateway
+	- to: User
+	- desc: 201 Created with cycle data
+
+### Create Questions Template
+- from: User
+	- to: API Gateway
+	- desc: POST /api/v1/hr/assessment-templates { name, description, job_category }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('HR')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_HR
+- from: API Gateway
+	- to: Evaluation
+	- desc: createTemplate(actorId, req)
+- from: Evaluation
+	- to: DB
+	- desc: INSERT INTO assessment_templates; INSERT INTO template_versions (version 1, status='draft')
+- from: DB
+	- to: Evaluation
+	- desc: Confirm saved
+- from: Evaluation
+	- to: Audit
+	- desc: @Auditable(action = "CREATE_TEMPLATE") → log action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: Evaluation
+	- to: API Gateway
+	- desc: Return TemplateResponseDTO { id, name, version, status, questions[] }
+- from: API Gateway
+	- to: User
+	- desc: 201 Created with template data
+
+### Create Evaluation Template
+- from: User
+	- to: API Gateway
+	- desc: POST /api/v1/hr/evaluation-templates { name, cycle_id, components[] }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('HR')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_HR
+- from: API Gateway
+	- to: Evaluation
+	- desc: createEvaluationTemplate(actorId, req)
+- from: Evaluation
+	- to: DB
+	- desc: INSERT INTO evaluation_templates; INSERT INTO evaluation_template_components (goal_weight, kpi_weight, questionnaire refs)
+- from: DB
+	- to: Evaluation
+	- desc: Confirm saved
+- from: Evaluation
+	- to: API Gateway
+	- desc: Return EvaluationTemplateResponse { template_id, name, status, components[] }
+- from: API Gateway
+	- to: User
+	- desc: 201 Created with evaluation template data
+
+### Publish Results
+- from: User
+	- to: API Gateway
+	- desc: PATCH /api/v1/hr/performance-cycles/{cycleId}/status { status: "results_published" }
+- from: API Gateway
+	- to: IAM
+	- desc: JwtAuthenticationFilter validates token; @PreAuthorize("hasRole('HR')")
+- from: IAM
+	- to: API Gateway
+	- desc: SecurityContext set with ROLE_HR
+- from: API Gateway
+	- to: Evaluation
+	- desc: patchCycleStatus(cycleId, req)
+- from: Evaluation
+	- to: DB
+	- desc: Find cycle; validate status transition; UPDATE performance_cycles SET status='results_published', results_published_at=NOW()
+- from: DB
+	- to: Evaluation
+	- desc: Confirm saved
+- from: Evaluation
+	- to: Audit
+	- desc: @Auditable(action = "UPDATE_CYCLE_STATUS") → log action
+- from: Audit
+	- to: DB
+	- desc: INSERT INTO audit_logs
+- from: Evaluation
+	- to: API Gateway
+	- desc: Return CycleResponseDTO with updated status
+- from: API Gateway
+	- to: User
+	- desc: 200 OK with published cycle data
