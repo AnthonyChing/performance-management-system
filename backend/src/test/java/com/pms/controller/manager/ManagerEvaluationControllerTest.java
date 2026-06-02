@@ -135,12 +135,7 @@ class ManagerEvaluationControllerTest {
     @Order(2)
     void getQuestionnaire_usesTemplateVersionAssignedToReview() {
         given().when()
-                .get(
-                        "/"
-                                + USER_ID
-                                + "/evaluations/"
-                                + EVALUATION_ID_WRONG_STAGE
-                                + "/questionnaire")
+                .get("/" + USER_ID + "/evaluations/" + EVALUATION_ID_WRONG_STAGE + "/questionnaire")
                 .then()
                 .statusCode(200)
                 .body("review_id", equalTo(EVALUATION_ID_WRONG_STAGE))
