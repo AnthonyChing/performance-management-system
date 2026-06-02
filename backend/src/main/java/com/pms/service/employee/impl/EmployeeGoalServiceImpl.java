@@ -58,6 +58,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EmployeeGoalServiceImpl implements EmployeeGoalService {
 
+    private static final String CYCLE_NOT_FOUND = "CYCLE_NOT_FOUND";
+    private static final String NO_CURRENT_CYCLE_MSG = "No current performance cycle found";
+    private static final String CYCLE_NOT_FOUND_MSG = "Cycle not found";
+    private static final String GOAL_NOT_FOUND = "GOAL_NOT_FOUND";
+    private static final String GOAL_NOT_FOUND_MSG = "Goal not found";
+    private static final String REVIEW_LOCKED = "REVIEW_LOCKED";
+    private static final String REVIEW_LOCKED_MSG = "The review cycle is currently locked";
+    private static final String INVALID_GOAL_STATUS = "invalid_goal_status";
+
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final PerformanceCycleRepository performanceCycleRepository;
@@ -70,10 +79,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         PerformanceCycle cycle =
                 getCurrentCycleOptional()
                         .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                "CYCLE_NOT_FOUND",
-                                                "No current performance cycle found"));
+                                () -> new NotFoundException(CYCLE_NOT_FOUND, NO_CURRENT_CYCLE_MSG));
 
         GoalStatus statusFilter = null;
         if (status != null && !status.isBlank()) {
@@ -214,10 +220,10 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                             .orElseThrow(
                                     () ->
                                             new NotFoundException(
-                                                    "CYCLE_NOT_FOUND", "Cycle not found"));
+                                                    CYCLE_NOT_FOUND, CYCLE_NOT_FOUND_MSG));
             if (cycle.getStatus() != CycleStatus.COMPLETED
                     && cycle.getStatus() != CycleStatus.CLOSED) {
-                throw new NotFoundException("CYCLE_NOT_FOUND", "Cycle is not a historical cycle");
+                throw new NotFoundException(CYCLE_NOT_FOUND, "Cycle is not a historical cycle");
             }
 
             int pageIndex = (page != null && page > 0) ? page - 1 : 0;
@@ -322,13 +328,10 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         PerformanceCycle cycle =
                 getCurrentCycleOptional()
                         .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                "CYCLE_NOT_FOUND",
-                                                "No current performance cycle found"));
+                                () -> new NotFoundException(CYCLE_NOT_FOUND, NO_CURRENT_CYCLE_MSG));
 
         if (Boolean.TRUE.equals(cycle.getIsLocked())) {
-            throw new ConflictException("REVIEW_LOCKED", "The review cycle is currently locked");
+            throw new ConflictException(REVIEW_LOCKED, REVIEW_LOCKED_MSG);
         }
 
         validateGoalRequest(request, cycle);
@@ -360,9 +363,9 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         goalDTO.setAvailableActions(
                 AvailableActionsDTO.builder()
                         .canEdit(false)
-                        .editUnavailableReason("invalid_goal_status")
+                        .editUnavailableReason(INVALID_GOAL_STATUS)
                         .canUpdateProgress(false)
-                        .updateProgressUnavailableReason("invalid_goal_status")
+                        .updateProgressUnavailableReason(INVALID_GOAL_STATUS)
                         .build());
 
         return GoalCreationResponseDTO.builder().goal(goalDTO).build();
@@ -378,7 +381,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                         .findById(goalUUID)
                         .filter(g -> g.getDeletedAt() == null)
                         .orElseThrow(
-                                () -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
+                                () -> new NotFoundException(GOAL_NOT_FOUND, GOAL_NOT_FOUND_MSG));
 
         if (!goal.getOwnerId().equals(userId)) {
             throw new ForbiddenException(
@@ -389,10 +392,10 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                 performanceCycleRepository
                         .findById(goal.getCycleId())
                         .orElseThrow(
-                                () -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
+                                () -> new NotFoundException(CYCLE_NOT_FOUND, CYCLE_NOT_FOUND_MSG));
 
         if (Boolean.TRUE.equals(cycle.getIsLocked())) {
-            throw new ConflictException("REVIEW_LOCKED", "The review cycle is currently locked");
+            throw new ConflictException(REVIEW_LOCKED, REVIEW_LOCKED_MSG);
         }
 
         if (goal.getStatus() != GoalStatus.REVISION_REQUESTED) {
@@ -419,9 +422,9 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         goalDTO.setAvailableActions(
                 AvailableActionsDTO.builder()
                         .canEdit(false)
-                        .editUnavailableReason("invalid_goal_status")
+                        .editUnavailableReason(INVALID_GOAL_STATUS)
                         .canUpdateProgress(false)
-                        .updateProgressUnavailableReason("invalid_goal_status")
+                        .updateProgressUnavailableReason(INVALID_GOAL_STATUS)
                         .build());
 
         return GoalCreationResponseDTO.builder().goal(goalDTO).build();
@@ -437,7 +440,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                 goalRepository
                         .findById(goalUUID)
                         .orElseThrow(
-                                () -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
+                                () -> new NotFoundException(GOAL_NOT_FOUND, GOAL_NOT_FOUND_MSG));
 
         if (!goal.getOwnerId().equals(userId)) {
             throw new ForbiddenException(
@@ -448,10 +451,10 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
                 performanceCycleRepository
                         .findById(goal.getCycleId())
                         .orElseThrow(
-                                () -> new NotFoundException("CYCLE_NOT_FOUND", "Cycle not found"));
+                                () -> new NotFoundException(CYCLE_NOT_FOUND, CYCLE_NOT_FOUND_MSG));
 
         if (Boolean.TRUE.equals(cycle.getIsLocked())) {
-            throw new ConflictException("REVIEW_LOCKED", "The review cycle is currently locked");
+            throw new ConflictException(REVIEW_LOCKED, REVIEW_LOCKED_MSG);
         }
 
         if (goal.getStatus() != GoalStatus.IN_PROGRESS) {
@@ -518,10 +521,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         PerformanceCycle cycle =
                 getCurrentCycleOptional()
                         .orElseThrow(
-                                () ->
-                                        new NotFoundException(
-                                                "CYCLE_NOT_FOUND",
-                                                "No current performance cycle found"));
+                                () -> new NotFoundException(CYCLE_NOT_FOUND, NO_CURRENT_CYCLE_MSG));
 
         // If specific goalId requested, validate ownership
         if (goalId != null) {
@@ -529,7 +529,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
             goalRepository
                     .findById(goalUUID)
                     .filter(g -> g.getOwnerId().equals(userId))
-                    .orElseThrow(() -> new NotFoundException("GOAL_NOT_FOUND", "Goal not found"));
+                    .orElseThrow(() -> new NotFoundException(GOAL_NOT_FOUND, GOAL_NOT_FOUND_MSG));
         }
 
         List<Goal> allGoals =
@@ -643,7 +643,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         String editUnavailableReason = null;
         if (!canEdit) {
             if (status != GoalStatus.REVISION_REQUESTED) {
-                editUnavailableReason = "invalid_goal_status";
+                editUnavailableReason = INVALID_GOAL_STATUS;
             } else {
                 editUnavailableReason = "review_locked";
             }
@@ -652,7 +652,7 @@ public class EmployeeGoalServiceImpl implements EmployeeGoalService {
         String updateProgressUnavailableReason = null;
         if (!canUpdateProgress) {
             if (status != GoalStatus.IN_PROGRESS) {
-                updateProgressUnavailableReason = "invalid_goal_status";
+                updateProgressUnavailableReason = INVALID_GOAL_STATUS;
             } else {
                 updateProgressUnavailableReason = "review_locked";
             }

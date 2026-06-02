@@ -62,7 +62,7 @@ public class EncryptionUtil {
             return Base64.getEncoder().encodeToString(byteBuffer.array());
         } catch (Exception e) {
             log.error("Error while encrypting data", e);
-            throw new RuntimeException("Encryption failed", e);
+            throw new IllegalStateException("Encryption failed", e);
         }
     }
 

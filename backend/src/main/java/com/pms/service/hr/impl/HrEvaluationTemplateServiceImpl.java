@@ -51,6 +51,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateService {
 
+    private static final String GROUP_TYPE_ALL = "all";
+    private static final String GROUP_TYPE_DEPARTMENT = "department";
+    private static final String GROUP_TYPE_JOB_CATEGORY = "job_category";
+    private static final String DEPT_PREFIX = "department:";
+    private static final String JOB_CAT_PREFIX = "job_category:";
+
     private final EvaluationTemplateRepository evalTemplateRepo;
     private final EvaluationTemplateComponentRepository componentRepo;
     private final AssessmentTemplateRepository assessmentTemplateRepo;
@@ -73,7 +79,7 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
         String groupRef = groupParts[1];
         validateEmployeeGroup(groupType, groupRef);
 
-        String normalizedRef = "all".equals(groupType) ? null : groupRef;
+        String normalizedRef = GROUP_TYPE_ALL.equals(groupType) ? null : groupRef;
         if (evalTemplateRepo
                 .existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
                         req.getCycleId(), groupType, normalizedRef)) {
@@ -159,31 +165,11 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
         }
 
         if (req.getEmployeeGroupId() != null) {
-            String[] parts = parseEmployeeGroupId(req.getEmployeeGroupId());
-            validateEmployeeGroup(parts[0], parts[1]);
-            String normalizedRef = "all".equals(parts[0]) ? null : parts[1];
-            UUID checkCycleId = req.getCycleId() != null ? req.getCycleId() : et.getCycleId();
-            if (!parts[0].equals(et.getEmployeeGroupType())
-                    || !Objects.equals(normalizedRef, et.getEmployeeGroupRef())) {
-                if (evalTemplateRepo
-                        .existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
-                                checkCycleId, parts[0], normalizedRef)) {
-                    throw new ConflictException(
-                            "CYCLE_TEMPLATE_CONFLICT",
-                            "An active evaluation template already exists for this cycle and employee group.");
-                }
-            }
-            et.setEmployeeGroupType(parts[0]);
-            et.setEmployeeGroupRef(normalizedRef);
+            applyEmployeeGroupUpdate(req, et);
         }
 
         if (req.getAssessmentTemplates() != null) {
-            List<ComponentBuildInfo> componentInfos =
-                    buildAndValidateComponents(req.getAssessmentTemplates());
-            validateWeightSum(componentInfos);
-            componentRepo.deleteAllByEvaluationTemplateId(templateId);
-            componentRepo.flush();
-            saveComponents(templateId, componentInfos);
+            applyComponentUpdate(templateId, req.getAssessmentTemplates());
         }
 
         et.setUpdatedBy(actorId);
@@ -232,8 +218,8 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
 
         groups.add(
                 EmployeeGroupDto.builder()
-                        .groupId("all")
-                        .groupType("all")
+                        .groupId(GROUP_TYPE_ALL)
+                        .groupType(GROUP_TYPE_ALL)
                         .name("全體員工")
                         .description("所有 active 員工")
                         .build());
@@ -244,8 +230,8 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                         d ->
                                 groups.add(
                                         EmployeeGroupDto.builder()
-                                                .groupId("department:" + d.getId())
-                                                .groupType("department")
+                                                .groupId(DEPT_PREFIX + d.getId())
+                                                .groupType(GROUP_TYPE_DEPARTMENT)
                                                 .name(d.getName())
                                                 .description("目前隸屬 " + d.getName() + " 的員工")
                                                 .build()));
@@ -259,16 +245,44 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                 jc ->
                         groups.add(
                                 EmployeeGroupDto.builder()
-                                        .groupId("job_category:" + jc)
-                                        .groupType("job_category")
+                                        .groupId(JOB_CAT_PREFIX + jc)
+                                        .groupType(GROUP_TYPE_JOB_CATEGORY)
                                         .name(jc)
-                                        .description("job_category = " + jc + " 的員工")
+                                        .description(GROUP_TYPE_JOB_CATEGORY + " = " + jc + " 的員工")
                                         .build()));
 
         return groups;
     }
 
     // ---- private helpers ----
+
+    private void applyEmployeeGroupUpdate(
+            PatchEvaluationTemplateRequest req, EvaluationTemplate et) {
+        String[] parts = parseEmployeeGroupId(req.getEmployeeGroupId());
+        validateEmployeeGroup(parts[0], parts[1]);
+        String normalizedRef = GROUP_TYPE_ALL.equals(parts[0]) ? null : parts[1];
+        UUID checkCycleId = req.getCycleId() != null ? req.getCycleId() : et.getCycleId();
+        if ((!parts[0].equals(et.getEmployeeGroupType())
+                        || !Objects.equals(normalizedRef, et.getEmployeeGroupRef()))
+                && evalTemplateRepo
+                        .existsByCycleIdAndEmployeeGroupTypeAndEmployeeGroupRefAndDeletedAtIsNullAndArchivedAtIsNull(
+                                checkCycleId, parts[0], normalizedRef)) {
+            throw new ConflictException(
+                    "CYCLE_TEMPLATE_CONFLICT",
+                    "An active evaluation template already exists for this cycle and employee group.");
+        }
+        et.setEmployeeGroupType(parts[0]);
+        et.setEmployeeGroupRef(normalizedRef);
+    }
+
+    private void applyComponentUpdate(
+            UUID templateId, List<AssessmentTemplateComponentRequest> assessmentTemplates) {
+        List<ComponentBuildInfo> componentInfos = buildAndValidateComponents(assessmentTemplates);
+        validateWeightSum(componentInfos);
+        componentRepo.deleteAllByEvaluationTemplateId(templateId);
+        componentRepo.flush();
+        saveComponents(templateId, componentInfos);
+    }
 
     private PerformanceCycle findCycleOrThrow(UUID cycleId) {
         return cycleRepo
@@ -301,23 +315,23 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
     }
 
     private String[] parseEmployeeGroupId(String groupId) {
-        if ("all".equals(groupId)) {
-            return new String[] {"all", null};
+        if (GROUP_TYPE_ALL.equals(groupId)) {
+            return new String[] {GROUP_TYPE_ALL, null};
         }
-        if (groupId.startsWith("department:")) {
-            String ref = groupId.substring("department:".length());
-            return new String[] {"department", ref};
+        if (groupId.startsWith(DEPT_PREFIX)) {
+            String ref = groupId.substring(DEPT_PREFIX.length());
+            return new String[] {GROUP_TYPE_DEPARTMENT, ref};
         }
-        if (groupId.startsWith("job_category:")) {
-            String ref = groupId.substring("job_category:".length());
-            return new String[] {"job_category", ref};
+        if (groupId.startsWith(JOB_CAT_PREFIX)) {
+            String ref = groupId.substring(JOB_CAT_PREFIX.length());
+            return new String[] {GROUP_TYPE_JOB_CATEGORY, ref};
         }
         throw new NotFoundException(
                 "EMPLOYEE_GROUP_NOT_FOUND", "Invalid employee_group_id format: " + groupId);
     }
 
     private void validateEmployeeGroup(String groupType, String groupRef) {
-        if ("department".equals(groupType)) {
+        if (GROUP_TYPE_DEPARTMENT.equals(groupType)) {
             try {
                 UUID deptId = UUID.fromString(groupRef);
                 departmentRepo
@@ -503,7 +517,8 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
     private EmployeeGroupDto toGroupDto(EvaluationTemplate et) {
         String groupType = et.getEmployeeGroupType();
         String groupRef = et.getEmployeeGroupRef();
-        String groupId = "all".equals(groupType) ? "all" : groupType + ":" + groupRef;
+        String groupId =
+                GROUP_TYPE_ALL.equals(groupType) ? GROUP_TYPE_ALL : groupType + ":" + groupRef;
         String name =
                 switch (groupType) {
                     case "all" -> "全體員工";

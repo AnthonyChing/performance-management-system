@@ -193,7 +193,76 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
         List<Kpi> assignedKpis =
                 kpis.stream().filter(k -> assignmentMap.containsKey(k.getId())).toList();
 
-        double totalWeightedScore = 0.0;
+        List<KpiResultDTO> kpiResults = buildKpiResultList(assignedKpis, assignmentMap, userId);
+        double totalWeightedScore = kpiResults.stream().mapToDouble(KpiResultDTO::getScore).sum();
+
+        Optional<KpiResultConfirmation> confirmationOpt =
+                kpiResultConfirmationRepository.findByReviewId(review.getId());
+
+        KpiResultSummaryDTO.DisputePeriodDTO disputePeriod =
+                computeDisputePeriod(cycle, resultStatus);
+        String disputeStatus = disputePeriod.getStatus();
+
+        AvailableActionsDTO availableActions = computeAvailableActions(resultStatus, disputeStatus);
+
+        KpiResultSummaryDTO.KpiConfirmationDTO confirmationDTO =
+                buildConfirmationDTO(confirmationOpt, review.getId().toString());
+
+        OffsetDateTime publishedAt = cycle.getResultsPublishedAt();
+        return KpiResultResponseDTO.builder()
+                .result(
+                        KpiResultSummaryDTO.builder()
+                                .resultId(review.getId().toString())
+                                .cycle(buildCycleSummaryDTO(cycle))
+                                .employee(employeeDTO)
+                                .status(resultStatus)
+                                .publishedAt(publishedAt)
+                                .weightedScore(round(totalWeightedScore))
+                                .kpiResults(kpiResults)
+                                .availableActions(availableActions)
+                                .confirmation(confirmationDTO)
+                                .disputePeriod(disputePeriod)
+                                .updatedAt(review.getUpdatedAt())
+                                .build())
+                .build();
+    }
+
+    private KpiResultSummaryDTO.DisputePeriodDTO computeDisputePeriod(
+            PerformanceCycle cycle, String resultStatus) {
+        OffsetDateTime publishedAt = cycle.getResultsPublishedAt();
+        OffsetDateTime disputeEnd = publishedAt.plusDays(cycle.getAppealDeadlineDays());
+        OffsetDateTime now = OffsetDateTime.now();
+        String disputeStatus;
+        if (now.isBefore(publishedAt)) {
+            disputeStatus = "not_open";
+        } else if (!now.isAfter(disputeEnd) && "pending_confirmation".equals(resultStatus)) {
+            disputeStatus = "open";
+        } else {
+            disputeStatus = "closed";
+        }
+        return KpiResultSummaryDTO.DisputePeriodDTO.builder()
+                .status(disputeStatus)
+                .startDate(publishedAt.toLocalDate().toString())
+                .endDate(disputeEnd.toLocalDate().toString())
+                .timezone(cycle.getTimezone())
+                .build();
+    }
+
+    private AvailableActionsDTO computeAvailableActions(String resultStatus, String disputeStatus) {
+        boolean canConfirm = "pending_confirmation".equals(resultStatus);
+        boolean canDispute =
+                "pending_confirmation".equals(resultStatus) && "open".equals(disputeStatus);
+        return AvailableActionsDTO.builder()
+                .canConfirm(canConfirm)
+                .confirmUnavailableReason(canConfirm ? null : "already_" + resultStatus)
+                .canDispute(canDispute)
+                .disputeUnavailableReason(
+                        canDispute ? null : disputeStatus.equals("open") ? null : disputeStatus)
+                .build();
+    }
+
+    private List<KpiResultDTO> buildKpiResultList(
+            List<Kpi> assignedKpis, Map<UUID, KpiAssignment> assignmentMap, UUID userId) {
         List<KpiResultDTO> kpiResults = new ArrayList<>();
         for (Kpi kpi : assignedKpis) {
             KpiAssignment assignment = assignmentMap.get(kpi.getId());
@@ -210,7 +279,6 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                     assignment.getWeight() != null ? assignment.getWeight().doubleValue() : 0.0;
             double achievementPercent = targetVal > 0 ? (currentVal / targetVal * 100.0) : 0.0;
             double score = targetVal > 0 ? (currentVal / targetVal * weight) : 0.0;
-            totalWeightedScore += score;
 
             Optional<KpiProgressSnapshot> snapshotOpt =
                     kpiProgressSnapshotRepository.findTopByKpiIdAndUserIdOrderByRecordedAtDesc(
@@ -256,80 +324,22 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                             .latestSnapshot(snapshotDTO)
                             .build());
         }
+        return kpiResults;
+    }
 
-        Optional<KpiResultConfirmation> confirmationOpt =
-                kpiResultConfirmationRepository.findByReviewId(review.getId());
-
-        // Compute dispute period
-        OffsetDateTime publishedAt = cycle.getResultsPublishedAt();
-        OffsetDateTime disputeEnd = publishedAt.plusDays(cycle.getAppealDeadlineDays());
-        OffsetDateTime now = OffsetDateTime.now();
-        String disputeStatus;
-        if (now.isBefore(publishedAt)) {
-            disputeStatus = "not_open";
-        } else if (!now.isAfter(disputeEnd) && "pending_confirmation".equals(resultStatus)) {
-            disputeStatus = "open";
-        } else {
-            disputeStatus = "closed";
+    private KpiResultSummaryDTO.KpiConfirmationDTO buildConfirmationDTO(
+            Optional<KpiResultConfirmation> confirmationOpt, String resultId) {
+        if (confirmationOpt.isEmpty()) {
+            return null;
         }
-
-        KpiResultSummaryDTO.DisputePeriodDTO disputePeriod =
-                KpiResultSummaryDTO.DisputePeriodDTO.builder()
-                        .status(disputeStatus)
-                        .startDate(publishedAt.toLocalDate().toString())
-                        .endDate(disputeEnd.toLocalDate().toString())
-                        .timezone(cycle.getTimezone())
-                        .build();
-
-        boolean canConfirm = "pending_confirmation".equals(resultStatus);
-        boolean canDispute =
-                "pending_confirmation".equals(resultStatus) && "open".equals(disputeStatus);
-
-        KpiResultSummaryDTO.KpiConfirmationDTO confirmationDTO = null;
-        if (confirmationOpt.isPresent()) {
-            KpiResultConfirmation conf = confirmationOpt.get();
-            confirmationDTO =
-                    KpiResultSummaryDTO.KpiConfirmationDTO.builder()
-                            .confirmationId(conf.getId().toString())
-                            .resultId(review.getId().toString())
-                            .confirmedAt(conf.getConfirmedAt())
-                            .confirmedBy(
-                                    buildEmployeeSummaryDTO(
-                                            userRepository
-                                                    .findById(conf.getConfirmedBy())
-                                                    .orElse(null)))
-                            .build();
-        }
-
-        return KpiResultResponseDTO.builder()
-                .result(
-                        KpiResultSummaryDTO.builder()
-                                .resultId(review.getId().toString())
-                                .cycle(buildCycleSummaryDTO(cycle))
-                                .employee(employeeDTO)
-                                .status(resultStatus)
-                                .publishedAt(publishedAt)
-                                .weightedScore(round(totalWeightedScore))
-                                .kpiResults(kpiResults)
-                                .availableActions(
-                                        AvailableActionsDTO.builder()
-                                                .canConfirm(canConfirm)
-                                                .confirmUnavailableReason(
-                                                        canConfirm
-                                                                ? null
-                                                                : "already_" + resultStatus)
-                                                .canDispute(canDispute)
-                                                .disputeUnavailableReason(
-                                                        canDispute
-                                                                ? null
-                                                                : disputeStatus.equals("open")
-                                                                        ? null
-                                                                        : disputeStatus)
-                                                .build())
-                                .confirmation(confirmationDTO)
-                                .disputePeriod(disputePeriod)
-                                .updatedAt(review.getUpdatedAt())
-                                .build())
+        KpiResultConfirmation conf = confirmationOpt.get();
+        return KpiResultSummaryDTO.KpiConfirmationDTO.builder()
+                .confirmationId(conf.getId().toString())
+                .resultId(resultId)
+                .confirmedAt(conf.getConfirmedAt())
+                .confirmedBy(
+                        buildEmployeeSummaryDTO(
+                                userRepository.findById(conf.getConfirmedBy()).orElse(null)))
                 .build();
     }
 
