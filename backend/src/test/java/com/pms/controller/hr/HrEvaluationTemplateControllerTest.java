@@ -296,6 +296,109 @@ class HrEvaluationTemplateControllerTest {
     }
 
     @Test
+    void createEvaluationTemplate_existingReviewInSelfEval_movesToPendingManagerEval() {
+        // c1 has pending_self_eval → should be advanced; c2 has manager_eval_in_progress → unchanged
+        String c1 = "00000000-0000-0000-0000-0000000000c1";
+        String c2 = "00000000-0000-0000-0000-0000000000c2";
+        String managerId = "00000000-0000-0000-0000-0000000000b1";
+
+        jdbc.update(
+                """
+                INSERT INTO performance_reviews
+                    (id, cycle_id, employee_id, manager_id, status, is_terminated_employee)
+                VALUES (?::uuid, ?::uuid, ?::uuid, ?::uuid, 'pending_self_eval', false)
+                """,
+                UUID.randomUUID().toString(),
+                NOT_STARTED_CYCLE_ID,
+                c1,
+                managerId);
+
+        jdbc.update(
+                """
+                INSERT INTO performance_reviews
+                    (id, cycle_id, employee_id, manager_id, status, is_terminated_employee)
+                VALUES (?::uuid, ?::uuid, ?::uuid, ?::uuid, 'manager_eval_in_progress', false)
+                """,
+                UUID.randomUUID().toString(),
+                NOT_STARTED_CYCLE_ID,
+                c2,
+                managerId);
+
+        String body =
+                """
+                {
+                  "cycle_id": "%s",
+                  "name": "2027 全體員工績效考核 (Move Test)",
+                  "employee_group_id": "all",
+                  "assessment_templates": [
+                    {"assessment_template_id": "%s", "weight_percent": 60},
+                    {"assessment_template_id": "%s", "weight_percent": 40}
+                  ]
+                }
+                """
+                        .formatted(NOT_STARTED_CYCLE_ID, PUBLISHED_A_ID, PUBLISHED_B_ID);
+
+        given().contentType("application/json").body(body).when().post().then().statusCode(201);
+
+        String c1Status =
+                jdbc.queryForObject(
+                        "SELECT status FROM performance_reviews WHERE cycle_id = ?::uuid AND employee_id = ?::uuid",
+                        String.class,
+                        NOT_STARTED_CYCLE_ID,
+                        c1);
+        assertEquals("pending_manager_eval", c1Status);
+
+        String c2Status =
+                jdbc.queryForObject(
+                        "SELECT status FROM performance_reviews WHERE cycle_id = ?::uuid AND employee_id = ?::uuid",
+                        String.class,
+                        NOT_STARTED_CYCLE_ID,
+                        c2);
+        assertEquals("manager_eval_in_progress", c2Status);
+    }
+
+    @Test
+    void createEvaluationTemplate_existingReviewInSelfEvalInProgress_movesToPendingManagerEval() {
+        String c1 = "00000000-0000-0000-0000-0000000000c1";
+        String managerId = "00000000-0000-0000-0000-0000000000b1";
+
+        jdbc.update(
+                """
+                INSERT INTO performance_reviews
+                    (id, cycle_id, employee_id, manager_id, status, is_terminated_employee)
+                VALUES (?::uuid, ?::uuid, ?::uuid, ?::uuid, 'self_eval_in_progress', false)
+                """,
+                UUID.randomUUID().toString(),
+                NOT_STARTED_CYCLE_ID,
+                c1,
+                managerId);
+
+        String body =
+                """
+                {
+                  "cycle_id": "%s",
+                  "name": "2027 全體員工績效考核 (SelfEvalInProgress Test)",
+                  "employee_group_id": "all",
+                  "assessment_templates": [
+                    {"assessment_template_id": "%s", "weight_percent": 60},
+                    {"assessment_template_id": "%s", "weight_percent": 40}
+                  ]
+                }
+                """
+                        .formatted(NOT_STARTED_CYCLE_ID, PUBLISHED_A_ID, PUBLISHED_B_ID);
+
+        given().contentType("application/json").body(body).when().post().then().statusCode(201);
+
+        String c1Status =
+                jdbc.queryForObject(
+                        "SELECT status FROM performance_reviews WHERE cycle_id = ?::uuid AND employee_id = ?::uuid",
+                        String.class,
+                        NOT_STARTED_CYCLE_ID,
+                        c1);
+        assertEquals("pending_manager_eval", c1Status);
+    }
+
+    @Test
     void createEvaluationTemplate_weightSumNot100_returns400() {
         String body =
                 """
