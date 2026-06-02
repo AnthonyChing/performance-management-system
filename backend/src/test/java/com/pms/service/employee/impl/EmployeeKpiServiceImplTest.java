@@ -18,6 +18,7 @@ import com.pms.repository.KpiRepository;
 import com.pms.repository.KpiResultConfirmationRepository;
 import com.pms.repository.PerformanceCycleRepository;
 import com.pms.repository.PerformanceReviewRepository;
+import com.pms.repository.ReviewResponseRepository;
 import com.pms.repository.UserRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -41,6 +42,7 @@ class EmployeeKpiServiceImplTest {
     @Mock private KpiProgressSnapshotRepository kpiProgressSnapshotRepository;
     @Mock private KpiResultConfirmationRepository kpiResultConfirmationRepository;
     @Mock private AppealRepository appealRepository;
+    @Mock private ReviewResponseRepository reviewResponseRepository;
 
     @InjectMocks private EmployeeKpiServiceImpl service;
 
@@ -110,6 +112,9 @@ class EmployeeKpiServiceImplTest {
         when(kpiRepository.findByCycleIdAndDeletedAtIsNull(cycleId)).thenReturn(List.of(kpi));
         when(kpiAssignmentRepository.findByUserIdAndKpiIdIn(eq(userId), any()))
                 .thenReturn(List.of(assignment));
+        when(reviewResponseRepository.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                        review.getId(), "manager"))
+                .thenReturn(List.of());
 
         var res = service.getKpiResult(userId);
         assertNotNull(res);
