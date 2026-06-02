@@ -14,6 +14,7 @@ function mapStatusToFrontend(backendStatus: string): "進行中" | "待審核" |
     case 'pending_review': return '待審核';
     case 'in_progress': return '進行中';
     case 'completed': return '已評估';
+    case 'revision_requested': return '已否決';
     default: return '待審核';
   }
 }
@@ -23,7 +24,7 @@ function mapStatusToBackend(frontendStatus: string): GoalStatus {
     case '待審核': return 'pending_review';
     case '進行中': return 'in_progress';
     case '已評估': return 'completed';
-    case '已否決': return 'pending_review'; // Or reject if backend supports
+    case '已否決': return 'revision_requested';
     default: return 'pending_review';
   }
 }
@@ -84,9 +85,9 @@ export async function loadManagerDataAsync(): Promise<{ teams: Team[]; members: 
   }
 }
 
-export async function updateGoalStatusAsync(id: string, memberId: string, status: string): Promise<boolean> {
+export async function updateGoalStatusAsync(id: string, memberId: string, status: string, comment?: string): Promise<boolean> {
   try {
-    await apiUpdateGoal(memberId, id, { status: mapStatusToBackend(status) });
+    await apiUpdateGoal(memberId, id, { status: mapStatusToBackend(status), manager_comment: comment });
     return true;
   } catch (error) {
     console.error('Failed to update goal status', error);

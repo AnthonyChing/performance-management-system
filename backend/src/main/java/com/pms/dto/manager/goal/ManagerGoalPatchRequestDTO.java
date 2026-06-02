@@ -13,4 +13,5 @@ public class ManagerGoalPatchRequestDTO {
     private String title;
     private String description;
     private LocalDate dueDate;
+    private String managerComment;
 }

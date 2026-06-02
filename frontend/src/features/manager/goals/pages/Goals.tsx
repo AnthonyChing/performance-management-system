@@ -69,10 +69,10 @@ export default function Goals() {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (id: string, comment?: string) => {
     const goal = data.goals.find(g => g.id === id);
     if (!goal) return;
-    const success = await updateGoalStatusAsync(id, goal.memberId, '已否決');
+    const success = await updateGoalStatusAsync(id, goal.memberId, '已否決', comment);
     if (success) {
       reloadData();
     }
@@ -81,8 +81,8 @@ export default function Goals() {
   const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectingGoal) return;
-    
-    await handleReject(rejectingGoal.id);
+
+    await handleReject(rejectingGoal.id, rejectReason);
 
     setRejectingGoal(null);
     setRejectReason('');
