@@ -5,17 +5,17 @@ import com.pms.dto.manager.goal.ManagerGoalCreateRequestDTO;
 import com.pms.dto.manager.goal.ManagerGoalPatchRequestDTO;
 import com.pms.dto.manager.goal.ManagerGoalResponseDTO;
 import com.pms.entity.Goal;
+import com.pms.entity.GoalReview;
 import com.pms.entity.PerformanceCycle;
 import com.pms.entity.User;
 import com.pms.entity.enums.CycleStatus;
+import com.pms.entity.enums.GoalReviewDecision;
 import com.pms.entity.enums.GoalStatus;
 import com.pms.entity.enums.GoalType;
 import com.pms.exception.ApiException;
 import com.pms.exception.ConflictException;
 import com.pms.exception.ForbiddenException;
 import com.pms.exception.NotFoundException;
-import com.pms.entity.GoalReview;
-import com.pms.entity.enums.GoalReviewDecision;
 import com.pms.repository.GoalRepository;
 import com.pms.repository.GoalReviewRepository;
 import com.pms.repository.PerformanceCycleRepository;
@@ -24,8 +24,8 @@ import com.pms.service.manager.ManagerGoalService;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -119,19 +119,23 @@ public class ManagerGoalServiceImpl implements ManagerGoalService {
 
         ManagerGoalResponseDTO result = ManagerGoalResponseDTO.from(goalRepo.save(goal));
 
-        Set<GoalStatus> reviewableTransitions = Set.of(GoalStatus.IN_PROGRESS, GoalStatus.REVISION_REQUESTED);
-        if (goal.getStatus() != previousStatus && reviewableTransitions.contains(goal.getStatus())) {
-            GoalReviewDecision decision = goal.getStatus() == GoalStatus.REVISION_REQUESTED
-                    ? GoalReviewDecision.REVISION_REQUESTED
-                    : GoalReviewDecision.APPROVED;
-            goalReviewRepo.save(GoalReview.builder()
-                    .id(UUID.randomUUID())
-                    .goalId(goal.getId())
-                    .decision(decision)
-                    .comment(req.getManagerComment())
-                    .reviewedBy(managerId)
-                    .reviewedAt(OffsetDateTime.now())
-                    .build());
+        Set<GoalStatus> reviewableTransitions =
+                Set.of(GoalStatus.IN_PROGRESS, GoalStatus.REVISION_REQUESTED);
+        if (goal.getStatus() != previousStatus
+                && reviewableTransitions.contains(goal.getStatus())) {
+            GoalReviewDecision decision =
+                    goal.getStatus() == GoalStatus.REVISION_REQUESTED
+                            ? GoalReviewDecision.REVISION_REQUESTED
+                            : GoalReviewDecision.APPROVED;
+            goalReviewRepo.save(
+                    GoalReview.builder()
+                            .id(UUID.randomUUID())
+                            .goalId(goal.getId())
+                            .decision(decision)
+                            .comment(req.getManagerComment())
+                            .reviewedBy(managerId)
+                            .reviewedAt(OffsetDateTime.now())
+                            .build());
         }
 
         return result;
