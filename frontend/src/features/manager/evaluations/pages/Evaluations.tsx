@@ -260,7 +260,11 @@ export default function Evaluations() {
       await refreshStatuses();
     } catch (error) {
       if (error instanceof ApiRequestError && error.code === 'STATE_CONFLICT') {
-        setActionError('目前不在主管評核階段，無法儲存 KPI 目前數值。');
+        if (error.message.toLowerCase().includes('locked')) {
+          setActionError('績效週期已鎖定，無法更新 KPI 資料。');
+        } else {
+          setActionError('目前不在主管評核階段，無法儲存 KPI 目前數值。');
+        }
       } else {
         setActionError(error instanceof ApiRequestError ? error.message : 'KPI 暫存失敗');
       }
@@ -323,7 +327,11 @@ export default function Evaluations() {
       await refreshStatuses();
     } catch (error) {
       if (error instanceof ApiRequestError && error.code === 'STATE_CONFLICT') {
-        setActionError('目前不在主管評核階段，無法提交最終評核。');
+        if (error.message.toLowerCase().includes('locked')) {
+          setActionError('績效週期已鎖定，無法提交最終評核。');
+        } else {
+          setActionError('目前不在主管評核階段，無法提交最終評核。');
+        }
       } else {
         setActionError(error instanceof ApiRequestError ? error.message : '提交失敗');
       }
