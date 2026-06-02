@@ -41,9 +41,16 @@ export default function KpiScoringForm({
         kpis.map((kpi) => {
           const draft = draftsByKpiId.get(kpi.id) ?? {
             kpi_id: kpi.id,
-            manager_score: '',
+            current_value: kpi.assignment.current_value ?? '',
             manager_feedback: '',
           };
+          const targetValue = kpi.assignment.target_value;
+          const currentValue = draft.current_value;
+          const sliderMax = Math.max(
+            100,
+            targetValue ?? 0,
+            currentValue === '' ? 0 : currentValue,
+          );
 
           return (
             <div
@@ -60,9 +67,9 @@ export default function KpiScoringForm({
                     目標：{kpi.assignment.target_value}
                     {kpi.unit ? ` ${kpi.unit}` : ''}
                   </span>
-                  {kpi.assignment.current_value !== null && (
+                  {currentValue !== '' && (
                     <span>
-                      目前：{kpi.assignment.current_value}
+                      目前：{currentValue}
                       {kpi.unit ? ` ${kpi.unit}` : ''}
                     </span>
                   )}
@@ -72,30 +79,31 @@ export default function KpiScoringForm({
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">
-                  主管評分 (0-100)
+                  目前數值{kpi.unit ? ` (${kpi.unit})` : ''}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
                     min={0}
-                    max={100}
+                    max={sliderMax}
+                    step="any"
                     disabled={disabled}
-                    value={draft.manager_score === '' ? 0 : draft.manager_score}
+                    value={currentValue === '' ? 0 : currentValue}
                     onChange={(event) =>
-                      onKpiChange(kpi.id, { manager_score: Number(event.target.value) })
+                      onKpiChange(kpi.id, { current_value: Number(event.target.value) })
                     }
                     className="w-full accent-indigo-600 disabled:opacity-50"
                   />
                   <input
                     type="number"
                     min={0}
-                    max={100}
+                    step="any"
                     disabled={disabled}
-                    value={draft.manager_score}
+                    value={currentValue}
                     onChange={(event) => {
                       const next = event.target.value;
                       onKpiChange(kpi.id, {
-                        manager_score: next === '' ? '' : Number(next),
+                        current_value: next === '' ? '' : Number(next),
                       });
                     }}
                     className="w-16 bg-slate-50 text-xs text-slate-700 rounded-lg px-2 py-2 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-100 disabled:opacity-50"
@@ -159,7 +167,7 @@ export default function KpiScoringForm({
             className="px-4 py-2 text-xs font-bold text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            暫存 KPI 評分
+            暫存 KPI 數值
           </button>
           <button
             type="button"

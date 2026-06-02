@@ -18,6 +18,7 @@ import com.pms.entity.KpiProgressSnapshot;
 import com.pms.entity.KpiResultConfirmation;
 import com.pms.entity.PerformanceCycle;
 import com.pms.entity.PerformanceReview;
+import com.pms.entity.ReviewResponse;
 import com.pms.entity.User;
 import com.pms.entity.enums.CycleStatus;
 import com.pms.exception.ConflictException;
@@ -30,6 +31,7 @@ import com.pms.repository.KpiRepository;
 import com.pms.repository.KpiResultConfirmationRepository;
 import com.pms.repository.PerformanceCycleRepository;
 import com.pms.repository.PerformanceReviewRepository;
+import com.pms.repository.ReviewResponseRepository;
 import com.pms.repository.UserRepository;
 import com.pms.service.employee.EmployeeKpiService;
 import java.math.BigDecimal;
@@ -61,6 +63,7 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
     private final KpiProgressSnapshotRepository kpiProgressSnapshotRepository;
     private final KpiResultConfirmationRepository kpiResultConfirmationRepository;
     private final AppealRepository appealRepository;
+    private final ReviewResponseRepository reviewResponseRepository;
 
     @Override
     public KpiStandardsResponseDTO getKpiStandards(UUID userId) {
@@ -340,6 +343,42 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                 .confirmedBy(
                         buildEmployeeSummaryDTO(
                                 userRepository.findById(conf.getConfirmedBy()).orElse(null)))
+
+        return KpiResultResponseDTO.builder()
+                .result(
+                        addReviewResultFields(
+                                        KpiResultSummaryDTO.builder()
+                                                .resultId(review.getId().toString())
+                                                .cycle(buildCycleSummaryDTO(cycle))
+                                                .employee(employeeDTO)
+                                                .status(resultStatus)
+                                                .publishedAt(publishedAt)
+                                                .weightedScore(round(totalWeightedScore))
+                                                .kpiResults(kpiResults)
+                                                .availableActions(
+                                                        AvailableActionsDTO.builder()
+                                                                .canConfirm(canConfirm)
+                                                                .confirmUnavailableReason(
+                                                                        canConfirm
+                                                                                ? null
+                                                                                : "already_"
+                                                                                        + resultStatus)
+                                                                .canDispute(canDispute)
+                                                                .disputeUnavailableReason(
+                                                                        canDispute
+                                                                                ? null
+                                                                                : disputeStatus
+                                                                                                .equals(
+                                                                                                        "open")
+                                                                                        ? null
+                                                                                        : disputeStatus)
+                                                                .build())
+                                                .confirmation(confirmationDTO)
+                                                .disputePeriod(disputePeriod)
+                                                .updatedAt(review.getUpdatedAt()),
+                                        review,
+                                        round(totalWeightedScore))
+                                .build())
                 .build();
     }
 
@@ -418,19 +457,26 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                         .build();
 
         KpiResultSummaryDTO resultSummary =
-                KpiResultSummaryDTO.builder()
-                        .resultId(review.getId().toString())
-                        .cycle(buildCycleSummaryDTO(cycle))
-                        .employee(buildEmployeeSummaryDTO(user))
-                        .status("confirmed")
-                        .confirmation(confirmationDTO)
-                        .availableActions(
-                                AvailableActionsDTO.builder()
-                                        .canConfirm(false)
-                                        .confirmUnavailableReason("already_confirmed")
-                                        .canDispute(false)
-                                        .disputeUnavailableReason("already_confirmed")
-                                        .build())
+                addReviewResultFields(
+                                KpiResultSummaryDTO.builder()
+                                        .resultId(review.getId().toString())
+                                        .cycle(buildCycleSummaryDTO(cycle))
+                                        .employee(buildEmployeeSummaryDTO(user))
+                                        .status("confirmed")
+                                        .confirmation(confirmationDTO)
+                                        .availableActions(
+                                                AvailableActionsDTO.builder()
+                                                        .canConfirm(false)
+                                                        .confirmUnavailableReason(
+                                                                "already_confirmed")
+                                                        .canDispute(false)
+                                                        .disputeUnavailableReason(
+                                                                "already_confirmed")
+                                                        .build()),
+                                review,
+                                review.getKpiScore() != null
+                                        ? review.getKpiScore().doubleValue()
+                                        : null)
                         .build();
 
         return KpiConfirmationResponseDTO.builder()
@@ -489,19 +535,32 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
                             .map(
                                     c -> {
                                         PerformanceReview r = reviewByCycleId.get(c.getId());
-                                        return KpiResultSummaryDTO.builder()
-                                                .resultId(r != null ? r.getId().toString() : null)
-                                                .cycle(buildCycleSummaryDTO(c))
-                                                .employee(
-                                                        buildEmployeeSummaryDTO(
-                                                                userRepository
-                                                                        .findById(userId)
-                                                                        .orElse(null)))
-                                                .status(
-                                                        r != null
-                                                                ? r.getStatus().getDbValue()
-                                                                : null)
-                                                .build();
+                                        KpiResultSummaryDTO.KpiResultSummaryDTOBuilder builder =
+                                                KpiResultSummaryDTO.builder()
+                                                        .resultId(
+                                                                r != null
+                                                                        ? r.getId().toString()
+                                                                        : null)
+                                                        .cycle(buildCycleSummaryDTO(c))
+                                                        .employee(
+                                                                buildEmployeeSummaryDTO(
+                                                                        userRepository
+                                                                                .findById(userId)
+                                                                                .orElse(null)))
+                                                        .status(
+                                                                r != null
+                                                                        ? r.getStatus().getDbValue()
+                                                                        : null);
+                                        return r != null
+                                                ? addReviewResultFields(
+                                                                builder,
+                                                                r,
+                                                                r.getKpiScore() != null
+                                                                        ? r.getKpiScore()
+                                                                                .doubleValue()
+                                                                        : null)
+                                                        .build()
+                                                : builder.build();
                                     })
                             .toList();
 
@@ -585,13 +644,18 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
 
             User user = userRepository.findById(userId).orElse(null);
             KpiResultSummaryDTO result =
-                    KpiResultSummaryDTO.builder()
-                            .resultId(review.getId().toString())
-                            .cycle(buildCycleSummaryDTO(cycle))
-                            .employee(buildEmployeeSummaryDTO(user))
-                            .status(
-                                    review.getStatus() != null
-                                            ? review.getStatus().getDbValue()
+                    addReviewResultFields(
+                                    KpiResultSummaryDTO.builder()
+                                            .resultId(review.getId().toString())
+                                            .cycle(buildCycleSummaryDTO(cycle))
+                                            .employee(buildEmployeeSummaryDTO(user))
+                                            .status(
+                                                    review.getStatus() != null
+                                                            ? review.getStatus().getDbValue()
+                                                            : null),
+                                    review,
+                                    review.getKpiScore() != null
+                                            ? review.getKpiScore().doubleValue()
                                             : null)
                             .build();
 
@@ -685,5 +749,57 @@ public class EmployeeKpiServiceImpl implements EmployeeKpiService {
 
     private double round(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private KpiResultSummaryDTO.KpiResultSummaryDTOBuilder addReviewResultFields(
+            KpiResultSummaryDTO.KpiResultSummaryDTOBuilder builder,
+            PerformanceReview review,
+            Double kpiScore) {
+        Double reviewScore = resolveReviewScore(review);
+        Double performanceScore =
+                kpiScore != null && reviewScore != null
+                        ? round((kpiScore + reviewScore) / 2)
+                        : null;
+
+        return builder.scoreSummary(
+                        KpiResultSummaryDTO.ScoreSummaryDTO.builder()
+                                .performanceScore(performanceScore)
+                                .kpiAchievementPercent(kpiScore)
+                                .managerReviewScore(reviewScore)
+                                .build())
+                .performanceScore(performanceScore)
+                .reviewScore(reviewScore)
+                .finalGrade(
+                        review.getFinalRating() != null
+                                ? review.getFinalRating().getDbValue()
+                                : null)
+                .managerEvaluation(
+                        KpiResultSummaryDTO.ManagerEvaluationDTO.builder()
+                                .score(reviewScore)
+                                .comment(review.getManagerComment())
+                                .build())
+                .reviewedAt(review.getManagerSubmittedAt())
+                .updatedAt(review.getUpdatedAt());
+    }
+
+    private Double resolveReviewScore(PerformanceReview review) {
+        if (review.getReviewScore() != null) {
+            return review.getReviewScore().doubleValue();
+        }
+
+        List<ReviewResponse> responses =
+                reviewResponseRepository.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                        review.getId(), "manager");
+        List<Integer> ratings =
+                responses.stream()
+                        .map(ReviewResponse::getRatingValue)
+                        .filter(value -> value != null && value > 0)
+                        .toList();
+        if (ratings.isEmpty()) {
+            return null;
+        }
+
+        double average = ratings.stream().mapToInt(Integer::intValue).average().orElse(0.0);
+        return round((average / 5.0) * 100.0);
     }
 }
