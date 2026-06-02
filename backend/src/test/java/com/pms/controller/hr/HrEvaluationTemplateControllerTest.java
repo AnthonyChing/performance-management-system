@@ -1,6 +1,7 @@
 package com.pms.controller.hr;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.pms.config.TestcontainersConfig;
 import com.pms.security.JwtUtil;
@@ -66,6 +67,9 @@ class HrEvaluationTemplateControllerTest {
     // ---- setup helpers ----
 
     private void cleanUp() {
+        jdbc.update(
+                "DELETE FROM performance_reviews WHERE cycle_id = ?::uuid",
+                NOT_STARTED_CYCLE_ID);
         // Delete components first (FK child), then templates
         jdbc.update(
                 """
@@ -275,6 +279,21 @@ class HrEvaluationTemplateControllerTest {
                 .body("assessment_templates", hasSize(2))
                 .body("total_weight_percent", equalTo(100.0f))
                 .body("available_actions.can_edit", equalTo(true));
+
+        Integer reviewCount =
+                jdbc.queryForObject(
+                        """
+                        SELECT COUNT(*) FROM performance_reviews
+                        WHERE cycle_id = ?::uuid
+                          AND status = 'pending_manager_eval'
+                          AND employee_id IN (
+                              '00000000-0000-0000-0000-0000000000c1'::uuid,
+                              '00000000-0000-0000-0000-0000000000c2'::uuid
+                          )
+                        """,
+                        Integer.class,
+                        NOT_STARTED_CYCLE_ID);
+        assertEquals(2, reviewCount);
     }
 
     @Test
