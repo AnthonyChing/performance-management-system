@@ -31,4 +31,21 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                     "SELECT DISTINCT job_category FROM users WHERE job_category IS NOT NULL ORDER BY job_category",
             nativeQuery = true)
     List<String> findDistinctJobCategories();
+
+    @Query(
+            value =
+                    """
+            SELECT * FROM users
+            WHERE manager_id IS NOT NULL
+              AND employment_status = 'active'
+              AND (
+                    (:groupType = 'all')
+                 OR (:groupType = 'department' AND department_id::text = :groupRef)
+                 OR (:groupType = 'job_category' AND job_category = :groupRef)
+              )
+            ORDER BY employee_id
+            """,
+            nativeQuery = true)
+    List<User> findActiveManagedUsersForGroup(
+            @Param("groupType") String groupType, @Param("groupRef") String groupRef);
 }

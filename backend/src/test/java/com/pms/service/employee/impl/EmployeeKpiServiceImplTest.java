@@ -9,7 +9,9 @@ import com.pms.entity.Kpi;
 import com.pms.entity.KpiAssignment;
 import com.pms.entity.PerformanceCycle;
 import com.pms.entity.PerformanceReview;
+import com.pms.entity.ReviewResponse;
 import com.pms.entity.enums.CycleStatus;
+import com.pms.entity.enums.RatingScale;
 import com.pms.exception.NotFoundException;
 import com.pms.repository.AppealRepository;
 import com.pms.repository.KpiAssignmentRepository;
@@ -18,8 +20,10 @@ import com.pms.repository.KpiRepository;
 import com.pms.repository.KpiResultConfirmationRepository;
 import com.pms.repository.PerformanceCycleRepository;
 import com.pms.repository.PerformanceReviewRepository;
+import com.pms.repository.ReviewResponseRepository;
 import com.pms.repository.UserRepository;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,6 +45,7 @@ class EmployeeKpiServiceImplTest {
     @Mock private KpiProgressSnapshotRepository kpiProgressSnapshotRepository;
     @Mock private KpiResultConfirmationRepository kpiResultConfirmationRepository;
     @Mock private AppealRepository appealRepository;
+    @Mock private ReviewResponseRepository reviewResponseRepository;
 
     @InjectMocks private EmployeeKpiServiceImpl service;
 
@@ -110,6 +115,9 @@ class EmployeeKpiServiceImplTest {
         when(kpiRepository.findByCycleIdAndDeletedAtIsNull(cycleId)).thenReturn(List.of(kpi));
         when(kpiAssignmentRepository.findByUserIdAndKpiIdIn(eq(userId), any()))
                 .thenReturn(List.of(assignment));
+        when(reviewResponseRepository.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                        review.getId(), "manager"))
+                .thenReturn(List.of());
 
         var res = service.getKpiResult(userId);
         assertNotNull(res);
@@ -121,5 +129,105 @@ class EmployeeKpiServiceImplTest {
         when(performanceCycleRepository.findByStatusIn(any())).thenReturn(List.of());
 
         assertThrows(NotFoundException.class, () -> service.getKpiResult(userId));
+    }
+
+    @Test
+    void getKpiResult_withDirectReviewScore_computesPerformanceScore() {
+        review.setReviewScore(new BigDecimal("80.0"));
+
+        when(performanceCycleRepository.findByStatusIn(any())).thenReturn(List.of(cycle));
+        when(performanceReviewRepository.findByCycleIdAndEmployeeId(cycleId, userId))
+                .thenReturn(Optional.of(review));
+        when(kpiRepository.findByCycleIdAndDeletedAtIsNull(cycleId)).thenReturn(List.of(kpi));
+        when(kpiAssignmentRepository.findByUserIdAndKpiIdIn(eq(userId), any()))
+                .thenReturn(List.of(assignment));
+
+        var res = service.getKpiResult(userId);
+        assertNotNull(res);
+        assertNotNull(res.getResult().getScoreSummary());
+        assertEquals(80.0, res.getResult().getScoreSummary().getManagerReviewScore());
+        assertEquals(80.0, res.getResult().getReviewScore());
+        assertNotNull(res.getResult().getScoreSummary().getPerformanceScore());
+    }
+
+    @Test
+    void getKpiResult_withResponseRatings_computesReviewScore() {
+        ReviewResponse r1 =
+                ReviewResponse.builder()
+                        .id(UUID.randomUUID())
+                        .reviewId(review.getId())
+                        .respondentType("manager")
+                        .ratingValue(4)
+                        .respondedAt(OffsetDateTime.now())
+                        .build();
+        ReviewResponse r2 =
+                ReviewResponse.builder()
+                        .id(UUID.randomUUID())
+                        .reviewId(review.getId())
+                        .respondentType("manager")
+                        .ratingValue(5)
+                        .respondedAt(OffsetDateTime.now())
+                        .build();
+
+        when(performanceCycleRepository.findByStatusIn(any())).thenReturn(List.of(cycle));
+        when(performanceReviewRepository.findByCycleIdAndEmployeeId(cycleId, userId))
+                .thenReturn(Optional.of(review));
+        when(kpiRepository.findByCycleIdAndDeletedAtIsNull(cycleId)).thenReturn(List.of(kpi));
+        when(kpiAssignmentRepository.findByUserIdAndKpiIdIn(eq(userId), any()))
+                .thenReturn(List.of(assignment));
+        when(reviewResponseRepository.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                        review.getId(), "manager"))
+                .thenReturn(List.of(r1, r2));
+
+        var res = service.getKpiResult(userId);
+        assertNotNull(res);
+        // average rating = 4.5, score = (4.5 / 5.0) * 100 = 90.0
+        assertEquals(90.0, res.getResult().getScoreSummary().getManagerReviewScore());
+    }
+
+    @Test
+    void getKpiResult_withZeroRatingsFiltered_returnsNullReviewScore() {
+        ReviewResponse r1 =
+                ReviewResponse.builder()
+                        .id(UUID.randomUUID())
+                        .reviewId(review.getId())
+                        .respondentType("manager")
+                        .ratingValue(0)
+                        .respondedAt(OffsetDateTime.now())
+                        .build();
+
+        when(performanceCycleRepository.findByStatusIn(any())).thenReturn(List.of(cycle));
+        when(performanceReviewRepository.findByCycleIdAndEmployeeId(cycleId, userId))
+                .thenReturn(Optional.of(review));
+        when(kpiRepository.findByCycleIdAndDeletedAtIsNull(cycleId)).thenReturn(List.of(kpi));
+        when(kpiAssignmentRepository.findByUserIdAndKpiIdIn(eq(userId), any()))
+                .thenReturn(List.of(assignment));
+        when(reviewResponseRepository.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                        review.getId(), "manager"))
+                .thenReturn(List.of(r1));
+
+        var res = service.getKpiResult(userId);
+        assertNotNull(res);
+        assertNull(res.getResult().getScoreSummary().getManagerReviewScore());
+        assertNull(res.getResult().getScoreSummary().getPerformanceScore());
+    }
+
+    @Test
+    void getKpiResult_withFinalRating_returnsFinalGrade() {
+        review.setFinalRating(RatingScale.OUTSTANDING);
+
+        when(performanceCycleRepository.findByStatusIn(any())).thenReturn(List.of(cycle));
+        when(performanceReviewRepository.findByCycleIdAndEmployeeId(cycleId, userId))
+                .thenReturn(Optional.of(review));
+        when(kpiRepository.findByCycleIdAndDeletedAtIsNull(cycleId)).thenReturn(List.of(kpi));
+        when(kpiAssignmentRepository.findByUserIdAndKpiIdIn(eq(userId), any()))
+                .thenReturn(List.of(assignment));
+        when(reviewResponseRepository.findByReviewIdAndRespondentTypeOrderByRespondedAtAsc(
+                        review.getId(), "manager"))
+                .thenReturn(List.of());
+
+        var res = service.getKpiResult(userId);
+        assertNotNull(res);
+        assertEquals("outstanding", res.getResult().getFinalGrade());
     }
 }

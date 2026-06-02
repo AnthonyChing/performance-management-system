@@ -7,6 +7,7 @@ import {
   type EmployeePagination,
   type KpiResultSummary,
 } from '../api';
+import { formatRatingScale, getRatingScaleClass } from '../ratingScale';
 
 const PAGE_SIZE = 10;
 
@@ -41,19 +42,6 @@ function getApiErrorMessage(error: unknown) {
 function formatDateRange(start: string | null | undefined, end: string | null | undefined) {
   if (start && end) return `${start} 至 ${end}`;
   return start ?? end ?? '-';
-}
-
-function formatScore(value: number | null | undefined) {
-  if (value === null || value === undefined) return '-';
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
-
-function getGradeClass(grade: string | null | undefined) {
-  if (!grade) return 'bg-slate-100 text-slate-600';
-  if (grade.startsWith('A')) return 'bg-green-100 text-green-700';
-  if (grade.startsWith('B')) return 'bg-indigo-100 text-indigo-700';
-  if (grade.startsWith('C')) return 'bg-orange-100 text-orange-700';
-  return 'bg-slate-100 text-slate-600';
 }
 
 export default function HistoryKPI() {
@@ -160,7 +148,6 @@ export function HistoryKpiContent({
         {results.map((item, index) => {
           const cycle = item.cycle;
           const cycleId = cycle?.cycle_id;
-          const score = item.score_summary?.performance_score ?? item.performance_score;
 
           return (
             <div
@@ -179,18 +166,13 @@ export function HistoryKpiContent({
                 )}
               </div>
 
-              <div className="flex items-center space-x-12">
-                <div className="text-center">
-                  <p className="text-xs text-slate-500 font-medium mb-1">總分</p>
-                  <p className="text-2xl font-bold text-slate-800">{formatScore(score)}</p>
-                </div>
-                <div className="w-px h-12 bg-slate-200"></div>
+              <div className="flex items-center space-x-8">
                 <div className="text-center">
                   <p className="text-xs text-slate-500 font-medium mb-1">最終等級</p>
                   <span
-                    className={`inline-flex items-center justify-center px-4 py-1 rounded-full text-lg font-bold ${getGradeClass(item.final_grade)}`}
+                    className={`inline-flex items-center justify-center px-4 py-1 rounded-full text-lg font-bold ${getRatingScaleClass(item.final_grade)}`}
                   >
-                    {item.final_grade ?? '-'}
+                    {formatRatingScale(item.final_grade)}
                   </span>
                 </div>
 

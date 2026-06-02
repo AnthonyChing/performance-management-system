@@ -10,6 +10,7 @@ import {
   type KpiStandard,
   type KpiStandardsResponse,
 } from '../api';
+import { formatRatingScale } from '../ratingScale';
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError';
@@ -345,10 +346,8 @@ export function CurrentKpiResultsContent({
     <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <ResultSummaryCard
-          label="績效總分"
-          value={formatValue(scoreSummary?.performance_score ?? result.performance_score)}
-          subLabel="績效等級"
-          subValue={result.final_grade ?? '-'}
+          label="績效等級"
+          value={formatRatingScale(result.final_grade)}
           accent
         />
         <ResultSummaryCard
@@ -358,7 +357,7 @@ export function CurrentKpiResultsContent({
           subValue={formatValue(result.weighted_score)}
         />
         <ResultSummaryCard
-          label="主管評核"
+          label="問卷分數"
           value={formatValue(scoreSummary?.manager_review_score ?? result.review_score)}
           subLabel="主管評語"
           subValue={result.manager_evaluation?.comment ?? '-'}
@@ -459,8 +458,8 @@ function ResultSummaryCard({
 }: {
   label: string;
   value: string;
-  subLabel: string;
-  subValue: string;
+  subLabel?: string;
+  subValue?: string;
   accent?: boolean;
 }) {
   return (
@@ -469,16 +468,18 @@ function ResultSummaryCard({
         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</h4>
         <div className="mt-2 text-3xl font-bold text-slate-900">{value}</div>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center gap-3">
-        <span className="text-xs font-semibold text-slate-500">{subLabel}</span>
-        <span
-          className={`text-sm font-bold text-right ${
-            accent ? 'text-indigo-600' : 'text-slate-700'
-          }`}
-        >
-          {subValue}
-        </span>
-      </div>
+      {(subLabel || subValue) && (
+        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center gap-3">
+          <span className="text-xs font-semibold text-slate-500">{subLabel}</span>
+          <span
+            className={`text-sm font-bold text-right ${
+              accent ? 'text-indigo-600' : 'text-slate-700'
+            }`}
+          >
+            {subValue}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

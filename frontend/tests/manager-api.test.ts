@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getQuestionnaire,
   listEvaluations,
+  updateKpi,
   type Fetcher,
 } from '../src/api/manager';
 
@@ -87,5 +88,44 @@ describe('manager api', () => {
     expect(result.data[0].final_rating).toBeUndefined();
     expect(result.data[0].responses?.[0].rating_value).toBeUndefined();
     expect(result.data[0].kpi_evaluations?.[0].manager_score).toBeUndefined();
+  });
+
+  it('PATCH /users/:id/kpis/:kpiId sends current value updates', async () => {
+    const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+    const fetcher: Fetcher = async (input, init) => {
+      calls.push({ input, init });
+      return jsonResponse({
+        id: 'kpi-1',
+        cycle_id: 'cycle-1',
+        created_by: 'manager-1',
+        kpi_type: 'individual',
+        title: '核心產品開發進度',
+        description: null,
+        unit: 'module',
+        target_operator: 'gte',
+        target_value: 4,
+        target_unit: 'module',
+        target_display_text: null,
+        assignment: {
+          weight: 40,
+          target_value: 4,
+          current_value: 5,
+          last_updated_at: '2026-06-02T12:00:00+08:00',
+        },
+        published_at: null,
+      });
+    };
+
+    const result = await updateKpi(
+      'employee-1',
+      'kpi-1',
+      { current_value: 5 },
+      { fetcher, authToken: 'dev-token' },
+    );
+
+    expect(calls[0].input).toBe('/api/v1/users/employee-1/kpis/kpi-1');
+    expect(calls[0].init).toEqual(expect.objectContaining({ method: 'PATCH' }));
+    expect(calls[0].init?.body).toBe(JSON.stringify({ current_value: 5 }));
+    expect(result.assignment.current_value).toBe(5);
   });
 });

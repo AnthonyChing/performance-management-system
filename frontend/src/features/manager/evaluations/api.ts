@@ -3,6 +3,7 @@ import {
   getQuestionnaire,
   listEvaluations,
   listKpis,
+  updateKpi,
   submitKpiEvaluation,
   submitQuestionnaireEvaluation,
   listMySubordinates,
@@ -23,6 +24,7 @@ export {
   getQuestionnaire,
   listEvaluations,
   listKpis,
+  updateKpi,
   submitKpiEvaluation,
   submitQuestionnaireEvaluation,
 };
@@ -165,7 +167,7 @@ export function createInitialKpiDrafts(
     const existing = existingByKpiId.get(kpi.id);
     return {
       kpi_id: kpi.id,
-      manager_score: existing?.manager_score ?? '',
+      current_value: kpi.assignment.current_value ?? '',
       manager_feedback: existing?.manager_feedback ?? '',
     };
   });

@@ -14,9 +14,12 @@ import com.pms.entity.Department;
 import com.pms.entity.EvaluationTemplate;
 import com.pms.entity.EvaluationTemplateComponent;
 import com.pms.entity.PerformanceCycle;
+import com.pms.entity.PerformanceReview;
 import com.pms.entity.TemplateVersion;
+import com.pms.entity.User;
 import com.pms.entity.enums.CycleStatus;
 import com.pms.entity.enums.EvaluationTemplateStatus;
+import com.pms.entity.enums.ReviewStatus;
 import com.pms.entity.enums.TemplateStatus;
 import com.pms.exception.ApiException;
 import com.pms.exception.ConflictException;
@@ -26,6 +29,7 @@ import com.pms.repository.DepartmentRepository;
 import com.pms.repository.EvaluationTemplateComponentRepository;
 import com.pms.repository.EvaluationTemplateRepository;
 import com.pms.repository.PerformanceCycleRepository;
+import com.pms.repository.PerformanceReviewRepository;
 import com.pms.repository.TemplateQuestionRepository;
 import com.pms.repository.TemplateVersionRepository;
 import com.pms.repository.UserRepository;
@@ -57,6 +61,7 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
     private final TemplateVersionRepository templateVersionRepo;
     private final TemplateQuestionRepository questionRepo;
     private final PerformanceCycleRepository cycleRepo;
+    private final PerformanceReviewRepository reviewRepo;
     private final DepartmentRepository departmentRepo;
     private final UserRepository userRepo;
 
@@ -103,6 +108,7 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
 
         List<EvaluationTemplateComponent> components =
                 saveComponents(saved.getId(), componentInfos);
+        dispatchManagerReviews(saved);
         return buildResponse(saved, cycle, components);
     }
 
@@ -403,6 +409,38 @@ public class HrEvaluationTemplateServiceImpl implements HrEvaluationTemplateServ
                                                 .sortOrder(info.sortOrder())
                                                 .build()))
                 .toList();
+    }
+
+    private void dispatchManagerReviews(EvaluationTemplate evaluationTemplate) {
+        List<User> employees =
+                userRepo.findActiveManagedUsersForGroup(
+                        evaluationTemplate.getEmployeeGroupType(),
+                        evaluationTemplate.getEmployeeGroupRef());
+
+        for (User employee : employees) {
+            reviewRepo
+                    .findByCycleIdAndEmployeeId(evaluationTemplate.getCycleId(), employee.getId())
+                    .ifPresentOrElse(
+                            review -> moveToPendingManagerEvalIfStillBeforeManagerPhase(review),
+                            () ->
+                                    reviewRepo.save(
+                                            PerformanceReview.builder()
+                                                    .id(UUID.randomUUID())
+                                                    .cycleId(evaluationTemplate.getCycleId())
+                                                    .employeeId(employee.getId())
+                                                    .managerId(employee.getManagerId())
+                                                    .status(ReviewStatus.PENDING_MANAGER_EVAL)
+                                                    .isTerminatedEmployee(false)
+                                                    .build()));
+        }
+    }
+
+    private void moveToPendingManagerEvalIfStillBeforeManagerPhase(PerformanceReview review) {
+        if (review.getStatus() == ReviewStatus.PENDING_SELF_EVAL
+                || review.getStatus() == ReviewStatus.SELF_EVAL_IN_PROGRESS) {
+            review.setStatus(ReviewStatus.PENDING_MANAGER_EVAL);
+            reviewRepo.save(review);
+        }
     }
 
     private EvaluationTemplateResponse buildResponse(

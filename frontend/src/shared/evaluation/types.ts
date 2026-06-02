@@ -27,7 +27,7 @@ export interface QuestionnaireDraftResponse {
 
 export interface KpiEvaluationDraft {
   kpi_id: string;
-  manager_score: number | '';
+  current_value: number | '';
   manager_feedback: string;
 }
 

@@ -4,9 +4,13 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 import com.pms.config.TestcontainersConfig;
+import com.pms.entity.PerformanceReview;
+import com.pms.entity.enums.RatingScale;
+import com.pms.repository.PerformanceReviewRepository;
 import com.pms.security.JwtUtil;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,6 +48,8 @@ class EmployeeKpiControllerTest {
 
     @Autowired JdbcTemplate jdbc;
 
+    @Autowired PerformanceReviewRepository performanceReviewRepository;
+
     @Autowired JwtUtil jwtUtil;
 
     @LocalServerPort int port;
@@ -55,7 +61,17 @@ class EmployeeKpiControllerTest {
         // Remove any confirmation or appeal for REVIEW_ID created by previous test runs
         jdbc.execute("DELETE FROM kpi_result_confirmations WHERE review_id = '" + REVIEW_ID + "'");
         jdbc.execute("DELETE FROM appeals WHERE review_id = '" + REVIEW_ID + "'");
+        setReviewResultFields(REVIEW_ID, RatingScale.EXCEEDS_EXPECTATIONS, "88");
+        setReviewResultFields(REVIEW_ID_CONFIRMED, RatingScale.MEETS_EXPECTATIONS, "82");
         token = jwtUtil.generateToken(UUID.fromString(USER_ID), List.of("employee"));
+    }
+
+    private void setReviewResultFields(String reviewId, RatingScale rating, String reviewScore) {
+        PerformanceReview review =
+                performanceReviewRepository.findById(UUID.fromString(reviewId)).orElseThrow();
+        review.setFinalRating(rating);
+        review.setReviewScore(new BigDecimal(reviewScore));
+        performanceReviewRepository.save(review);
     }
 
     @BeforeEach
@@ -97,6 +113,10 @@ class EmployeeKpiControllerTest {
                 .contentType("application/json")
                 .body("result.result_id", equalTo(REVIEW_ID))
                 .body("result.status", equalTo("pending_confirmation"))
+                .body("result.final_grade", equalTo("exceeds_expectations"))
+                .body("result.review_score", equalTo(88.0F))
+                .body("result.score_summary.manager_review_score", equalTo(88.0F))
+                .body("result.manager_evaluation.score", equalTo(88.0F))
                 .body("result.available_actions.can_confirm", equalTo(true));
     }
 
@@ -111,7 +131,9 @@ class EmployeeKpiControllerTest {
                 .body("mode", equalTo("historical_results"))
                 .body("pagination.page", equalTo(1))
                 .body("results.size()", equalTo(1))
-                .body("results[0].result_id", equalTo(REVIEW_ID_CONFIRMED));
+                .body("results[0].result_id", equalTo(REVIEW_ID_CONFIRMED))
+                .body("results[0].final_grade", equalTo("meets_expectations"))
+                .body("results[0].score_summary.manager_review_score", equalTo(82.0F));
     }
 
     @Test
@@ -124,7 +146,9 @@ class EmployeeKpiControllerTest {
                 .contentType("application/json")
                 .body("mode", equalTo("historical_result_detail"))
                 .body("result.result_id", equalTo(REVIEW_ID_CONFIRMED))
-                .body("result.cycle.cycle_id", equalTo(CYCLE_ID_COMPLETED));
+                .body("result.cycle.cycle_id", equalTo(CYCLE_ID_COMPLETED))
+                .body("result.final_grade", equalTo("meets_expectations"))
+                .body("result.score_summary.manager_review_score", equalTo(82.0F));
     }
 
     @Test

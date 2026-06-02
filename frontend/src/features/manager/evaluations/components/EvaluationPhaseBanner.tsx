@@ -13,7 +13,7 @@ export default function EvaluationPhaseBanner({ editable, lockReason }: Evaluati
         <div>
           <p className="font-bold">主管評核階段</p>
           <p className="mt-1 text-indigo-800/80 leading-relaxed">
-            您可暫存問卷與 KPI 評分。完成全部必填項目後，再提交最終評核結果。
+            您可暫存問卷與 KPI 數值。完成全部必填項目後，再提交最終評核結果。
           </p>
         </div>
       </div>
