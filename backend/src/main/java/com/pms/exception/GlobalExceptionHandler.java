@@ -16,8 +16,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private DiscordAlertService discordAlertService;
+    private final DiscordAlertService discordAlertService;
+
+    public GlobalExceptionHandler(
+            @org.springframework.beans.factory.annotation.Autowired(required = false)
+                    DiscordAlertService discordAlertService) {
+        this.discordAlertService = discordAlertService;
+    }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApi(ApiException ex) {
@@ -39,10 +44,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) throws Exception {
+    public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
         // 讓 Spring Security 自行處理權限相關的例外 (避免 403 變成 500)
-        if (ex.getClass().getName().startsWith("org.springframework.security.")) {
-            throw ex;
+        if (ex instanceof RuntimeException runtimeEx
+                && ex.getClass().getName().startsWith("org.springframework.security.")) {
+            throw runtimeEx;
         }
 
         // Send alert to Discord

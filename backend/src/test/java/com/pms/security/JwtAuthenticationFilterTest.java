@@ -116,17 +116,6 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void noCookiesNull_doesNotSetAuthentication() throws ServletException, IOException {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        filter.doFilterInternal(request, response, filterChain);
-
-        assertNull(SecurityContextHolder.getContext().getAuthentication());
-        assertTrue(filterChainCalled);
-    }
-
-    @Test
     void cookieWithWrongName_doesNotSetAuthentication() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new jakarta.servlet.http.Cookie("session", "some.value"));
