@@ -145,3 +145,7 @@ Branches should be created to focus on a specific functionality or purpose. Avoi
 ## Documentation
 
 For further documentation, please check out the [docs/](./docs/) directory.
+
+## Final Report
+
+See [第11組_績效管理系統_期末報告.pdf](./第11組_績效管理系統_期末報告.pdf) for our final report.
