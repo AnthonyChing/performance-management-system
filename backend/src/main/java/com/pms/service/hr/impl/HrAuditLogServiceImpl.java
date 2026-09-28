@@ -38,12 +38,13 @@ public class HrAuditLogServiceImpl implements HrAuditLogService {
         java.util.List<UUID> actorIds =
                 logs.stream()
                         .map(
-                                log ->
-                                        log.getActorId() != null
-                                                ? log.getActorId()
-                                                : ("LOGIN_GOOGLE".equals(log.getAction())
-                                                        ? log.getResourceId()
-                                                        : null))
+                                log -> {
+                                    UUID fallback =
+                                            "LOGIN_GOOGLE".equals(log.getAction())
+                                                    ? log.getResourceId()
+                                                    : null;
+                                    return log.getActorId() != null ? log.getActorId() : fallback;
+                                })
                         .filter(java.util.Objects::nonNull)
                         .distinct()
                         .toList();
@@ -53,12 +54,9 @@ public class HrAuditLogServiceImpl implements HrAuditLogService {
 
         return logs.map(
                 log -> {
-                    UUID actualActorId =
-                            log.getActorId() != null
-                                    ? log.getActorId()
-                                    : ("LOGIN_GOOGLE".equals(log.getAction())
-                                            ? log.getResourceId()
-                                            : null);
+                    UUID fallback =
+                            "LOGIN_GOOGLE".equals(log.getAction()) ? log.getResourceId() : null;
+                    UUID actualActorId = log.getActorId() != null ? log.getActorId() : fallback;
                     User actor = actualActorId != null ? userMap.get(actualActorId) : null;
                     String name = actor != null ? actor.getFullName() : "系統/未知操作者";
                     return AuditLogDTO.builder()

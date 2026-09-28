@@ -43,6 +43,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EmployeeAppealServiceImpl implements EmployeeAppealService {
 
+    private static final String CURRENT_APPEAL_PERIOD_NOT_FOUND = "CURRENT_APPEAL_PERIOD_NOT_FOUND";
+    private static final String REVIEW_NOT_FOUND = "REVIEW_NOT_FOUND";
+    private static final String NO_PERFORMANCE_REVIEW_FOUND = "No performance review found";
+    private static final String ALREADY_SUBMITTED = "already_submitted";
+
     private final UserRepository userRepository;
     private final PerformanceCycleRepository performanceCycleRepository;
     private final PerformanceReviewRepository performanceReviewRepository;
@@ -56,7 +61,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                "CURRENT_APPEAL_PERIOD_NOT_FOUND",
+                                                CURRENT_APPEAL_PERIOD_NOT_FOUND,
                                                 "No current appeal period found"));
 
         PerformanceReview review =
@@ -65,7 +70,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                "REVIEW_NOT_FOUND", "No performance review found"));
+                                                REVIEW_NOT_FOUND, NO_PERFORMANCE_REVIEW_FOUND));
 
         Optional<Appeal> appealOpt = appealRepository.findByReviewId(review.getId());
 
@@ -88,6 +93,8 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
 
         boolean canStartAppeal = "compose".equals(mode) && "open".equals(appealPeriod.getStatus());
         boolean canSubmit = canStartAppeal;
+        String unavailableReason =
+                appealOpt.isPresent() ? ALREADY_SUBMITTED : appealPeriod.getStatus();
 
         return AppealsResponseDTO.builder()
                 .mode(mode)
@@ -99,18 +106,9 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         AvailableActionsDTO.builder()
                                 .canStartAppeal(canStartAppeal)
                                 .startAppealUnavailableReason(
-                                        canStartAppeal
-                                                ? null
-                                                : appealOpt.isPresent()
-                                                        ? "already_submitted"
-                                                        : appealPeriod.getStatus())
+                                        canStartAppeal ? null : unavailableReason)
                                 .canSubmit(canSubmit)
-                                .submitUnavailableReason(
-                                        canSubmit
-                                                ? null
-                                                : appealOpt.isPresent()
-                                                        ? "already_submitted"
-                                                        : appealPeriod.getStatus())
+                                .submitUnavailableReason(canSubmit ? null : unavailableReason)
                                 .build())
                 .build();
     }
@@ -129,7 +127,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                "CURRENT_APPEAL_PERIOD_NOT_FOUND",
+                                                CURRENT_APPEAL_PERIOD_NOT_FOUND,
                                                 "Performance cycle not found"));
 
         PerformanceReview review =
@@ -138,7 +136,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                "REVIEW_NOT_FOUND", "No performance review found"));
+                                                REVIEW_NOT_FOUND, NO_PERFORMANCE_REVIEW_FOUND));
 
         if (!review.getEmployeeId().equals(userId)) {
             throw new ForbiddenException(
@@ -201,9 +199,9 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                 .availableActions(
                         AvailableActionsDTO.builder()
                                 .canStartAppeal(false)
-                                .startAppealUnavailableReason("already_submitted")
+                                .startAppealUnavailableReason(ALREADY_SUBMITTED)
                                 .canSubmit(false)
-                                .submitUnavailableReason("already_submitted")
+                                .submitUnavailableReason(ALREADY_SUBMITTED)
                                 .build())
                 .build();
     }
@@ -215,7 +213,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                "CURRENT_APPEAL_PERIOD_NOT_FOUND",
+                                                CURRENT_APPEAL_PERIOD_NOT_FOUND,
                                                 "No current appeal period found"));
 
         PerformanceReview review =
@@ -224,7 +222,7 @@ public class EmployeeAppealServiceImpl implements EmployeeAppealService {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                "REVIEW_NOT_FOUND", "No performance review found"));
+                                                REVIEW_NOT_FOUND, NO_PERFORMANCE_REVIEW_FOUND));
 
         Appeal appeal =
                 appealRepository
